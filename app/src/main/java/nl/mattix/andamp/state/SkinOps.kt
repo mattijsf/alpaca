@@ -78,8 +78,8 @@ class SkinOps internal constructor(
         { _, _, _, _ -> error("no modern skins here") },
     /**
      * Whether a classic skin on the player is drawn by the engine modern skins run on, as Winamp
-     * draws it, through a look of its file. Off, Andamp's own classic windows draw it, as they do a
-     * skin whose look fails.
+     * draws it, through a look of its file. Off, which only tests use, a classic skin gets no look
+     * and the player shows a placeholder, so a test sees only the looks of modern skins.
      */
     private val classicLooks: Boolean = true,
     /** The file the engine opens for a skin that ships with the app, as it looks now; called on IO. */
@@ -804,10 +804,10 @@ class SkinOps internal constructor(
     /**
      * The look of the classic skin [id] drawn by the engine: the one on screen or parked, else a
      * new one of its file, the stored one or, for a skin that ships with the app, the one
-     * [bundledFile] writes, which for a live skin follows the phone's palette. Null for a skin whose
-     * look failed in this process, so Andamp's own renderer draws it. Call under the lock.
+     * [bundledFile] writes, which for a live skin follows the phone's palette. Null for a skin with
+     * no file for the engine or whose look failed in this process. Call under the lock.
      */
-    @Suppress("TooGenericExceptionCaught") // whatever making a look throws, Andamp's own renderer draws the skin
+    @Suppress("TooGenericExceptionCaught") // whatever making a look throws, the skin goes on without a look
     private fun classicLookFor(id: String): WalLook? {
         if (id in failed || !classicLooks) return null
         val file =

@@ -10,11 +10,6 @@ class SkinManagerLayout(
     val visibleRows: Int = DEFAULT_ROWS,
     /** The window's width: [WIDTH] plus [WIDTH_STEP] a step. */
     val width: Int = WIDTH,
-    /**
-     * What the list is taller than its rows: a window held at a height that is not a whole
-     * number of rows leaves this much empty under the last one.
-     */
-    val slack: Int = 0,
     /** How tall a row of the list is: Winamp's 13 px, or what the listener picked. */
     val rowH: Int = ROW_H,
 ) {
@@ -24,7 +19,7 @@ class SkinManagerLayout(
      * The height of the list area: every visible row plus the top pad the rows are drawn
      * with.
      */
-    fun listHeight() = ListText.TOP_PAD.toInt() + visibleRows * rowH + slack
+    fun listHeight() = ListText.TOP_PAD.toInt() + visibleRows * rowH
 
     /** The window's height in [frame]: the list plus the frame's chrome. */
     fun height(frame: WindowFrame) = frame.chromeH + listHeight()

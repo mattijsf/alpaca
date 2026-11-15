@@ -107,7 +107,7 @@ class SkinOpsWearTest {
         library,
         live = live,
         modernOn = { modernOn && gate },
-        // these are about modern skins: a classic skin is drawn by Andamp's own windows
+        // these are about modern skins: a classic skin gets no look
         classicLooks = false,
         openModern = { id, file, name, siblings ->
             beforeOpen()
