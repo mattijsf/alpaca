@@ -155,13 +155,12 @@ class LibraryGoldenTest {
         ops: nl.mattix.andamp.state.LibraryOps,
         state: WinampState,
         cols: Int = 0,
-        slack: Int = 0,
         rowH: Int = LibraryLayout.ROW_H,
         source: String? = null,
         sourceMark: nl.mattix.andamp.state.SourceMark? = null,
     ) {
         val frame = GenFrame
-        val layout = LibraryLayout(8, LibraryLayout.widthOfCols(cols), slack, rowH)
+        val layout = LibraryLayout(8, LibraryLayout.widthOfCols(cols), rowH = rowH)
         render(layout.listWidth(frame), layout.contentH) {
             drawLibraryContent(libraryRasterizer(), ops, state, skin, 1, frame, layout, source, sourceMark)
         }.captureRoboImage("$SNAPSHOT_DIR/$name.png")
@@ -171,13 +170,6 @@ class LibraryGoldenTest {
     fun `library artists with header and status bar`() {
         val (ops, state) = libraryFixture()
         renderLibrary("library_artists", ops, state)
-    }
-
-    @Test
-    fun `a library held at a height between two rows keeps its bar at the bottom`() {
-        // the rows' area and the scrollbar's rail are seven pixels taller than the rows
-        val (ops, state) = libraryFixture()
-        renderLibrary("library_slack", ops, state, slack = 7)
     }
 
     @Test

@@ -275,7 +275,6 @@ android {
         idSuffix?.let { applicationIdSuffix = it }
         val suffixName = idSuffix?.trimStart('.')
         manifestPlaceholders["appLabel"] = suffixName?.let { "Andamp $it" } ?: "@string/app_name"
-        manifestPlaceholders["modernSkinsLabel"] = suffixName?.let { "Modern $it" } ?: "Andamp Modern"
     }
 
     // One app, and no flavors. No source is compiled in: a source is an app the listener installed,

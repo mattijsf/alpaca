@@ -65,7 +65,7 @@ fun SkinManagerWindow(
                 .coerceIn(minRows, fits.coerceAtLeast(minRows))
         val layout = SkinManagerLayout(rows, SkinManagerLayout.widthOfCols(cols), rowH = rowH)
         val widgets =
-            remember(vm, frame, layout.visibleRows, layout.width, layout.slack, rowH) { skinManagerWidgets(vm, frame, layout) }
+            remember(vm, frame, layout.visibleRows, layout.width, rowH) { skinManagerWidgets(vm, frame, layout) }
         GenSkinWindow(
             skin = skin,
             state = s,

@@ -89,21 +89,6 @@ class WindowGoldenTest {
             drawSkinList(rasterizer, entries, scroll = 0, currentId = "aaaa", style = skin.pledit, scale = 1, frame = frame)
         }.captureRoboImage("$SNAPSHOT_DIR/skin_manager_rows.png")
 
-        // held at a height between two rows: the list's background runs on under the last one
-        val held = SkinManagerLayout(slack = 5)
-        render(width, held.listHeight()) {
-            drawSkinList(
-                rasterizer,
-                entries,
-                scroll = 0,
-                currentId = "aaaa",
-                style = skin.pledit,
-                scale = 1,
-                frame = frame,
-                layout = held,
-            )
-        }.captureRoboImage("$SNAPSHOT_DIR/skin_manager_slack.png")
-
         // taller rows: the band and the names step by the row the listener picked
         val large = SkinManagerLayout(4, rowH = RowHeight.LARGE.px)
         render(width, large.listHeight()) {

@@ -387,7 +387,6 @@ internal fun DrawScope.drawLibraryContent(
             order = LibraryRasterizer.wordOf(s.albumOrder).takeIf { ops.canOrder },
             width = width,
             visibleRows = layout.visibleRows,
-            slack = layout.slack,
             scale = scale,
             style = skin.pledit,
             rowH = layout.rowH,
@@ -494,7 +493,6 @@ internal class LibraryRasterizer(
         val deleteCell: Boolean,
         val width: Int,
         val visibleRows: Int,
-        val slack: Int,
         val scale: Int,
         val style: PleditStyle,
         val rowH: Int = LibraryLayout.ROW_H,
@@ -509,7 +507,7 @@ internal class LibraryRasterizer(
         /** Every source's mark, so a row's marks each take the room of the widest; see [MarkInk]. */
         val marks: Collection<SourceMark> = emptyList(),
     ) {
-        val layout: LibraryLayout get() = LibraryLayout(visibleRows, slack = slack, rowH = rowH)
+        val layout: LibraryLayout get() = LibraryLayout(visibleRows, rowH = rowH)
     }
 
     /** One layer and the key it was made for. */
@@ -599,7 +597,6 @@ internal class LibraryRasterizer(
                 ops.needsAccess,
                 ops.unreachable,
                 scene.visibleRows,
-                scene.slack,
                 scene.width,
                 scene.scale,
                 scene.style,
@@ -932,11 +929,6 @@ class LibraryLayout(
     val visibleRows: Int,
     /** The window's width, which grows in steps of [WIDTH_STEP]. */
     val width: Int = WIDTH,
-    /**
-     * What the rows' area is taller than its rows: a window held at a height that is not a
-     * whole number of rows leaves this much empty under the last one.
-     */
-    val slack: Int = 0,
     /** How tall a row of the list is: Winamp's 13 px, or what the listener picked. */
     val rowH: Int = ROW_H,
 ) {
@@ -970,7 +962,7 @@ class LibraryLayout(
     val barH = rowH
     val headerTop = headerTop(rowH)
     val rowsTop = rowsTop(rowH)
-    val rowsH = visibleRows * rowH + slack
+    val rowsH = visibleRows * rowH
     val contentH = furnitureH(rowH) + rowsH
     val rowsBottom = rowsTop + rowsH
     val barTop = rowsBottom + RULE_H

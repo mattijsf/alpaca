@@ -74,7 +74,7 @@ class WinampViewModel
         playlistLibrary: PlaylistLibrary = PlaylistLibrary(java.io.File(app.filesDir, "playlists")),
         stationStore: StationStore = StationStore(java.io.File(app.filesDir, "stations.m3u")),
         bookmarkStore: BookmarkStore = BookmarkStore(java.io.File(app.filesDir, "bookmarks.m3u")),
-        /** Whether the engine draws classic skins; see [SkinOps]. Tests of Andamp's own classic windows turn it off. */
+        /** Whether the engine draws classic skins; see [SkinOps]. Tests that run without the engine turn it off. */
         classicLooks: Boolean = true,
     ) : AndroidViewModel(app),
         nl.mattix.andamp.ui.window.WindowControls {

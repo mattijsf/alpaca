@@ -34,8 +34,8 @@ const val GESTURE_BAR = 48
 const val WIDE_WINDOW = "w1400dp-h1600dp-mdpi"
 
 /**
- * Interaction tests run on the mock backend: fast, deterministic, no ExoPlayer. They test Andamp's
- * own classic windows, so a classic skin is drawn by those, not by the engine.
+ * Interaction tests run on the mock backend: fast, deterministic, no ExoPlayer. They run without
+ * the engine, so a classic skin gets no look and the player shows a placeholder.
  */
 fun testViewModel(): WinampViewModel =
     WinampViewModel(
