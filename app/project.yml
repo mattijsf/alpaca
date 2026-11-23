@@ -29,6 +29,9 @@ targets:
       - path: Resources/fonts
         type: folder
         buildPhase: resources
+      - path: Resources/wasabi
+        type: folder
+        buildPhase: resources
     settings:
       base:
         PRODUCT_NAME: Andamp

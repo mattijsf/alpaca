@@ -78,7 +78,16 @@ impl Assets {
         let key = file.to_lowercase();
         let decoded = match self.pictures.get(&key) {
             Some(p) => p.clone(),
-            None => self.files.read(file).and_then(|b| decode(&b)).map(Rc::new),
+            // a picture the skin's XML asks to be made: a box of one color
+            None => match walkit::generated::solid_spec(file) {
+                Some((w, h, argb)) => Some(Rc::new(Picture {
+                    w,
+                    h,
+                    argb: vec![argb; (w.max(0) * h.max(0)) as usize],
+                    opaque: (argb >> 24) == 0xff,
+                })),
+                None => self.files.read(file).and_then(|b| decode(&b)).map(Rc::new),
+            },
         };
         self.pictures.insert(file.to_string(), decoded.clone());
         self.pictures.insert(key, decoded.clone());

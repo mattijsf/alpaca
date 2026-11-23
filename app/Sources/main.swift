@@ -8,6 +8,9 @@ import UniformTypeIdentifiers
 ///
 /// ```
 /// Andamp [skin.wsz|skin.wal] [song ...] [--modern] [--zoom n] [--volume 0..255]
+///        [--base skin.wsz]     a classic skin laid under classic skins, in place of AndAmp Dark
+///        [--wasabi base.zip]   a zip of a wasabi folder laid under modern skins, in place of
+///                              Andamp's own element set
 ///        [--click x,y]         clicks there on the screen, in layout pixels from its top left
 ///                              corner, a second after the start; may be given more than once
 ///        [--dump <folder>]     writes every window as a PNG after two seconds, and quits
@@ -25,6 +28,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         var volume: Int?
         var modern = false
         var zoom = 1
+        var base: URL?
+        var wasabi: URL?
         var dump: URL?
         var bench: Double?
         var clicks: [(Int32, Int32)] = []
@@ -37,6 +42,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 case "--zoom": zoom = args.popFirst().flatMap { Int($0) } ?? 1
                 case "--volume": volume = args.popFirst().flatMap { Int($0) }
                 case "--dump": dump = args.popFirst().map { URL(fileURLWithPath: $0) }
+                case "--base": base = args.popFirst().map { URL(fileURLWithPath: $0) }
+                case "--wasabi": wasabi = args.popFirst().map { URL(fileURLWithPath: $0) }
                 case "--click":
                     let at = (args.popFirst() ?? "").split(separator: ",").compactMap { Int32($0) }
                     if at.count == 2 { clicks.append((at[0], at[1])) }
@@ -63,11 +70,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// The file name endings of a skin.
     static let skinTypes = ["wsz", "wal", "zip"]
 
-    private var fonts: URL? { Bundle.main.url(forResource: "fonts", withExtension: nil) }
+    /// A skin that comes with the app, by its file name.
+    private func builtin(_ name: String) -> URL? {
+        Bundle.main.url(forResource: "skins", withExtension: nil)?.appendingPathComponent(name)
+    }
 
-    private func builtin(modern: Bool) -> URL? {
-        Bundle.main.url(forResource: "skins", withExtension: nil)?
-            .appendingPathComponent(modern ? "walkit-modern.wal" : "walkit-classic.wsz")
+    /// The skin shown when none is asked for, which also lies under every classic skin.
+    private static let defaultSkin = "AndAmp Dark.wsz"
+    private static let modernSkin = "walkit-modern.wal"
+
+    /// What lies under every skin: AndAmp Dark, Andamp's element set and the stand-in fonts,
+    /// unless the command line names others.
+    private var under: SkinController.Under {
+        SkinController.Under(
+            base: options.base ?? builtin(Self.defaultSkin),
+            wasabi: options.wasabi,
+            wasabiFolder: Bundle.main.url(forResource: "wasabi", withExtension: nil),
+            fonts: Bundle.main.url(forResource: "fonts", withExtension: nil))
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -76,7 +95,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.onMenu = { [weak self] at in self?.popUpMenu(at: at) }
         controller.onDrop = { [weak self] files in self?.dropped(files) }
         if let volume = options.volume { controller.setVolume(volume) }
-        if let skin = options.skin ?? builtin(modern: options.modern) { open(skin) }
+        if let skin = options.skin ?? builtin(options.modern ? Self.modernSkin : Self.defaultSkin) {
+            open(skin)
+        }
         if !options.songs.isEmpty { controller.play(files: options.songs) }
         NSApp.activate(ignoringOtherApps: true)
         for (n, at) in options.clicks.enumerated() {
@@ -92,7 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func open(_ skin: URL) {
         do {
-            try controller.open(file: skin, fonts: fonts)
+            try controller.open(file: skin, under: under)
         } catch {
             if options.dump != nil || options.bench != nil {
                 FileHandle.standardError.write(Data("andamp: \(error.localizedDescription)\n".utf8))
@@ -124,8 +145,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item("Add Files…", #selector(addFiles))
         menu.addItem(.separator())
         item("Open Skin…", #selector(openSkin))
-        item("Classic Skin", #selector(showClassic))
-        item("Modern Skin", #selector(showModern))
+        let skins = NSMenuItem(title: "Skins", action: nil, keyEquivalent: "")
+        skins.submenu = NSMenu(title: "Skins")
+        skinItems().forEach { skins.submenu?.addItem($0) }
+        menu.addItem(skins)
         menu.addItem(.separator())
         item("Double Size", #selector(toggleDoubleSize), on: controller.zoom > 1)
         item("Always on Top", #selector(toggleOnTop), on: controller.onTop)
@@ -166,10 +189,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             item("Stop", #selector(stop), "v"),
             item("Next", #selector(next), "b"),
         ])
-        add("Skins", [
-            item("Classic", #selector(showClassic)),
-            item("Modern", #selector(showModern)),
-        ])
+        add("Skins", skinItems())
         add("View", [
             item("Double Size", #selector(toggleDoubleSize), "d"),
             item("Always on Top", #selector(toggleOnTop), "a"),
@@ -202,8 +222,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if panel.runModal() == .OK, let file = panel.url { open(file) }
     }
 
-    @objc private func showClassic() { builtin(modern: false).map(open) }
-    @objc private func showModern() { builtin(modern: true).map(open) }
+    /// The skins that come with the app, as menu items.
+    private func skinItems() -> [NSMenuItem] {
+        let folder = Bundle.main.url(forResource: "skins", withExtension: nil)
+        let files = (folder.flatMap { try? FileManager.default.contentsOfDirectory(atPath: $0.path) } ?? [])
+            .filter { Self.skinTypes.contains(($0 as NSString).pathExtension.lowercased()) }
+            .sorted()
+        return files.map { file in
+            let item = NSMenuItem(
+                title: (file as NSString).deletingPathExtension, action: #selector(showBuiltin(_:)),
+                keyEquivalent: "")
+            item.target = self
+            item.representedObject = file
+            item.state = file == controller.name ? .on : .off
+            return item
+        }
+    }
+
+    @objc private func showBuiltin(_ item: NSMenuItem) {
+        (item.representedObject as? String).flatMap(builtin).map(open)
+    }
     @objc private func toggleDoubleSize() { controller.setZoom(controller.zoom == 1 ? 2 : 1) }
     @objc private func toggleOnTop() { controller.setOnTop(!controller.onTop) }
 

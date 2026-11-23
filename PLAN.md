@@ -60,15 +60,23 @@ the last block.
 
 ## What "fast" means here
 
-Measured on an M1 Max with the built-in skins, a track playing. The walkit example app this
-grew from is the baseline (see [spikes/](spikes/README.md)).
+Measured on an M1 Max with the built-in skins, a song playing (`--bench`). The walkit example
+app this grew from is the baseline (see [spikes/](spikes/README.md)).
 
-| | Baseline | Aim |
-| --- | --- | --- |
-| Classic skin playing | 47% of a core | under 2% |
-| Modern skin playing | 99% | under 3% |
-| Paused or stopped, nothing moving | 4% | 0, no wakeups |
-| Memory | 68 MB | under 50 MB |
+| | Baseline | Aim | Now |
+| --- | --- | --- | --- |
+| Classic skin playing | 47% of a core | under 2% | 6.6%, at any zoom |
+| Modern skin playing | 99% | under 3% | 6.6% |
+| Nothing playing | 4% | 0, no wakeups | 0.0%, no steps |
+| Drawing one window | 4 to 20 ms a frame | | 25 to 45 microseconds |
+| Memory, peak | 68 MB | under 50 MB | 88 MB |
+
+Where the 6.6% goes: the engine's tick and draw lists 1.3%, drawing pixels 0.6%, the rest is
+the 40 wakeups a second themselves (the timer, handing the layer its pixels, the window
+server's turn, the audio thread) and decoding. The processor is asleep in all but a few of
+every hundred samples; each wake runs cold. To get under 2%: draw only the part of a window
+that changed (the engine's planner, `walkit::plan`), and look at what the engine does in a tick
+that changes nothing but the visualizer. Memory has not been looked at.
 
 ## Working on it
 
@@ -89,16 +97,37 @@ spent drawing.
 
 Updated with every step. Whoever picks this up, person or model, starts here.
 
-- [ ] 1. Windows
-- [ ] 2. Playback
-- [ ] 3. Equalizer and visualizer
+- [x] 1. Windows: one desktop window for each of the skin's, drawn only when it changes;
+  drags, docking and snapping by the engine; double size; always on top; the skin's close,
+  minimize, menu and clutter bar buttons; the skin's popup menus as Mac menus.
+  - [ ] A click on a clear part of a shaped window goes to the app, not to what is under it.
+  - [ ] More than one screen: the windows move on the main screen's visible part only.
+  - [ ] Bento shows its top bar and an empty frame: its player area is missing and its menu
+    words lie on top of each other. MMD3, Winamp3's default and CornerAmp show as they should.
+- [x] 2. Playback: MP3, AAC, ALAC, FLAC, Ogg Vorbis, WAV and AIFF files; the playlist; play,
+  pause, stop, next, previous, seek, shuffle, repeat; volume and balance; Winamp's keys.
+  - [ ] The playlist window's own buttons (add, remove, select, sort) do nothing yet.
+  - [ ] Gapless play from one song to the next; the song's sample rate changing reopens the output.
+- [x] 3. Equalizer (ten bands, preamp) and the skin's spectrum and oscilloscope from what is heard.
+  - [ ] Equalizer presets.
 - [ ] 4. The Mac around it
 - [ ] 5. Effects
 - [ ] 6. Milkdrop and AVS
 - [ ] 7. The App Store
 - [ ] 8. Music sources
 
+What comes with the app: AndAmp Dark (the skin shown first, and the one under every classic
+skin), Light and Spot, from Andamp's own `skin/dist`; walkit's two example skins; Andamp's
+own element set under modern skins (`app/Resources/wasabi`, from Andamp's `defaultset`); the
+stand-in fonts.
+
 ### Log
 
 - 2026-11-23: plan written. Spikes done before it: a source in another app works through
   ExtensionKit; the example app's cost is where and how large it draws, not the engine.
+- 2026-11-23, night: steps 1 to 3 in their first form. `core/` is the engine's host, a
+  renderer that draws one window at one pixel per layout pixel, and the audio (Symphonia,
+  the default output unit, a ring between them). `app/` is the AppKit shell. Tests in
+  `core/tests` cover windows, drags, the skin's buttons, the player, the equalizer and the
+  spectrum; none makes a sound. Checked by `--dump` with AndAmp Dark, walkit's two skins,
+  two classic skins and four modern ones from the local test corpus.

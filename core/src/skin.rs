@@ -73,14 +73,14 @@ pub struct Skin {
 }
 
 impl Skin {
-    /// Opens the skin archive `bytes` named `file_name`, over `base` when it is a classic skin
-    /// and over `wasabi` when it is a modern one, with `fonts` under both, on a screen of
-    /// `viewport` layout pixels, driven by `player`.
+    /// Opens the skin archive `bytes` named `file_name`, over the files of `base` when it is a
+    /// classic skin and over those of `wasabi` when it is a modern one, with `fonts` under
+    /// both, on a screen of `viewport` layout pixels, driven by `player`.
     pub fn open(
         bytes: Vec<u8>,
         file_name: &str,
-        base: Option<Vec<u8>>,
-        wasabi: Option<Vec<u8>>,
+        base: Option<MemoryFiles>,
+        wasabi: Option<MemoryFiles>,
         fonts: MemoryFiles,
         viewport: (i32, i32),
         player: impl FnOnce(Clock) -> Box<dyn Player>,
@@ -92,7 +92,6 @@ impl Skin {
         } else {
             wasabi
         };
-        let under = under.map(unzip).transpose()?;
         // the engine and the host each read the files, so the host decodes wasabi-base/...
         // pictures and the stand-in fonts from under the skin too; the bytes are shared
         let layered = || -> Box<dyn SkinFiles> {
@@ -335,9 +334,24 @@ impl SkinFiles for WithFonts {
     }
 }
 
+/// The files of the folder `dir`, by their names: a set of files to lay under a skin.
+pub fn read_folder(dir: &Path) -> MemoryFiles {
+    let mut files = MemoryFiles::new();
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return files;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if let (true, Some(name), Ok(bytes)) = (path.is_file(), path.file_name(), std::fs::read(&path)) {
+            files.insert(&name.to_string_lossy(), bytes);
+        }
+    }
+    files
+}
+
 /// The files of a zip archive in memory. A skin zipped inside a folder has that folder
 /// stripped.
-fn unzip(bytes: Vec<u8>) -> Result<MemoryFiles, String> {
+pub fn unzip(bytes: Vec<u8>) -> Result<MemoryFiles, String> {
     let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| e.to_string())?;
     let mut all = MemoryFiles::new();
     let mut names = Vec::new();

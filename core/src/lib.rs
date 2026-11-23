@@ -110,8 +110,9 @@ fn demo_player(clock: walkit::host::Clock) -> Box<dyn Player> {
 
 /// Opens the skin archive (`.wsz` or `.wal`) of `skin_len` bytes at `skin`, named `name` (its
 /// file name), on a screen of `viewport_w` x `viewport_h` layout pixels. `base` is a classic
-/// skin laid under a classic skin, `wasabi` a zip of a wasabi folder laid under a modern one;
-/// either may be null. `fonts_dir` is a folder of the stand-in fonts, or null. `player` is the
+/// skin laid under a classic skin. Under a modern one goes `wasabi`, a zip of a wasabi folder,
+/// or without it the files of the folder `wasabi_dir`. Each may be null. `fonts_dir` is a
+/// folder of the stand-in fonts, or null. `player` is the
 /// player the skin shows and drives; with null it shows a demo that plays nothing. On failure
 /// it gives null and, when `error` is not null, a message in `*error` to free with
 /// [`andamp_string_free`].
@@ -127,6 +128,7 @@ pub unsafe extern "C" fn andamp_skin_open(
     base_len: usize,
     wasabi: *const u8,
     wasabi_len: usize,
+    wasabi_dir: *const c_char,
     fonts_dir: *const c_char,
     viewport_w: i32,
     viewport_h: i32,
@@ -142,11 +144,17 @@ pub unsafe extern "C" fn andamp_skin_open(
             skin::read_fonts(Path::new(&string(fonts_dir)))
         };
         let shown = player.clone();
+        let base = bytes(base, base_len).map(skin::unzip).transpose()?;
+        let wasabi = match bytes(wasabi, wasabi_len) {
+            Some(zip) => Some(skin::unzip(zip)?),
+            None if !wasabi_dir.is_null() => Some(skin::read_folder(Path::new(&string(wasabi_dir)))),
+            None => None,
+        };
         let mut skin = Skin::open(
             skin,
             &string(name),
-            bytes(base, base_len),
-            bytes(wasabi, wasabi_len),
+            base,
+            wasabi,
             fonts,
             (viewport_w, viewport_h),
             |clock| match shown {

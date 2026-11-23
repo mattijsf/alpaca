@@ -57,16 +57,36 @@ final class SkinController {
         NSPoint(x: area.minX + CGFloat(x * zoom), y: area.maxY - CGFloat(y * zoom))
     }
 
+    /// What lies under a skin: a classic skin under every classic skin, which gives the
+    /// pictures a skin leaves out; under a modern skin a zip of a wasabi folder or, without
+    /// one, a folder of such files; and the folder of the fonts that stand in for Arial and Tahoma.
+    struct Under {
+        var base: URL?
+        var wasabi: URL?
+        var wasabiFolder: URL?
+        var fonts: URL?
+    }
+
     /// Opens the skin archive at `file` in place of the one shown. Throws what the engine says
     /// when it cannot.
-    func open(file: URL, fonts: URL?) throws {
+    func open(file: URL, under: Under) throws {
         let bytes = try Data(contentsOf: file)
+        let base = under.base.flatMap { try? Data(contentsOf: $0) } ?? Data()
+        let wasabi = under.wasabi.flatMap { try? Data(contentsOf: $0) } ?? Data()
         var error: UnsafeMutablePointer<CChar>?
         let (w, h) = viewport
-        let opened = bytes.withUnsafeBytes { raw in
-            andamp_skin_open(
-                raw.bindMemory(to: UInt8.self).baseAddress, raw.count, file.lastPathComponent,
-                nil, 0, nil, 0, fonts?.path, w, h, player, &error)
+        func pointer(_ raw: UnsafeRawBufferPointer) -> UnsafePointer<UInt8>? {
+            raw.isEmpty ? nil : raw.bindMemory(to: UInt8.self).baseAddress
+        }
+        let opened = bytes.withUnsafeBytes { skin in
+            base.withUnsafeBytes { base in
+                wasabi.withUnsafeBytes { wasabi in
+                    andamp_skin_open(
+                        pointer(skin), skin.count, file.lastPathComponent, pointer(base), base.count,
+                        pointer(wasabi), wasabi.count, under.wasabiFolder?.path, under.fonts?.path, w, h,
+                        player, &error)
+                }
+            }
         }
         guard let opened else {
             let message = error.map { String(cString: $0) } ?? "the skin did not open"

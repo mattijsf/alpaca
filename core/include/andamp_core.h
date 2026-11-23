@@ -34,15 +34,17 @@ typedef struct {
 
 /// Opens the skin archive (.wsz or .wal) of `skin_len` bytes at `skin`, named `name` (its file
 /// name), on a screen of `viewport_w` x `viewport_h` layout pixels. `base` is a classic skin
-/// laid under a classic skin, `wasabi` a zip of a wasabi folder laid under a modern one; either
-/// may be null. `fonts_dir` is a folder of the stand-in fonts, or null. `player` is the player
+/// laid under a classic skin. Under a modern one goes `wasabi`, a zip of a wasabi folder, or
+/// without it the files of the folder `wasabi_dir`. Each may be null. `fonts_dir` is a folder
+/// of the stand-in fonts, or null. `player` is the player
 /// the skin shows and drives; with null it shows a demo that plays nothing. On failure it
 /// gives null and, when `error` is not null, a message in `*error` to free with
 /// andamp_string_free.
 AndampSkin *andamp_skin_open(const uint8_t *skin, size_t skin_len, const char *name,
                              const uint8_t *base, size_t base_len, const uint8_t *wasabi,
-                             size_t wasabi_len, const char *fonts_dir, int32_t viewport_w,
-                             int32_t viewport_h, AndampPlayer *player, char **error);
+                             size_t wasabi_len, const char *wasabi_dir, const char *fonts_dir,
+                             int32_t viewport_w, int32_t viewport_h, AndampPlayer *player,
+                             char **error);
 
 /// Frees a skin andamp_skin_open gave.
 void andamp_skin_free(AndampSkin *skin);
