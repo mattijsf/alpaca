@@ -13,6 +13,8 @@ import UniformTypeIdentifiers
 ///                              Andamp's own element set
 ///        [--click x,y]         clicks there on the screen, in layout pixels from its top left
 ///                              corner, a second after the start; may be given more than once
+///        [--quit-after <seconds>]  prints what it would keep for the next run, and quits as
+///                              the menu's Quit does
 ///        [--dump <folder>]     writes every window as a PNG after two seconds, and quits
 ///        [--bench <seconds>]   prints what that many seconds cost, and quits
 ///
@@ -21,17 +23,22 @@ import UniformTypeIdentifiers
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let controller: SkinController
     private var options = Options()
+    private let settings: Settings
+    private var nowPlaying: NowPlaying?
+    /// The skin file worn.
+    private var worn: URL?
 
     struct Options {
         var skin: URL?
         var songs: [URL] = []
         var volume: Int?
         var modern = false
-        var zoom = 1
+        var zoom: Int?
         var base: URL?
         var wasabi: URL?
         var dump: URL?
         var bench: Double?
+        var quitAfter: Double?
         var clicks: [(Int32, Int32)] = []
 
         init() {
@@ -39,7 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             while let arg = args.popFirst() {
                 switch arg {
                 case "--modern": modern = true
-                case "--zoom": zoom = args.popFirst().flatMap { Int($0) } ?? 1
+                case "--zoom": zoom = args.popFirst().flatMap { Int($0) }
                 case "--volume": volume = args.popFirst().flatMap { Int($0) }
                 case "--dump": dump = args.popFirst().map { URL(fileURLWithPath: $0) }
                 case "--base": base = args.popFirst().map { URL(fileURLWithPath: $0) }
@@ -48,6 +55,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     let at = (args.popFirst() ?? "").split(separator: ",").compactMap { Int32($0) }
                     if at.count == 2 { clicks.append((at[0], at[1])) }
                 case "--bench": bench = args.popFirst().flatMap { Double($0) }
+                case "--quit-after": quitAfter = args.popFirst().flatMap { Double($0) }
                 // the arguments Xcode and macOS add, such as -NSDocumentRevisionsDebugMode YES
                 case _ where arg.hasPrefix("-") && !arg.hasPrefix("--"): args = args.dropFirst()
                 default:
@@ -63,7 +71,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     override init() {
-        controller = SkinController(zoom: options.zoom)
+        // a run that only looks or measures starts from nothing and leaves nothing
+        settings = Settings(kept: options.dump == nil && options.bench == nil && options.clicks.isEmpty)
+        controller = SkinController(zoom: options.zoom ?? settings.zoom)
         super.init()
     }
 
@@ -94,11 +104,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.onOpenFiles = { [weak self] in self?.openFiles() }
         controller.onMenu = { [weak self] at in self?.popUpMenu(at: at) }
         controller.onDrop = { [weak self] files in self?.dropped(files) }
-        if let volume = options.volume { controller.setVolume(volume) }
-        if let skin = options.skin ?? builtin(options.modern ? Self.modernSkin : Self.defaultSkin) {
-            open(skin)
+        if let volume = options.volume ?? settings.volume { controller.setVolume(volume) }
+        if settings.onTop { controller.setOnTop(true) }
+        let builtIn = builtin(options.modern ? Self.modernSkin : Self.defaultSkin)
+        if let skin = options.skin ?? (options.modern ? nil : settings.skin) ?? builtIn { open(skin) }
+        if !options.songs.isEmpty {
+            controller.play(files: options.songs)
+        } else if !opened.isEmpty {
+            // files Finder opened the app with
+            dropped(opened)
+        } else {
+            // the playlist as it was, at the song it was at, not playing
+            controller.add(files: settings.songs)
+            andamp_player_select(controller.player, Int32(settings.song))
+            controller.pump(force: true)
         }
-        if !options.songs.isEmpty { controller.play(files: options.songs) }
+        launched = true
+        nowPlaying = NowPlaying(controller: controller)
+        controller.onStep = { [weak self] in self?.nowPlaying?.update() }
         NSApp.activate(ignoringOtherApps: true)
         for (n, at) in options.clicks.enumerated() {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1 + Double(n) * 0.2) {
@@ -109,11 +132,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.dump(to: folder) }
         }
         if let seconds = options.bench { bench(seconds) }
+        if let seconds = options.quitAfter {
+            DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
+                let corner = self.controller.places.values.map { "\(Int($0.x)),\(Int($0.y))" }.sorted()
+                print(
+                    "skin \(self.controller.name) zoom \(self.controller.zoom) on top \(self.controller.onTop)"
+                        + " volume \(andamp_player_volume(self.controller.player))"
+                        + " songs \(self.controller.songs.count) at \(andamp_player_index(self.controller.player))"
+                        + " status \(andamp_player_status(self.controller.player)) windows \(corner)")
+                NSApp.terminate(nil)
+            }
+        }
+    }
+
+    /// Files Finder asked for before the app was up.
+    private var opened: [URL] = []
+    private var launched = false
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        if launched { dropped(urls) } else { opened += urls }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) { save() }
+
+    func applicationDidResignActive(_ notification: Notification) { save() }
+
+    /// Keeps what the next run starts from.
+    private func save() {
+        settings.skin = worn
+        settings.zoom = controller.zoom
+        settings.onTop = controller.onTop
+        settings.volume = Int(andamp_player_volume(controller.player))
+        settings.songs = controller.songs
+        settings.song = Int(andamp_player_index(controller.player))
+        settings.setPlaces(controller.places, skin: controller.name)
     }
 
     private func open(_ skin: URL) {
         do {
-            try controller.open(file: skin, under: under)
+            // the places of the skin worn are kept before it goes
+            if worn != nil { settings.setPlaces(controller.places, skin: controller.name) }
+            try controller.open(
+                file: skin, under: under, places: settings.places(skin: skin.lastPathComponent))
+            worn = skin
         } catch {
             if options.dump != nil || options.bench != nil {
                 FileHandle.standardError.write(Data("andamp: \(error.localizedDescription)\n".utf8))

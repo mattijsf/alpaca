@@ -35,6 +35,8 @@ final class SkinController {
     var onMenu: ((NSPoint) -> Void)?
     /// Called with files dropped on a window.
     var onDrop: (([URL]) -> Void)?
+    /// Called after every step of the skin.
+    var onStep: (() -> Void)?
 
     init(zoom: Int = 1) {
         player = andamp_player_new()
@@ -67,9 +69,10 @@ final class SkinController {
         var fonts: URL?
     }
 
-    /// Opens the skin archive at `file` in place of the one shown. Throws what the engine says
-    /// when it cannot.
-    func open(file: URL, under: Under) throws {
+    /// Opens the skin archive at `file` in place of the one shown, with its windows at `places`
+    /// (each window's top left corner on the screen, by the engine's id) where those are given.
+    /// Throws what the engine says when it cannot.
+    func open(file: URL, under: Under, places: [UInt32: NSPoint] = [:]) throws {
         let bytes = try Data(contentsOf: file)
         let base = under.base.flatMap { try? Data(contentsOf: $0) } ?? Data()
         let wasabi = under.wasabi.flatMap { try? Data(contentsOf: $0) } ?? Data()
@@ -104,13 +107,43 @@ final class SkinController {
                 return controller.showSkinMenu(String(cString: menu))
             }, Unmanaged.passUnretained(self).toOpaque())
         tellSwitches()
-        // the windows open in the screen's top left corner: a little in from it
-        andamp_skin_move_windows(opened, 120 / Int32(zoom), 80 / Int32(zoom))
+        let main = andamp_skin_main_window(opened)
+        if let corner = places[main] ?? mainCorner {
+            // the main window goes where it was, and the others come along as they are docked;
+            // then every window that had a place of its own gets it back
+            let (x, y) = viewportPoint(corner)
+            andamp_skin_move_windows(opened, x, y)
+            for (id, corner) in places where id != main {
+                let (x, y) = viewportPoint(corner)
+                andamp_skin_place_window(opened, id, x, y)
+            }
+        } else {
+            // the windows open in the screen's top left corner: a little in from it
+            andamp_skin_move_windows(opened, 120 / Int32(zoom), 80 / Int32(zoom))
+        }
+        mainCorner = nil
         pump()
+    }
+
+    /// Where the main window of the skin just closed was, for the next skin to open at.
+    private var mainCorner: NSPoint?
+
+    /// A place on the screen as a place on the viewport, in layout pixels, kept on the screen.
+    private func viewportPoint(_ p: NSPoint) -> (Int32, Int32) {
+        let (w, h) = viewport
+        let x = Int32(((p.x - area.minX) / CGFloat(zoom)).rounded())
+        let y = Int32(((area.maxY - p.y) / CGFloat(zoom)).rounded())
+        return (max(0, min(w - 40, x)), max(0, min(h - 20, y)))
+    }
+
+    /// Every window's top left corner on the screen, by the engine's id.
+    var places: [UInt32: NSPoint] {
+        windows.mapValues { NSPoint(x: $0.frame.minX, y: $0.frame.maxY) }
     }
 
     /// Closes the skin and its windows.
     func close() {
+        if let skin { mainCorner = places[andamp_skin_main_window(skin)] }
         timer?.invalidate()
         timer = nil
         for window in windows.values { window.close() }
@@ -165,6 +198,7 @@ final class SkinController {
             // after this turn of the run loop: the panel must not open inside a mouse event
             DispatchQueue.main.async { [weak self] in self?.onOpenFiles?() }
         }
+        onStep?()
         if let actions = andamp_skin_take_actions(skin) {
             let lines = String(cString: actions).split(separator: "\n").map(String.init)
             andamp_string_free(actions)
@@ -306,6 +340,22 @@ final class SkinController {
     func command(_ command: Int32) {
         andamp_player_command(player, command)
         pump(force: true)
+    }
+
+    /// Moves the song to `ms` milliseconds.
+    func seek(toMs ms: Int32) {
+        andamp_player_seek_to(player, ms)
+        pump(force: true)
+    }
+
+    /// The files of the playlist, in order.
+    var songs: [URL] {
+        (0..<andamp_player_count(player)).compactMap { index in
+            var path: UnsafeMutablePointer<CChar>?
+            guard andamp_player_entry(player, index, nil, nil, nil, &path) >= 0, let path else { return nil }
+            defer { andamp_string_free(path) }
+            return URL(fileURLWithPath: String(cString: path))
+        }
     }
 
     func setVolume(_ volume: Int) {

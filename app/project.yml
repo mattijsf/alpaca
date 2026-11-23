@@ -32,15 +32,42 @@ targets:
       - path: Resources/wasabi
         type: folder
         buildPhase: resources
+    info:
+      # written by XcodeGen, not committed
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: Andamp
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.music
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        NSHumanReadableCopyright: GPL-3.0-or-later
+        NSPrincipalClass: NSApplication
+        # Finder offers the app for songs, and for skins by their file name's ending
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Audio
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.audio]
+          - CFBundleTypeName: Winamp skin
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Default
+            LSItemContentTypes: [nl.mattix.andamp.skin.classic, nl.mattix.andamp.skin.modern]
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: nl.mattix.andamp.skin.classic
+            UTTypeDescription: Classic Winamp skin
+            UTTypeConformsTo: [public.data]
+            UTTypeTagSpecification:
+              public.filename-extension: [wsz]
+          - UTTypeIdentifier: nl.mattix.andamp.skin.modern
+            UTTypeDescription: Modern Winamp skin
+            UTTypeConformsTo: [public.data]
+            UTTypeTagSpecification:
+              public.filename-extension: [wal]
     settings:
       base:
         PRODUCT_NAME: Andamp
         PRODUCT_BUNDLE_IDENTIFIER: nl.mattix.andamp.mac
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Andamp
-        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.music
-        INFOPLIST_KEY_NSHumanReadableCopyright: GPL-3.0-or-later
-        INFOPLIST_KEY_NSPrincipalClass: NSApplication
         SWIFT_OBJC_BRIDGING_HEADER: ../core/include/andamp_core.h
         LIBRARY_SEARCH_PATHS: $(PROJECT_DIR)/../core/target/macos
         # the Rust library and the system frameworks its audio output calls

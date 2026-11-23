@@ -58,6 +58,12 @@ void andamp_skin_set_viewport(AndampSkin *skin, int32_t w, int32_t h);
 /// Moves every window by `dx`, `dy` layout pixels.
 void andamp_skin_move_windows(AndampSkin *skin, int32_t dx, int32_t dy);
 
+/// Puts window `id` with its top left corner at `x`, `y` on the viewport.
+void andamp_skin_place_window(AndampSkin *skin, uint32_t id, int32_t x, int32_t y);
+
+/// The id of the skin's main window, or 0 when it has none.
+uint32_t andamp_skin_main_window(AndampSkin *skin);
+
 /// Runs the engine's timers and animations and brings the windows up to date. The answer has
 /// ANDAMP_MOVED and ANDAMP_DRAWN set for what changed.
 uint32_t andamp_skin_step(AndampSkin *skin);
@@ -127,6 +133,9 @@ int32_t andamp_player_count(AndampPlayer *player);
 /// Makes entry `index` current and plays it.
 void andamp_player_play_index(AndampPlayer *player, int32_t index);
 
+/// Makes entry `index` current without playing it, when nothing plays.
+void andamp_player_select(AndampPlayer *player, int32_t index);
+
 /// The transport, for andamp_player_command.
 #define ANDAMP_PLAY 1
 #define ANDAMP_PAUSE 2
@@ -143,6 +152,24 @@ int32_t andamp_player_volume(AndampPlayer *player);
 
 /// Moves the song by `ms` milliseconds, back for a negative number.
 void andamp_player_seek_by(AndampPlayer *player, int32_t ms);
+
+/// What the transport is doing: 0 stopped, 1 playing, 2 paused.
+int32_t andamp_player_status(AndampPlayer *player);
+
+/// Which entry of the playlist is current.
+int32_t andamp_player_index(AndampPlayer *player);
+
+/// Where the song is, in milliseconds.
+int32_t andamp_player_position_ms(AndampPlayer *player);
+
+/// Moves the song to `ms` milliseconds.
+void andamp_player_seek_to(AndampPlayer *player, int32_t ms);
+
+/// Entry `index` of the playlist: its length in milliseconds, or -1 when there is none. The
+/// pointers that are not null get its title, its artist, its album and its file's path, each to
+/// free with andamp_string_free; a tag the file does not carry comes out empty.
+int32_t andamp_player_entry(AndampPlayer *player, int32_t index, char **title, char **artist,
+                            char **album, char **path);
 
 /// What the player asked the app for since the last call.
 /// ANDAMP_REQUEST_OPEN_FILES: let the listener pick files to play.

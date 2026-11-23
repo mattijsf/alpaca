@@ -297,6 +297,14 @@ impl Player {
         }
     }
 
+    /// Makes entry `index` current without playing it, when nothing plays.
+    pub fn select(&mut self, index: usize) {
+        if index < self.playlist.len() && self.status == Status::Stopped {
+            self.index = index;
+            self.resume_ms = 0;
+        }
+    }
+
     /// The entry after this one: the next in the list, or any other with shuffle on. `None`
     /// at the end of the list with repeat off.
     fn following(&mut self) -> Option<usize> {

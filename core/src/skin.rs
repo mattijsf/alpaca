@@ -183,6 +183,12 @@ impl Skin {
         self.redraw.set(true);
     }
 
+    /// Puts window `id` with its top left corner at `x`, `y` on the viewport.
+    pub fn place_window(&mut self, id: u32, x: i32, y: i32) {
+        self.runtime.place_window(WindowId(id), x, y);
+        self.redraw.set(true);
+    }
+
     /// Runs the engine's timers and animations and brings the windows up to date: their
     /// places, and the pixels of those that changed. Says what changed, [`MOVED`] and [`DRAWN`].
     pub fn step(&mut self) -> u32 {

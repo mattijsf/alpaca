@@ -223,6 +223,24 @@ pub unsafe extern "C" fn andamp_skin_move_windows(skin: *mut AndampSkin, dx: i32
     with_skin(skin, (), |s| s.move_windows(dx, dy));
 }
 
+/// Puts window `id` with its top left corner at `x`, `y` on the viewport.
+///
+/// # Safety
+/// `skin` is null or a live skin.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_skin_place_window(skin: *mut AndampSkin, id: u32, x: i32, y: i32) {
+    with_skin(skin, (), |s| s.place_window(id, x, y));
+}
+
+/// The id of the skin's main window, or 0 when it has none.
+///
+/// # Safety
+/// `skin` is null or a live skin.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_skin_main_window(skin: *mut AndampSkin) -> u32 {
+    with_skin(skin, 0, |s| s.runtime.main_window().map_or(0, |id| id.0))
+}
+
 /// Runs the engine's timers and animations and brings the windows up to date. Bit 1 of the
 /// answer is set when a window moved, opened, closed or changed its place in the order, bit 2
 /// when a window's pixels changed.
@@ -510,6 +528,19 @@ pub unsafe extern "C" fn andamp_player_play_index(player: *mut AndampPlayer, ind
     });
 }
 
+/// Makes entry `index` current without playing it, when nothing plays.
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_select(player: *mut AndampPlayer, index: i32) {
+    with_player(player, (), |p| {
+        if let Ok(index) = usize::try_from(index) {
+            p.select(index);
+        }
+    });
+}
+
 /// The transport: 1 play, 2 pause or go on, 3 stop, 4 next, 5 previous.
 ///
 /// # Safety
@@ -554,6 +585,85 @@ pub unsafe extern "C" fn andamp_player_seek_by(player: *mut AndampPlayer, ms: i3
         let to = p.position_ms().saturating_add(ms);
         p.seek_to(to);
     });
+}
+
+/// What the transport is doing: 0 stopped, 1 playing, 2 paused.
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_status(player: *mut AndampPlayer) -> i32 {
+    with_player(player, 0, |p| match p.status() {
+        walkit::player::Status::Stopped => 0,
+        walkit::player::Status::Playing => 1,
+        walkit::player::Status::Paused => 2,
+    })
+}
+
+/// Which entry of the playlist is current.
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_index(player: *mut AndampPlayer) -> i32 {
+    with_player(player, 0, |p| p.index() as i32)
+}
+
+/// Where the song is, in milliseconds.
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_position_ms(player: *mut AndampPlayer) -> i32 {
+    with_player(player, 0, |p| p.position_ms())
+}
+
+/// Moves the song to `ms` milliseconds.
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_seek_to(player: *mut AndampPlayer, ms: i32) {
+    with_player(player, (), |p| p.seek_to(ms));
+}
+
+/// Entry `index` of the playlist: its length in milliseconds, or -1 when there is none. The
+/// pointers that are not null get its title, its artist, its album and its file's path, each
+/// to free with [`andamp_string_free`]; a tag the file does not carry comes out empty.
+///
+/// # Safety
+/// `player` is null or a live player; the others are null or point at a pointer.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_entry(
+    player: *mut AndampPlayer,
+    index: i32,
+    title: *mut *mut c_char,
+    artist: *mut *mut c_char,
+    album: *mut *mut c_char,
+    path: *mut *mut c_char,
+) -> i32 {
+    with_player(player, -1, |p| {
+        let Some(entry) = usize::try_from(index).ok().and_then(|i| p.entries().get(i)) else {
+            return -1;
+        };
+        let tag = |name: &str| entry.info.tags.get(name).cloned().unwrap_or_default();
+        // the title alone when the tags give one, else what the playlist shows
+        let name = match entry.info.tags.get("title") {
+            Some(title) => title.clone(),
+            None => entry.title.clone(),
+        };
+        for (out, text) in [
+            (title, name),
+            (artist, tag("artist")),
+            (album, tag("album")),
+            (path, entry.path.to_string_lossy().into_owned()),
+        ] {
+            if !out.is_null() {
+                *out = CString::new(text.replace('\0', " ")).unwrap_or_default().into_raw();
+            }
+        }
+        entry.info.length_ms
+    })
 }
 
 /// What the player asked the app for since the last call: bit 1, to let the listener pick
