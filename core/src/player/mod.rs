@@ -163,6 +163,89 @@ impl Player {
         &self.playlist
     }
 
+    /// Takes the entries at `rows` out of the playlist. The song playing goes on when it stays;
+    /// when it goes, the player stops.
+    pub fn remove(&mut self, rows: &[usize]) {
+        self.keep(|row| !rows.contains(&row));
+    }
+
+    /// Keeps only the entries at `rows`.
+    pub fn crop(&mut self, rows: &[usize]) {
+        self.keep(|row| rows.contains(&row));
+    }
+
+    /// Keeps the entries `keep` says to, by their place in the list.
+    fn keep(&mut self, keep: impl Fn(usize) -> bool) {
+        let current_stays = keep(self.index);
+        if !current_stays {
+            self.stop();
+        }
+        // the current entry's new place: as many kept entries as lie before it
+        let before = (0..self.index.min(self.playlist.len())).filter(|row| keep(*row)).count();
+        let mut row = 0;
+        self.playlist.retain(|_| {
+            row += 1;
+            keep(row - 1)
+        });
+        self.index = if current_stays {
+            before
+        } else {
+            before.min(self.playlist.len().saturating_sub(1))
+        };
+        self.shuffled.clear();
+    }
+
+    /// Sorts the playlist by title; the song playing goes on.
+    pub fn sort_by_title(&mut self) {
+        let current = self.entry().map(|e| e.path.clone());
+        self.playlist
+            .sort_by_cached_key(|e| (e.title.to_lowercase(), e.path.clone()));
+        if let Some(at) = current.and_then(|path| self.playlist.iter().position(|e| e.path == path)) {
+            self.index = at;
+        }
+        self.shuffled.clear();
+    }
+
+    /// Adds the songs a playlist file names (`.m3u`, `.m3u8` or `.pls`); how many joined.
+    pub fn add_list(&mut self, list: &Path) -> Result<usize, String> {
+        let text = std::fs::read(list).map_err(|e| e.to_string())?;
+        let text = String::from_utf8_lossy(&text);
+        let folder = list.parent().unwrap_or(Path::new("."));
+        let mut added = 0;
+        for line in text.lines() {
+            let line = line.trim().trim_start_matches('\u{feff}');
+            // a .pls names its files as File1=..., an .m3u one to a line, with # for comments
+            let name = match line.split_once('=') {
+                Some((key, value)) if key.to_ascii_lowercase().starts_with("file") => value.trim(),
+                _ if line.is_empty() || line.starts_with('#') || line.starts_with('[') => continue,
+                _ if line.contains('=') && !Path::new(line).exists() => continue,
+                _ => line,
+            };
+            if name.contains("://") {
+                continue;
+            }
+            let path = folder.join(name);
+            if self.add(&path).is_ok() {
+                added += 1;
+            }
+        }
+        Ok(added)
+    }
+
+    /// Writes the playlist as an `.m3u8` file, with each song's length and title.
+    pub fn save_list(&self, list: &Path) -> Result<(), String> {
+        let mut text = String::from("#EXTM3U\n");
+        for entry in &self.playlist {
+            text.push_str(&format!(
+                "#EXTINF:{},{}\n{}\n",
+                entry.info.length_ms / 1000,
+                entry.title.replace('\n', " "),
+                entry.path.display()
+            ));
+        }
+        std::fs::write(list, text).map_err(|e| e.to_string())
+    }
+
     pub fn index(&self) -> usize {
         self.index
     }

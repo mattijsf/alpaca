@@ -124,6 +124,13 @@ void andamp_player_free(AndampPlayer *player);
 /// -1 when the file cannot be read as audio.
 int32_t andamp_player_add(AndampPlayer *player, const char *path);
 
+/// Adds the songs the playlist file at `path` names (.m3u, .m3u8 or .pls). Gives how many
+/// joined, or -1 when the file cannot be read.
+int32_t andamp_player_add_list(AndampPlayer *player, const char *path);
+
+/// Writes the playlist to `path` as an .m3u8 file; false when it cannot be written.
+bool andamp_player_save_list(AndampPlayer *player, const char *path);
+
 /// Empties the playlist and stops.
 void andamp_player_clear(AndampPlayer *player);
 

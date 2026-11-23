@@ -68,6 +68,8 @@ pub struct Skin {
     windows: Vec<Window>,
     stats: Stats,
     desk: Rc<Desk>,
+    /// The rows selected in the playlist window, as the skin last said.
+    selected: Vec<usize>,
     /// The app's player, when the skin shows it: asked to move on before every step.
     pub player: Option<Rc<RefCell<crate::player::Player>>>,
 }
@@ -158,6 +160,7 @@ impl Skin {
             windows: Vec::new(),
             stats: Stats::default(),
             desk,
+            selected: Vec::new(),
             player: None,
         })
     }
@@ -287,9 +290,46 @@ impl Skin {
         }
     }
 
-    /// What the skin's buttons asked of the app since the last call.
+    /// What the skin's buttons asked of the app since the last call. What the playlist
+    /// window asks that the player can answer by itself (which rows are selected, remove,
+    /// crop, sort, a new list) is answered here and not handed on.
     pub fn take_actions(&mut self) -> Vec<HostAction> {
-        std::mem::take(&mut *self.desk.actions.borrow_mut())
+        let actions = std::mem::take(&mut *self.desk.actions.borrow_mut());
+        actions
+            .into_iter()
+            .filter(|action| !self.answer(action))
+            .collect()
+    }
+
+    /// Answers `action` when the player can; false leaves it to the app.
+    fn answer(&mut self, action: &HostAction) -> bool {
+        let Some(player) = self.player.clone() else {
+            return false;
+        };
+        let rows = |param: &Option<String>| -> Vec<usize> {
+            param
+                .as_deref()
+                .unwrap_or("")
+                .split(',')
+                .filter_map(|row| row.trim().parse().ok())
+                .collect()
+        };
+        match (action.name.as_str(), action.param.as_deref()) {
+            ("PLAYLIST_SELECT" | "PLAYLIST_SELECTION", _) => self.selected = rows(&action.param),
+            ("PLAYLIST", Some("remove_selected")) => player.borrow_mut().remove(&self.selected),
+            ("PLAYLIST", Some("crop")) => player.borrow_mut().crop(&self.selected),
+            ("PLAYLIST", Some("remove_all" | "list_new")) => player.borrow_mut().clear(),
+            ("PLAYLIST", Some("sort")) => player.borrow_mut().sort_by_title(),
+            _ => return false,
+        }
+        if action.name == "PLAYLIST" {
+            // the list changed under the selection
+            self.selected.clear();
+            self.runtime.set_playlist_selection(None);
+            self.runtime.invalidate();
+            self.redraw.set(true);
+        }
+        true
     }
 
     /// Tells the skin whether one of the app's switches is on ("doublesize", "ontop"), so the

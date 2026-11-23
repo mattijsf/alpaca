@@ -497,6 +497,27 @@ pub unsafe extern "C" fn andamp_player_add(player: *mut AndampPlayer, path: *con
     })
 }
 
+/// Adds the songs the playlist file at `path` names (`.m3u`, `.m3u8` or `.pls`). Gives how
+/// many joined, or -1 when the file cannot be read.
+///
+/// # Safety
+/// `player` is null or a live player; `path` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_add_list(player: *mut AndampPlayer, path: *const c_char) -> i32 {
+    let path = string(path);
+    with_player(player, -1, |p| p.add_list(Path::new(&path)).map_or(-1, |n| n as i32))
+}
+
+/// Writes the playlist to `path` as an `.m3u8` file; false when it cannot be written.
+///
+/// # Safety
+/// `player` is null or a live player; `path` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_save_list(player: *mut AndampPlayer, path: *const c_char) -> bool {
+    let path = string(path);
+    with_player(player, false, |p| p.save_list(Path::new(&path)).is_ok())
+}
+
 /// Empties the playlist and stops.
 ///
 /// # Safety

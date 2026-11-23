@@ -37,6 +37,9 @@ final class SkinController {
     var onDrop: (([URL]) -> Void)?
     /// Called after every step of the skin.
     var onStep: (() -> Void)?
+    /// Called with what the playlist window asks of the app: "add_file", "add_dir",
+    /// "list_load", "list_save".
+    var onPlaylist: ((String) -> Void)?
 
     init(zoom: Int = 1) {
         player = andamp_player_new()
@@ -220,7 +223,8 @@ final class SkinController {
         case "ALWAYS_ON_TOP": setOnTop(!onTop)
         case "MENU", "SYSMENU", "CONTROLMENU": onMenu?(at ?? NSEvent.mouseLocation)
         case "ABOUT": NSApp.orderFrontStandardAboutPanel(nil)
-        case "PE_ADD": onOpenFiles?()
+        case "PE_ADD": onPlaylist?("add_file")
+        case "PLAYLIST" where parts.count >= 2: onPlaylist?(parts[1])
         default: break
         }
     }
@@ -334,6 +338,17 @@ final class SkinController {
         andamp_player_clear(player)
         if add(files: files) > 0 { andamp_player_play_index(player, 0) }
         pump(force: true)
+    }
+
+    /// Adds the songs a playlist file names.
+    func add(list: URL) {
+        andamp_player_add_list(player, list.path)
+        pump(force: true)
+    }
+
+    /// Writes the playlist to `file`.
+    func save(list file: URL) {
+        andamp_player_save_list(player, file.path)
     }
 
     /// The transport: `ANDAMP_PLAY` and the like.

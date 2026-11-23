@@ -158,3 +158,47 @@ fn the_equalizer_lifts_its_band_and_leaves_the_others() {
     let preamp = gain_db(&mut Equalizer::with(44100, [128; 10], 0), 1000.0);
     assert!((preamp + 12.0).abs() < 0.2, "the preamp all the way down takes 12 dB: {preamp}");
 }
+
+#[test]
+fn rows_are_removed_cropped_and_sorted_around_the_song_playing() {
+    let mut player = Player::silent();
+    for name in ["d.wav", "b.wav", "a.wav", "c.wav"] {
+        player.add(&tone_file(name, 440.0, 5.0, 44100)).unwrap();
+    }
+    let titles = |p: &Player| p.entries().iter().map(|e| e.title.clone()).collect::<Vec<_>>();
+    player.play_index(2);
+    assert_eq!(titles(&player)[player.index()], "a");
+    // a row before the song goes: the song stays current and keeps playing
+    player.remove(&[0]);
+    assert_eq!(titles(&player), ["b", "a", "c"]);
+    assert_eq!((player.index(), player.status()), (1, Status::Playing));
+    player.sort_by_title();
+    assert_eq!(titles(&player), ["a", "b", "c"]);
+    assert_eq!((player.index(), player.status()), (0, Status::Playing));
+    // the song itself goes: the player stops
+    player.crop(&[1, 2]);
+    assert_eq!(titles(&player), ["b", "c"]);
+    assert_eq!(player.status(), Status::Stopped);
+    assert!(player.index() < 2);
+}
+
+#[test]
+fn a_list_is_saved_and_read_back() {
+    let mut player = Player::silent();
+    let first = tone_file("one.wav", 440.0, 1.0, 44100);
+    let second = tone_file("two.wav", 440.0, 2.0, 44100);
+    player.add(&first).unwrap();
+    player.add(&second).unwrap();
+    let list = first.with_file_name("list.m3u8");
+    player.save_list(&list).unwrap();
+    let text = std::fs::read_to_string(&list).unwrap();
+    assert!(text.starts_with("#EXTM3U\n#EXTINF:1,one\n"), "{text}");
+    let mut other = Player::silent();
+    assert_eq!(other.add_list(&list), Ok(2));
+    assert_eq!(other.entries()[1].title, "two");
+    // a .pls, with names beside the list
+    let pls = first.with_file_name("list.pls");
+    std::fs::write(&pls, "[playlist]\nFile1=one.wav\nTitle1=One\nFile2=missing.wav\nNumberOfEntries=2\n").unwrap();
+    let mut third = Player::silent();
+    assert_eq!(third.add_list(&pls), Ok(1));
+}
