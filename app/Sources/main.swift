@@ -8,6 +8,9 @@ import UniformTypeIdentifiers
 ///
 /// ```
 /// Andamp [skin.wsz|skin.wal] [song ...] [--modern] [--zoom n] [--volume 0..255]
+///        [--effect <id>]       switches on the effect with that id or name; may be given more
+///                              than once
+///        [--show-effects]      opens the Effects window; --dump writes it as effects.png
 ///        [--base skin.wsz]     a classic skin laid under classic skins, in place of AndAmp Dark
 ///        [--wasabi base.zip]   a zip of a wasabi folder laid under modern skins, in place of
 ///                              Andamp's own element set
@@ -26,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var options = Options()
     private let settings: Settings
     private var nowPlaying: NowPlaying?
+    private lazy var effects = Effects(player: controller.player, settings: settings)
     /// The skin file worn.
     private var worn: URL?
 
@@ -37,6 +41,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         var zoom: Int?
         var base: URL?
         var wasabi: URL?
+        var effects: [String] = []
+        var showEffects = false
         var dump: URL?
         var bench: Double?
         var quitAfter: Double?
@@ -51,6 +57,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 case "--zoom": zoom = args.popFirst().flatMap { Int($0) }
                 case "--volume": volume = args.popFirst().flatMap { Int($0) }
                 case "--dump": dump = args.popFirst().map { URL(fileURLWithPath: $0) }
+                case "--show-effects": showEffects = true
+                case "--effect": if let id = args.popFirst() { effects.append(id) }
                 case "--base": base = args.popFirst().map { URL(fileURLWithPath: $0) }
                 case "--wasabi": wasabi = args.popFirst().map { URL(fileURLWithPath: $0) }
                 case "--click":
@@ -110,6 +118,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.onPlaylist = { [weak self] choice in self?.playlist(choice) }
         if let volume = options.volume ?? settings.volume { controller.setVolume(volume) }
         if settings.onTop { controller.setOnTop(true) }
+        effects.loadIfLeftOn()
+        options.effects.forEach(effects.switchOn(id:))
+        if options.showEffects { DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.effects.show() } }
         let builtIn = builtin(options.modern ? Self.modernSkin : Self.defaultSkin)
         if let skin = options.skin ?? (options.modern ? nil : settings.skin) ?? builtIn { open(skin) }
         if !options.songs.isEmpty {
@@ -176,6 +187,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings.songs = controller.songs
         settings.song = Int(andamp_player_index(controller.player))
         settings.setPlaces(controller.places, skin: controller.name)
+        effects.save()
     }
 
     private func open(_ skin: URL) {
@@ -276,6 +288,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
         item("Double Size", #selector(toggleDoubleSize), on: controller.zoom > 1)
         item("Always on Top", #selector(toggleOnTop), on: controller.onTop)
+        item("Effects…", #selector(showEffects))
         menu.addItem(.separator())
         item("Quit Andamp", #selector(NSApplication.terminate(_:)))
         menu.popUp(positioning: nil, at: point, in: nil)
@@ -317,6 +330,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         add("View", [
             item("Double Size", #selector(toggleDoubleSize), "d"),
             item("Always on Top", #selector(toggleOnTop), "a"),
+            .separator(),
+            item("Effects…", #selector(showEffects), "e"),
         ])
         return main
     }
@@ -368,6 +383,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     @objc private func toggleDoubleSize() { controller.setZoom(controller.zoom == 1 ? 2 : 1) }
     @objc private func toggleOnTop() { controller.setOnTop(!controller.onTop) }
+    @objc private func showEffects() { effects.show() }
 
     // MARK: --dump and --bench
 
@@ -385,6 +401,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             lines.append(
                 "window \(n) id \(window.id) frame \(Int(f.minX)),\(Int(f.minY)) \(Int(f.width))x\(Int(f.height))"
                     + " pixels \(window.image.width)x\(window.image.height)")
+        }
+        if options.showEffects, let png = effects.picture()?.representation(using: .png, properties: [:]) {
+            try? png.write(to: folder.appendingPathComponent("effects.png"))
         }
         try? lines.joined(separator: "\n").appending("\n")
             .write(to: folder.appendingPathComponent("windows.txt"), atomically: true, encoding: .utf8)

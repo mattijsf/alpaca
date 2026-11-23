@@ -6,3 +6,4 @@
 
 pub mod graph;
 pub mod lua;
+pub mod rack;

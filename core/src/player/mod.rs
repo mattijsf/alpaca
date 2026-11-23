@@ -22,6 +22,7 @@ use rustfft::num_complex::Complex32;
 use rustfft::{Fft, FftPlanner};
 use walkit::player::{Status, Track};
 
+use crate::dsp::rack::Rack;
 use decode::{FileInfo, Stream};
 use output::{Output, Shared, Source};
 
@@ -103,6 +104,8 @@ pub struct Player {
     seed: u32,
     /// Whether the output may make sound: tests leave it shut.
     audible: bool,
+    /// The effects the audio passes through after the equalizer.
+    pub rack: Rack,
 }
 
 impl Default for Player {
@@ -134,6 +137,7 @@ impl Player {
             shuffled: Vec::new(),
             seed: 0x2545_f491,
             audible: true,
+            rack: Rack::default(),
         }
     }
 
@@ -295,7 +299,9 @@ impl Player {
                 self.output = None;
             }
             if self.output.is_none() {
-                match Output::new(rate, self.shared.clone()) {
+                // the effects are built for the song's sample rate with the unit
+                let rack = self.rack.connect(rate);
+                match Output::new(rate, self.shared.clone(), rack) {
                     Ok(output) => self.output = Some(output),
                     Err(message) => eprintln!("andamp: {message}"),
                 }
@@ -455,6 +461,7 @@ impl Player {
         if let Some(output) = &mut self.output {
             output.collect();
         }
+        self.rack.collect();
         // with no output the player takes what the decoder made, and the song is over when
         // the decoder is done and the ring is empty
         if let (Status::Playing, Some(p)) = (self.status, &mut self.playing) {

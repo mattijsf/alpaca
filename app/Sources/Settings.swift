@@ -17,6 +17,14 @@ struct Settings {
         static let songs = "songs"
         static let song = "song"
         static let places = "places"
+        static let effects = "effects"
+    }
+
+    /// The effects as the listener left them, by plug-in id: whether each is on ("on") and
+    /// where its controls stand, by their ids ("values").
+    var effects: [String: [String: Any]] {
+        get { kept ? store.dictionary(forKey: Key.effects) as? [String: [String: Any]] ?? [:] : [:] }
+        nonmutating set { if kept { store.set(newValue, forKey: Key.effects) } }
     }
 
     /// The skin file last worn, when it is still there.

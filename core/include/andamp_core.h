@@ -190,4 +190,29 @@ uint32_t andamp_player_take_requests(AndampPlayer *player);
 /// Blocks of audio in which the output ran dry while a song went on, so far.
 uint64_t andamp_player_underruns(AndampPlayer *player);
 
+/// Adds an effect plug-in from the Lua source at `source`, off and at its defaults; a plug-in
+/// with the id of one in the rack takes its place. Gives its place in the rack, or -1 with the
+/// reason in `*error` (to free with andamp_string_free) when it is refused.
+int32_t andamp_player_add_effect(AndampPlayer *player, const char *source, char **error);
+
+/// Takes effect `index` out of the rack.
+void andamp_player_remove_effect(AndampPlayer *player, int32_t index);
+
+/// The rack as JSON, to free with andamp_string_free: {"effects":[...]}, each effect with id,
+/// name, version, author, about, on, error (why it is left out of the stream playing, or
+/// empty), params (each id, name, kind "number", "toggle" or "choice", min, max, default,
+/// value, unit, help, scale, decimals or -1, zero, options of name and value) and presets
+/// (each name and values as pairs of a control's place and a number).
+char *andamp_player_effects(AndampPlayer *player);
+
+/// Switches effect `index`: it fades in or out, so the switch does not click.
+void andamp_player_set_effect_on(AndampPlayer *player, int32_t index, bool on);
+
+/// Moves control `param` of effect `index` to `value`, in the control's own units.
+void andamp_player_set_effect_value(AndampPlayer *player, int32_t index, int32_t param, float value);
+
+/// Applies preset `preset` of effect `index`, or with -1 puts its controls back at their
+/// defaults; either way in one step, so nothing sweeps.
+void andamp_player_apply_preset(AndampPlayer *player, int32_t index, int32_t preset);
+
 #endif

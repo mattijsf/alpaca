@@ -1098,11 +1098,11 @@ impl Engine {
                 self.here[i] = next;
                 self.bus[self.program.param_slot[i]] = next;
             }
-            self.run(0, self.program.control_end);
+            self.step(0, self.program.control_end);
             self.until_tick = CONTROL_PERIOD;
         }
         self.until_tick -= 1;
-        self.run(self.program.control_end, self.program.instrs.len());
+        self.step(self.program.control_end, self.program.instrs.len());
         // written only after every instruction ran, so a node that reads another channel
         // sees the frame as it arrived
         for (slot, sample) in self.program.out_slot.iter().zip(frame.iter_mut()) {
@@ -1110,7 +1110,15 @@ impl Engine {
         }
     }
 
-    fn run(&mut self, from: usize, to: usize) {
+    /// Runs `samples`, the channels in turn, through the program.
+    pub fn run(&mut self, samples: &mut [f32]) {
+        let channels = self.program.in_slot.len().max(1);
+        for frame in samples.chunks_exact_mut(channels) {
+            self.process(frame);
+        }
+    }
+
+    fn step(&mut self, from: usize, to: usize) {
         let rate = self.program.sample_rate;
         for index in from..to {
             let Instr { op, dst, a, b, c, state, aux } = self.program.instrs[index];

@@ -716,3 +716,209 @@ pub unsafe extern "C" fn andamp_player_take_requests(player: *mut AndampPlayer) 
 pub unsafe extern "C" fn andamp_player_underruns(player: *mut AndampPlayer) -> u64 {
     with_player(player, 0, |p| p.underruns())
 }
+
+/// `text` as a JSON string.
+fn json_text(text: &str) -> String {
+    let mut out = String::with_capacity(text.len() + 2);
+    out.push('"');
+    for c in text.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
+
+/// A number as JSON, which has no word for one that is not finite.
+fn json_number(v: f32) -> String {
+    if v.is_finite() {
+        format!("{v}")
+    } else {
+        "0".into()
+    }
+}
+
+/// The rack as JSON: for every effect what it is, whether it is on, why it is left out of the
+/// stream playing when it is, its controls with where each stands, and its presets.
+fn effects_json(player: &player::Player) -> String {
+    use dsp::lua::Kind;
+    let effects: Vec<String> = player
+        .rack
+        .effects()
+        .iter()
+        .map(|effect| {
+            let info = &effect.plugin.info;
+            let params: Vec<String> = effect
+                .plugin
+                .params
+                .iter()
+                .zip(&effect.values)
+                .map(|(p, value)| {
+                    let (kind, options) = match &p.kind {
+                        Kind::Number => ("number", Vec::new()),
+                        Kind::Toggle => ("toggle", Vec::new()),
+                        Kind::Choice(options) => (
+                            "choice",
+                            options
+                                .iter()
+                                .map(|(name, v)| format!("{{\"name\":{},\"value\":{}}}", json_text(name), json_number(*v)))
+                                .collect(),
+                        ),
+                    };
+                    format!(
+                        "{{\"id\":{},\"name\":{},\"kind\":\"{kind}\",\"min\":{},\"max\":{},\"default\":{},\"value\":{},\
+                         \"unit\":{},\"help\":{},\"scale\":{},\"decimals\":{},\"zero\":{},\"options\":[{}]}}",
+                        json_text(&p.id),
+                        json_text(&p.name),
+                        json_number(p.min),
+                        json_number(p.max),
+                        json_number(p.default),
+                        json_number(*value),
+                        json_text(&p.unit),
+                        json_text(&p.help),
+                        json_number(p.scale),
+                        p.decimals.map_or(-1, |d| d as i32),
+                        json_text(&p.zero),
+                        options.join(",")
+                    )
+                })
+                .collect();
+            let presets: Vec<String> = effect
+                .plugin
+                .presets
+                .iter()
+                .map(|preset| {
+                    let values: Vec<String> = preset
+                        .values
+                        .iter()
+                        .map(|(index, v)| format!("[{index},{}]", json_number(*v)))
+                        .collect();
+                    format!("{{\"name\":{},\"values\":[{}]}}", json_text(&preset.name), values.join(","))
+                })
+                .collect();
+            format!(
+                "{{\"id\":{},\"name\":{},\"version\":{},\"author\":{},\"about\":{},\"on\":{},\"error\":{},\
+                 \"params\":[{}],\"presets\":[{}]}}",
+                json_text(&info.id),
+                json_text(&info.name),
+                json_text(&info.version),
+                json_text(&info.author),
+                json_text(&info.about),
+                effect.on,
+                json_text(&effect.error),
+                params.join(","),
+                presets.join(",")
+            )
+        })
+        .collect();
+    format!("{{\"effects\":[{}]}}", effects.join(","))
+}
+
+/// Adds an effect plug-in from the Lua source at `source`, off and at its defaults; a
+/// plug-in with the id of one in the rack takes its place. Gives its place in the rack, or -1
+/// with the reason in `*error` (to free with [`andamp_string_free`]) when it is refused.
+///
+/// # Safety
+/// `player` is null or a live player; `source` is a C string; `error` is null or points at a pointer.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_add_effect(
+    player: *mut AndampPlayer,
+    source: *const c_char,
+    error: *mut *mut c_char,
+) -> i32 {
+    let source = string(source);
+    let added = with_player(player, Err("the player is gone".to_string()), |p| p.rack.add(&source));
+    match added {
+        Ok(index) => index as i32,
+        Err(message) => {
+            if !error.is_null() {
+                *error = CString::new(message.replace('\0', " ")).unwrap_or_default().into_raw();
+            }
+            -1
+        }
+    }
+}
+
+/// Takes effect `index` out of the rack.
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_remove_effect(player: *mut AndampPlayer, index: i32) {
+    with_player(player, (), |p| {
+        if let Ok(index) = usize::try_from(index) {
+            p.rack.remove(index);
+        }
+    });
+}
+
+/// The rack as JSON, to free with [`andamp_string_free`]: `{"effects":[...]}`, each effect
+/// with `id`, `name`, `version`, `author`, `about`, `on`, `error` (why it is left out of the
+/// stream playing, or empty), `params` (each `id`, `name`, `kind` "number", "toggle" or
+/// "choice", `min`, `max`, `default`, `value`, `unit`, `help`, `scale`, `decimals` or -1,
+/// `zero`, `options` of `name` and `value`) and `presets` (each `name` and `values` as pairs
+/// of a control's place and a number).
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_effects(player: *mut AndampPlayer) -> *mut c_char {
+    let json = with_player(player, "{\"effects\":[]}".to_string(), |p| effects_json(p));
+    CString::new(json).unwrap_or_default().into_raw()
+}
+
+/// Switches effect `index`: it fades in or out, so the switch does not click.
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_set_effect_on(player: *mut AndampPlayer, index: i32, on: bool) {
+    with_player(player, (), |p| {
+        if let Ok(index) = usize::try_from(index) {
+            p.rack.set_on(index, on);
+        }
+    });
+}
+
+/// Moves control `param` of effect `index` to `value`, in the control's own units.
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_set_effect_value(
+    player: *mut AndampPlayer,
+    index: i32,
+    param: i32,
+    value: f32,
+) {
+    with_player(player, (), |p| {
+        if let (Ok(index), Ok(param)) = (usize::try_from(index), usize::try_from(param)) {
+            p.rack.set_value(index, param, value);
+        }
+    });
+}
+
+/// Applies preset `preset` of effect `index`, or with -1 puts its controls back at their
+/// defaults; either way in one step, so nothing sweeps.
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_apply_preset(player: *mut AndampPlayer, index: i32, preset: i32) {
+    with_player(player, (), |p| {
+        let Ok(index) = usize::try_from(index) else {
+            return;
+        };
+        match usize::try_from(preset) {
+            Ok(preset) => p.rack.apply_preset(index, preset),
+            Err(_) => p.rack.reset(index),
+        }
+    });
+}

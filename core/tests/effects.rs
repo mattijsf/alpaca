@@ -163,3 +163,35 @@ fn filters_delays_and_feedback_do_what_the_primitives_say() {
     assert_ne!(noise(3), noise(4));
     assert!(noise(3).iter().all(|v| (-1.0..1.0).contains(v)));
 }
+
+#[test]
+fn the_rack_runs_what_is_on_and_fades_what_is_switched() {
+    use andamp_core::dsp::rack::Rack;
+    let gain = std::fs::read_to_string(folder("tests/plugins/gain.lua")).unwrap();
+    let mut rack = Rack::default();
+    assert_eq!(rack.add(&gain), Ok(0));
+    assert!(rack.add("not lua at all {").is_err());
+    assert_eq!(rack.effects().len(), 1);
+    rack.set_value(0, 0, 5.0);
+    assert_eq!(rack.effects()[0].values, [2.0], "a value is held to its control's range");
+    let mut voice = rack.connect(44_100);
+    // off: the audio passes untouched
+    let mut samples = vec![0.25f32; 2 * 4410];
+    voice.run(&mut samples);
+    assert!(samples.iter().all(|s| *s == 0.25));
+    // on: it fades in over 20 ms, to twice as loud
+    rack.set_on(0, true);
+    voice.run(&mut samples);
+    assert!(samples[0] < 0.26, "the first frame is nearly dry: {}", samples[0]);
+    assert!((samples[2 * 4409] - 0.5).abs() < 1e-3, "then the effect is all there: {}", samples[2 * 4409]);
+    // a move of the control reaches the engine; off again fades back to dry
+    rack.set_value(0, 0, 1.0);
+    rack.set_on(0, false);
+    let mut samples = vec![0.25f32; 2 * 4410];
+    voice.run(&mut samples);
+    assert!((samples[2 * 4409] - 0.25).abs() < 1e-6);
+    // the same plug-in again takes the first one's place and keeps its settings
+    assert_eq!(rack.add(&gain), Ok(0));
+    assert_eq!(rack.effects().len(), 1);
+    assert_eq!(rack.effects()[0].values, [1.0]);
+}

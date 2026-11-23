@@ -65,13 +65,20 @@ app this grew from is the baseline (see [spikes/](spikes/README.md)).
 
 | | Baseline | Aim | Now |
 | --- | --- | --- | --- |
-| Classic skin playing | 47% of a core | under 2% | 6.6%, at any zoom |
-| Modern skin playing | 99% | under 3% | 6.6% |
+| Classic skin playing | 47% of a core | under 2% | 6%, at any zoom |
+| Modern skin playing | 99% | under 3% | 6.5% |
+| Playing with every window covered or the app hidden | | | 0.5% |
 | Nothing playing | 4% | 0, no wakeups | 0.0%, no steps |
-| Drawing one window | 4 to 20 ms a frame | | 25 to 45 microseconds |
-| Memory, peak | 68 MB | under 50 MB | 88 MB |
+| Drawing one window | 4 to 20 ms a frame | | 16 to 45 microseconds |
+| Memory, peak | 68 MB | under 50 MB | 89 MB |
 
-Where the 6.6% goes: the engine's tick and draw lists 1.3%, drawing pixels 0.6%, the rest is
+An effect adds what `cargo run --release --example effectcost` prints for it, about three
+times over in the app, where the audio thread runs cold: Bass & Treble 1%, all six that come
+with the app 8%. Andamp on Android runs a graph a block at a time where nothing in it needs a
+sample the block has not made yet (`BlockRunner`); the engine here runs a frame at a time, and
+that is the first thing to port when an effect's cost matters.
+
+Where the 6% goes: the engine's tick and draw lists 1.3%, drawing pixels 0.6%, the rest is
 the 40 wakeups a second themselves (the timer, handing the layer its pixels, the window
 server's turn, the audio thread) and decoding. The processor is asleep in all but a few of
 every hundred samples; each wake runs cold. To get under 2%: draw only the part of a window
@@ -110,9 +117,24 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   - [ ] Gapless play from one song to the next; the song's sample rate changing reopens the output.
 - [x] 3. Equalizer (ten bands, preamp) and the skin's spectrum and oscilloscope from what is heard.
   - [ ] Equalizer presets.
-- [ ] 4. The Mac around it
-- [ ] 5. Effects
-- [ ] 6. Milkdrop and AVS
+- [x] 4. The Mac around it: the skin, its size and places, the volume, the playlist and the
+  effects are kept between runs; media keys and Now Playing; Finder opens songs, folders,
+  playlist files and skins with the app; files dropped on a window; nothing runs or draws
+  while no window is in sight.
+  - [ ] Internet radio.
+  - [ ] An icon.
+  - [ ] The mouse wheel and hovering: the engine has no call for either.
+- [x] 5. Effects: Andamp's `.lua` plug-in format (`core/src/dsp`): the loader in a shut-in
+  Lua, the checks, the program and the engine, with the arithmetic of the Kotlin original;
+  the six plug-ins Andamp ships; the rack after the equalizer, each effect fading when
+  switched; the Effects window (View > Effects…) with switches, presets, controls and
+  Add Plug-in….
+  - [ ] The `ui` block is read but not laid out: controls show in the order declared.
+    `enabledBy` is not checked against the graph.
+  - [ ] Andamp's built-in Karaoke, Modulation and Reverb are Kotlin graphs, not ported.
+  - [ ] The block runner (see above).
+- [ ] 6. Milkdrop and AVS: not started. projectM builds with CMake, which this Mac does not
+  have; installing it is the first step.
 - [ ] 7. The App Store
 - [ ] 8. Music sources
 
@@ -131,3 +153,7 @@ stand-in fonts.
   `core/tests` cover windows, drags, the skin's buttons, the player, the equalizer and the
   spectrum; none makes a sound. Checked by `--dump` with AndAmp Dark, walkit's two skins,
   two classic skins and four modern ones from the local test corpus.
+- 2026-11-24, night: steps 4 and 5 in their first form: settings, media keys, Finder, the
+  playlist window's buttons, and the effect rack with Andamp's plug-in format ported from
+  Kotlin. The eleven plug-ins of Andamp (six shipped, five examples) load and build; the two
+  made to be refused are refused.

@@ -9,8 +9,10 @@ cd "$(dirname "$0")"
 
 # a build phase gets a short PATH: rustup's cargo lives in ~/.cargo/bin
 export PATH="$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
-# Xcode's SDK settings are for clang, not for the Rust build
-unset SDKROOT
+# the C sources among the crates (the Lua interpreter) are compiled against the macOS SDK,
+# whatever SDK Xcode is building the app for
+SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
+export SDKROOT
 
 libs=""
 for arch in ${ARCHS:-$(uname -m)}; do

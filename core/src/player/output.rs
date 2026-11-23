@@ -16,6 +16,7 @@ use coreaudio::audio_unit::render_callback::{self, data};
 use coreaudio::audio_unit::{AudioUnit, Element, IOType, SampleFormat, Scope, StreamFormat};
 
 use super::decode::Stream;
+use crate::dsp::rack::RackVoice;
 
 /// The equalizer's bands, as Winamp has them, in Hz.
 pub const EQ_BANDS: [f32; 10] = [
@@ -258,6 +259,8 @@ struct Voice {
     done: rtrb::Producer<Source>,
     current: Option<Source>,
     eq: Equalizer,
+    /// The effects, after the equalizer.
+    rack: RackVoice,
     tap_at: usize,
 }
 
@@ -301,6 +304,7 @@ impl Voice {
             self.eq.follow(shared);
             self.eq.run(heard);
         }
+        self.rack.run(heard);
         // the visualizer and the levels read what is heard before the volume
         let (mut peak_left, mut peak_right) = (0f32, 0f32);
         let mut at = self.tap_at;
@@ -335,8 +339,8 @@ pub struct Output {
 }
 
 impl Output {
-    /// Opens the default output for stereo float at `sample_rate`.
-    pub fn new(sample_rate: u32, shared: Arc<Shared>) -> Result<Output, String> {
+    /// Opens the default output for stereo float at `sample_rate`, with `rack` as its effects.
+    pub fn new(sample_rate: u32, shared: Arc<Shared>, rack: RackVoice) -> Result<Output, String> {
         let error = |e: coreaudio::Error| format!("the audio output did not open: {e}");
         let mut unit = AudioUnit::new(IOType::DefaultOutput).map_err(error)?;
         unit.uninitialize().map_err(error)?;
@@ -364,6 +368,7 @@ impl Output {
             done,
             current: None,
             eq: Equalizer::new(sample_rate),
+            rack,
             tap_at: 0,
         };
         type Args = render_callback::Args<data::Interleaved<f32>>;
