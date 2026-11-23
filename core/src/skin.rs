@@ -300,6 +300,11 @@ impl Skin {
         *self.desk.menu.borrow_mut() = handler;
     }
 
+    /// The skin's pictures and fonts, as the renderer reads them.
+    pub fn assets(&self) -> &Rc<RefCell<Assets>> {
+        &self.assets
+    }
+
     /// What drawing has cost so far.
     pub fn stats(&self) -> Stats {
         self.stats

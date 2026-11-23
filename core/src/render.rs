@@ -38,6 +38,8 @@ impl Canvas {
 /// Which pixels of a shaped window show: one flag per pixel of the canvas.
 pub struct Mask {
     bits: Vec<bool>,
+    /// Whether every pixel shows: such a shape cuts nothing.
+    full: bool,
 }
 
 /// The shape a window was last drawn with, kept so that a window whose shape did not change
@@ -123,7 +125,7 @@ fn draw_command(
                 bitmap.w.unwrap_or(pic.w - bitmap.x),
                 bitmap.h.unwrap_or(pic.h - bitmap.y),
             );
-            stretch(canvas, pen, *dst, src, *alpha, pic.w, pic.h, &pic.argb);
+            stretch(canvas, pen, *dst, src, *alpha, pic.w, pic.h, &pic.argb, pic.opaque);
         }
         DrawCmd::Fill { rect, color, alpha } => fill(canvas, pen, *rect, color.0, *alpha),
         DrawCmd::Pixels {
@@ -135,7 +137,7 @@ fn draw_command(
             ..
         } => {
             if argb.len() >= (*w.max(&0) * *h.max(&0)) as usize {
-                stretch(canvas, pen, *rect, Rect::new(0, 0, *w, *h), *alpha, *w, *h, argb);
+                stretch(canvas, pen, *rect, Rect::new(0, 0, *w, *h), *alpha, *w, *h, argb, false);
             }
         }
         DrawCmd::Text(text) => draw_text(canvas, assets, pen, text),
@@ -155,12 +157,15 @@ fn draw_command(
                     mask.clone()
                 }
                 _ => {
-                    let mask = Rc::new(rasterize(region, canvas.bounds(), assets));
+                    let mut mask = rasterize(region, canvas.bounds(), assets);
+                    mask.full = mask.bits.iter().all(|b| *b);
+                    let mask = Rc::new(mask);
                     shapes.last = Some((region.clone(), mask.clone()));
                     mask
                 }
             };
-            pen.mask = Some(mask);
+            // a shape that is the whole window cuts nothing: no pixel needs asking
+            pen.mask = (!mask.full).then_some(mask);
         }
         DrawCmd::WindowEnd => pen.mask = None,
         // the engine spells bitmap text out as clips and images before the host sees it
@@ -195,7 +200,7 @@ fn fill(canvas: &mut Canvas, pen: &Pen, rect: Rect, rgb: u32, alpha: i32) {
 }
 
 /// Draws the `src` part of a picture of `pic_w` x `pic_h` pixels over `dst` with nearest
-/// pixels, at `alpha` on top of each pixel's own.
+/// pixels, at `alpha` on top of each pixel's own. `opaque` says the picture has no clear pixel.
 #[allow(clippy::too_many_arguments)]
 fn stretch(
     canvas: &mut Canvas,
@@ -206,6 +211,7 @@ fn stretch(
     pic_w: i32,
     pic_h: i32,
     data: &[u32],
+    opaque: bool,
 ) {
     let alpha = alpha.clamp(0, 255) as u32;
     if dst.width <= 0 || dst.height <= 0 || src.width <= 0 || src.height <= 0 || alpha == 0 {
@@ -213,6 +219,28 @@ fn stretch(
     }
     let visible = dst.cut_to(&pen.clip());
     if visible.width <= 0 || visible.height <= 0 {
+        return;
+    }
+    let w = canvas.w as usize;
+    // most of a skin is opaque pictures at their own size: those rows are copied as they are
+    let first = src.left + (visible.left - dst.left);
+    if opaque
+        && alpha == 255
+        && pen.mask.is_none()
+        && dst.width == src.width
+        && first >= 0
+        && first + visible.width <= pic_w
+    {
+        for y in visible.top..visible.bottom() {
+            let sy = src.top + (y - dst.top) * src.height / dst.height;
+            if sy < 0 || sy >= pic_h {
+                continue;
+            }
+            let from = (sy * pic_w + first) as usize;
+            let to = y as usize * w + visible.left as usize;
+            let n = visible.width as usize;
+            canvas.pixels[to..to + n].copy_from_slice(&data[from..from + n]);
+        }
         return;
     }
     // which column of the picture each column drawn reads; -1 outside the picture
@@ -225,7 +253,6 @@ fn stretch(
             -1
         }
     }));
-    let w = canvas.w as usize;
     for y in visible.top..visible.bottom() {
         let sy = src.top + (y - dst.top) * src.height / dst.height;
         if sy < 0 || sy >= pic_h {
@@ -329,6 +356,7 @@ pub fn tinted(argb: u32, gamma: Gamma) -> u32 {
 fn rasterize(region: &Region, area: Rect, assets: &mut Assets) -> Mask {
     let mut mask = Mask {
         bits: vec![false; (area.width * area.height) as usize],
+        full: false,
     };
     let merge = |into: &mut Mask, other: &Mask, op: fn(bool, bool) -> bool| {
         for (a, b) in into.bits.iter_mut().zip(&other.bits) {
@@ -381,6 +409,7 @@ fn rasterize(region: &Region, area: Rect, assets: &mut Assets) -> Mask {
             if !keep.is_empty() {
                 let mut kept = Mask {
                     bits: vec![false; mask.bits.len()],
+                    full: false,
                 };
                 for k in keep {
                     merge(&mut kept, &rasterize(k, area, assets), |a, b| a || b);

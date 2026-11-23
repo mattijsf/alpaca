@@ -53,6 +53,9 @@ pub struct Stream {
 /// The ring's size in samples: two seconds of stereo at 48 kHz.
 const RING_SAMPLES: usize = 2 * 2 * 48_000;
 
+/// How much room the ring has before the decoder fills it again, in samples: a third of it.
+const FILL_AT: usize = RING_SAMPLES / 3;
+
 /// An open file: its container, the track that plays and that track's parameters.
 struct Opened {
     format: Box<dyn FormatReader>,
@@ -260,8 +263,10 @@ fn decode(
             }
             // whole frames only, so left stays left
             let room = ring.slots() & !1;
-            if room == 0 {
-                std::thread::sleep(Duration::from_millis(8));
+            // the ring holds two seconds: once it is full the decoder sleeps until a good part
+            // of it has been played, and so wakes a few times a second, not a hundred
+            if room < FILL_AT.min(rest.len()) {
+                std::thread::sleep(Duration::from_millis(100));
                 continue;
             }
             let take = room.min(rest.len());

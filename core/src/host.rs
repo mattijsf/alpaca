@@ -29,6 +29,8 @@ pub struct Picture {
     pub w: i32,
     pub h: i32,
     pub argb: Vec<u32>,
+    /// Whether every pixel is opaque: such a picture is copied, not blended.
+    pub opaque: bool,
 }
 
 impl Picture {
@@ -97,6 +99,7 @@ impl Assets {
                 w: p.w,
                 h: p.h,
                 argb: p.argb.iter().map(|argb| crate::render::tinted(*argb, tint)).collect(),
+                opaque: p.opaque,
             })
         });
         self.tinted
@@ -184,17 +187,19 @@ impl Assets {
 fn decode(bytes: &[u8]) -> Option<Picture> {
     let rgba = image::load_from_memory(bytes).ok()?.to_rgba8();
     let (w, h) = rgba.dimensions();
-    let argb = rgba
+    let argb: Vec<u32> = rgba
         .pixels()
         .map(|p| {
             let [r, g, b, a] = p.0;
             (u32::from(a) << 24) | (u32::from(r) << 16) | (u32::from(g) << 8) | u32::from(b)
         })
         .collect();
+    let opaque = argb.iter().all(|p| (p >> 24) == 0xff);
     Some(Picture {
         w: w as i32,
         h: h as i32,
         argb,
+        opaque,
     })
 }
 

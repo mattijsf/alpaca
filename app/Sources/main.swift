@@ -231,12 +231,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Lets the skin run for `seconds` and prints what it cost.
     private func bench(_ seconds: Double) {
-        func cpu() -> Double {
+        /// Seconds of processor time so far, in the app's own code and in the system for it.
+        func cpu() -> (user: Double, system: Double) {
             var usage = rusage()
             getrusage(RUSAGE_SELF, &usage)
-            let user = Double(usage.ru_utime.tv_sec) + Double(usage.ru_utime.tv_usec) / 1e6
-            let system = Double(usage.ru_stime.tv_sec) + Double(usage.ru_stime.tv_usec) / 1e6
-            return user + system
+            return (
+                Double(usage.ru_utime.tv_sec) + Double(usage.ru_utime.tv_usec) / 1e6,
+                Double(usage.ru_stime.tv_sec) + Double(usage.ru_stime.tv_usec) / 1e6
+            )
         }
         // the first second is the launch: not counted
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
@@ -251,11 +253,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 getrusage(RUSAGE_SELF, &usage)
                 print(
                     String(
-                        format: "%@ zoom %d, %.0f s: %.1f%% of a core; %.1f steps/s, %.1f windows drawn/s; "
+                        format: "%@ zoom %d, %.0f s: %.1f%% of a core (%.1f%% own code, %.1f%% system); "
+                            + "%.1f steps/s, %.1f windows drawn/s; "
                             + "engine %.2f ms/s, drawing %.2f ms/s (%.0f us a window); peak memory %.0f MB; "
                             + "%d songs, %llu underruns",
                         self.controller.name, self.controller.zoom, seconds,
-                        (after.1 - before.1) / seconds * 100, Double(steps) / seconds, Double(drawn) / seconds,
+                        (after.1.user + after.1.system - before.1.user - before.1.system) / seconds * 100,
+                        (after.1.user - before.1.user) / seconds * 100,
+                        (after.1.system - before.1.system) / seconds * 100,
+                        Double(steps) / seconds, Double(drawn) / seconds,
                         engine / seconds * 1000, draw / seconds * 1000,
                         drawn > 0 ? draw / Double(drawn) * 1e6 : 0, Double(usage.ru_maxrss) / 1_048_576,
                         Int(andamp_player_count(self.controller.player)),
