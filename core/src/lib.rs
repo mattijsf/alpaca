@@ -9,6 +9,7 @@
 //!
 //! Every call runs on the app's main thread: the engine is not shared across threads.
 
+pub mod dsp;
 pub mod host;
 pub mod player;
 pub mod render;
