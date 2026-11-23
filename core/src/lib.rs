@@ -975,3 +975,22 @@ pub unsafe extern "C" fn andamp_player_restore(player: *mut AndampPlayer, state:
     let state = string(state);
     with_player(player, (), |p| p.restore(&state));
 }
+
+/// The samples heard since the last call, both sides mixed, oldest first, into `out`, which
+/// has room for `max`; gives how many there were. Nothing while no song plays. For a
+/// visualizer that takes every sample once.
+///
+/// # Safety
+/// `player` is null or a live player; `out` points at `max` floats.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_take_wave(player: *mut AndampPlayer, out: *mut f32, max: i32) -> i32 {
+    let Ok(max) = usize::try_from(max) else {
+        return 0;
+    };
+    if out.is_null() {
+        return 0;
+    }
+    let wave = with_player(player, Vec::new(), |p| p.take_wave(max));
+    std::ptr::copy_nonoverlapping(wave.as_ptr(), out, wave.len());
+    wave.len() as i32
+}

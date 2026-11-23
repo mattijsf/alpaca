@@ -140,6 +140,8 @@ pub struct Player {
     audible: bool,
     /// The effects the audio passes through after the equalizer.
     pub rack: Rack,
+    /// Up to where the visualizer window has taken the samples heard.
+    wave_cursor: usize,
 }
 
 impl Default for Player {
@@ -172,6 +174,7 @@ impl Player {
             seed: 0x2545_f491,
             audible: true,
             rack: Rack::default(),
+            wave_cursor: 0,
         }
     }
 
@@ -720,6 +723,15 @@ impl Player {
             return Vec::new();
         }
         self.shared.tap.last(WAVE_SAMPLES)
+    }
+
+    /// The samples heard since the last call, both sides mixed, oldest first, at most `max`:
+    /// for a visualizer that takes every sample once. Empty when nothing plays.
+    pub fn take_wave(&mut self, max: usize) -> Vec<f32> {
+        if self.status != Status::Playing {
+            return Vec::new();
+        }
+        self.shared.tap.since(&mut self.wave_cursor, max)
     }
 
     /// The level of each side, 0..255.

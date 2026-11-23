@@ -18,6 +18,8 @@ It is early. [PLAN.md](PLAN.md) says what is done, what is not, and what comes n
 - The ten-band equalizer, balance and volume, and the skin's spectrum and oscilloscope.
 - Effects: Andamp's `.lua` plug-ins. Six come with the app (View > Effects…), and you can
   add your own.
+- Milkdrop: the Visualizer window draws `.milk` presets with libprojectM, once that library
+  is built (`vis/build-projectm.sh`; it needs CMake and a projectM checkout).
 - The Mac's media keys and Now Playing. Winamp's keys: Z X C V B, the arrows for volume and
   for five seconds back and on.
 - It keeps the skin, its size and places, the volume, the playlist and the effects between

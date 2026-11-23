@@ -41,6 +41,8 @@ final class SkinController {
     var onDrop: (([URL]) -> Void)?
     /// Called after every step of the skin.
     var onStep: (() -> Void)?
+    /// Called when a button of the skin asks for the visualizer window.
+    var onVisualizer: (() -> Void)?
     /// Called with what the playlist window asks of the app: "add_file", "add_dir",
     /// "list_load", "list_save".
     var onPlaylist: ((String) -> Void)?
@@ -164,11 +166,20 @@ final class SkinController {
         skin = nil
     }
 
+    /// Whether the visualizer window is open, which a skin's button for it shows.
+    var visualizerOpen = false {
+        didSet {
+            tellSwitches()
+            pump(force: true)
+        }
+    }
+
     /// Tells the skin which of the app's switches are on, so its buttons show them.
     private func tellSwitches() {
         guard let skin else { return }
         andamp_skin_set_switch(skin, "doublesize", zoom > 1)
         andamp_skin_set_switch(skin, "ontop", onTop)
+        andamp_skin_set_switch(skin, "vis", visualizerOpen)
     }
 
     /// Sets how many points a layout pixel is: 2 is Winamp's double size.
@@ -237,6 +248,8 @@ final class SkinController {
         case "ALWAYS_ON_TOP": setOnTop(!onTop)
         case "MENU", "SYSMENU", "CONTROLMENU": onMenu?(at ?? NSEvent.mouseLocation)
         case "ABOUT": NSApp.orderFrontStandardAboutPanel(nil)
+        case "TOGGLE" where parts.count >= 2 && parts[1] == "vis": onVisualizer?()
+        case "SHOW" where parts.count >= 2 && parts[1] == "vis": onVisualizer?()
         case "EQ_PRESETS": showEqPresets(at: at ?? NSEvent.mouseLocation)
         case "PE_ADD": onPlaylist?("add_file")
         case "PLAYLIST" where parts.count >= 2: onPlaylist?(parts[1])

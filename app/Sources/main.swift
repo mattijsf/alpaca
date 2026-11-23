@@ -10,6 +10,8 @@ import UniformTypeIdentifiers
 /// Andamp [skin.wsz|skin.wal] [song ...] [--modern] [--zoom n] [--volume 0..255]
 ///        [--effect <id>]       switches on the effect with that id or name; may be given more
 ///                              than once
+///        [--show-vis]          opens the Visualizer window; --dump writes it as visualizer.png
+///        [--presets <folder>]  the Milkdrop presets it shows
 ///        [--show-effects]      opens the Effects window; --dump writes it as effects.png
 ///        [--base skin.wsz]     a classic skin laid under classic skins, in place of AndAmp Dark
 ///        [--wasabi base.zip]   a zip of a wasabi folder laid under modern skins, in place of
@@ -30,6 +32,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settings: Settings
     private var nowPlaying: NowPlaying?
     private lazy var effects = Effects(player: controller.player, settings: settings)
+    private lazy var visualizer: Visualizer = {
+        let made = Visualizer(player: controller.player, settings: settings)
+        made.onChange = { [weak self] open in self?.controller.visualizerOpen = open }
+        return made
+    }()
     /// The skin file worn.
     private var worn: URL?
 
@@ -43,6 +50,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         var wasabi: URL?
         var effects: [String] = []
         var showEffects = false
+        var showVis = false
+        var presets: URL?
         var dump: URL?
         var bench: Double?
         var quitAfter: Double?
@@ -58,6 +67,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 case "--volume": volume = args.popFirst().flatMap { Int($0) }
                 case "--dump": dump = args.popFirst().map { URL(fileURLWithPath: $0) }
                 case "--show-effects": showEffects = true
+                case "--show-vis": showVis = true
+                case "--presets": presets = args.popFirst().map { URL(fileURLWithPath: $0) }
                 case "--effect": if let id = args.popFirst() { effects.append(id) }
                 case "--base": base = args.popFirst().map { URL(fileURLWithPath: $0) }
                 case "--wasabi": wasabi = args.popFirst().map { URL(fileURLWithPath: $0) }
@@ -124,6 +135,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let state = settings.player { andamp_player_restore(controller.player, state) }
         effects.loadIfLeftOn()
         options.effects.forEach(effects.switchOn(id:))
+        controller.onVisualizer = { [weak self] in self?.visualizer.toggle() }
+        if options.showVis {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.visualizer.show(presets: self.options.presets) }
+        }
         if options.showEffects { DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.effects.show() } }
         let builtIn = builtin(options.modern ? Self.modernSkin : Self.defaultSkin)
         if let skin = options.skin ?? (options.modern ? nil : settings.skin) ?? builtIn { open(skin) }
@@ -303,6 +318,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item("Always on Top", #selector(toggleOnTop), on: controller.onTop)
         menu.addItem(opacityItem())
         item("Effects…", #selector(showEffects))
+        menu.addItem(visualizerItem())
         menu.addItem(.separator())
         item("Quit Andamp", #selector(NSApplication.terminate(_:)))
         menu.popUp(positioning: nil, at: point, in: nil)
@@ -348,6 +364,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             opacityItem(),
             .separator(),
             item("Effects…", #selector(showEffects), "e"),
+            visualizerItem(),
+            item("Choose Milkdrop Presets…", #selector(choosePresets)),
         ])
         return main
     }
@@ -420,6 +438,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func toggleDoubleSize() { controller.setZoom(controller.zoom == 1 ? 2 : 1) }
     @objc private func toggleOnTop() { controller.setOnTop(!controller.onTop) }
     @objc private func showEffects() { effects.show() }
+    @objc private func toggleVisualizer() { visualizer.toggle() }
+    @objc private func choosePresets() {
+        visualizer.choosePresets()
+        if !visualizer.isShown { visualizer.show() }
+    }
+
+    /// The Visualizer menu item: Winamp's key for it with the command key, Shift and K.
+    private func visualizerItem() -> NSMenuItem {
+        let item = NSMenuItem(title: "Visualizer", action: #selector(toggleVisualizer), keyEquivalent: "k")
+        item.keyEquivalentModifierMask = [.command, .shift]
+        item.target = self
+        item.state = visualizer.isShown ? .on : .off
+        return item
+    }
 
     /// The Opacity menu: how much of the windows shows over what is behind them.
     private func opacityItem() -> NSMenuItem {
@@ -457,6 +489,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             lines.append(
                 "window \(n) id \(window.id) frame \(Int(f.minX)),\(Int(f.minY)) \(Int(f.width))x\(Int(f.height))"
                     + " pixels \(window.image.width)x\(window.image.height)")
+        }
+        if options.showVis, let png = visualizer.picture(after: 60)?.representation(using: .png, properties: [:]) {
+            try? png.write(to: folder.appendingPathComponent("visualizer.png"))
         }
         if options.showEffects, let png = effects.picture()?.representation(using: .png, properties: [:]) {
             try? png.write(to: folder.appendingPathComponent("effects.png"))

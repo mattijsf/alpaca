@@ -82,6 +82,21 @@ impl Tap {
             .collect()
     }
 
+    /// The samples heard since `cursor` was last here, oldest first, at most `max` of them (the
+    /// newest when there were more); `cursor` moves on to now. For a visualizer that wants
+    /// every sample once.
+    pub fn since(&self, cursor: &mut usize, max: usize) -> Vec<f32> {
+        let end = self.at.load(Ordering::Relaxed);
+        let fresh = end.wrapping_sub(*cursor).min(TAP_SAMPLES).min(max);
+        *cursor = end;
+        (0..fresh)
+            .map(|i| {
+                let at = end.wrapping_sub(fresh).wrapping_add(i) % TAP_SAMPLES;
+                f32::from_bits(self.samples[at].load(Ordering::Relaxed))
+            })
+            .collect()
+    }
+
     /// Forgets what was heard.
     pub fn clear(&self) {
         for s in self.samples.iter() {

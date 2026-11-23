@@ -233,4 +233,9 @@ char *andamp_player_state(AndampPlayer *player);
 /// Puts back what andamp_player_state gave.
 void andamp_player_restore(AndampPlayer *player, const char *state);
 
+/// The samples heard since the last call, both sides mixed, oldest first, into `out`, which
+/// has room for `max`; gives how many there were. Nothing while no song plays. For a visualizer
+/// that takes every sample once.
+int32_t andamp_player_take_wave(AndampPlayer *player, float *out, int32_t max);
+
 #endif

@@ -20,6 +20,17 @@ struct Settings {
         static let effects = "effects"
         static let player = "player"
         static let opacity = "opacity"
+        static let presets = "presets"
+    }
+
+    /// The folder of Milkdrop presets the listener picked, when it is still there.
+    var presets: URL? {
+        get {
+            guard kept, let path = store.string(forKey: Key.presets), FileManager.default.fileExists(atPath: path)
+            else { return nil }
+            return URL(fileURLWithPath: path)
+        }
+        nonmutating set { if kept { store.set(newValue?.path, forKey: Key.presets) } }
     }
 
     /// How much of the windows shows over what is behind them, 0.2..1.

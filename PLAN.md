@@ -142,8 +142,22 @@ Updated with every step. Whoever picks this up, person or model, starts here.
     `enabledBy` is not checked against the graph.
   - [ ] Andamp's built-in Karaoke, Modulation and Reverb are Kotlin graphs, not ported.
   - [ ] The block runner (see above).
-- [ ] 6. Milkdrop and AVS: not started. projectM builds with CMake, which this Mac does not
-  have; installing it is the first step.
+- [ ] 6. Milkdrop and AVS
+  - [x] Milkdrop in its first form: the Visualizer window (View > Visualizer, or the skin's
+    button for it) draws `.milk` presets with libprojectM to what plays. The engine is a
+    library of its own, `vis/lib/libprojectM-4.dylib`, built by `vis/build-projectm.sh` from a
+    projectM 4.1 checkout (it needs CMake) and copied into the app when it is there; without
+    it the app builds and runs, and the window says what is missing. Presets come from a
+    folder the listener picks (View > Choose Milkdrop Presets…); none come with the app.
+    Right and left arrows, R for a random one, space to keep the one shown.
+  - [ ] What it costs: about 0.5% of a core for every frame a second (16% at the 30 it runs
+    at, 33% at 60), at 640 by 400, most of it inside the system's OpenGL, which macOS runs
+    on top of Metal. Not looked into further.
+  - [ ] The window is a plain Mac window, not a skin's. A skin's own visualizer frame stays shut.
+  - [ ] projectM's sources are not in this repository: `vis/projectm` as a submodule, or
+    `PROJECTM_SRC`. It was built here from Andamp's own checkout of v4.1.7.
+  - [ ] AVS: Andamp's is 15,000 lines of Kotlin on a framebuffer of its own, with the ns-eel
+    evaluator in C. A port, not started.
 - [ ] 7. The App Store
 - [ ] 8. Music sources
 
@@ -162,6 +176,8 @@ stand-in fonts.
   `core/tests` cover windows, drags, the skin's buttons, the player, the equalizer and the
   spectrum; none makes a sound. Checked by `--dump` with AndAmp Dark, walkit's two skins,
   two classic skins and four modern ones from the local test corpus.
+- 2026-11-24, night, later: damage-only drawing, Bento through its sibling skin, internet
+  radio, the equalizer's presets, and Milkdrop through libprojectM in a window of its own.
 - 2026-11-24, night: steps 4 and 5 in their first form: settings, media keys, Finder, the
   playlist window's buttons, and the effect rack with Andamp's plug-in format ported from
   Kotlin. The eleven plug-ins of Andamp (six shipped, five examples) load and build; the two

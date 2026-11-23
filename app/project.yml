@@ -75,7 +75,21 @@ targets:
         LIBRARY_SEARCH_PATHS: $(PROJECT_DIR)/../core/target/macos
         # the Rust library and the system frameworks its audio output calls
         OTHER_LDFLAGS: -landamp_core -framework AudioToolbox -framework AudioUnit -framework CoreAudio
+        # the Visualizer window draws with OpenGL, which Apple has deprecated and still ships
+        GCC_PREPROCESSOR_DEFINITIONS: GL_SILENCE_DEPRECATION=1
         ONLY_ACTIVE_ARCH: YES
+    postBuildScripts:
+      # the Milkdrop engine, when vis/build-projectm.sh built it: a library of its own in the
+      # app's Frameworks folder, which the app loads when the Visualizer window opens
+      - name: Copy the Milkdrop engine
+        script: |
+          lib="$PROJECT_DIR/../vis/lib/libprojectM-4.dylib"
+          if [ -f "$lib" ]; then
+            mkdir -p "$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH"
+            cp -f "$lib" "$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/"
+            codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY:--}" "$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/libprojectM-4.dylib"
+          fi
+        basedOnDependencyAnalysis: false
     preBuildScripts:
       - name: Build the andamp-core library
         script: exec "$PROJECT_DIR/../core/build.sh"
