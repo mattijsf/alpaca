@@ -113,7 +113,8 @@ fn demo_player(clock: walkit::host::Clock) -> Box<dyn Player> {
 /// file name), on a screen of `viewport_w` x `viewport_h` layout pixels. `base` is a classic
 /// skin laid under a classic skin. Under a modern one goes `wasabi`, a zip of a wasabi folder,
 /// or without it the files of the folder `wasabi_dir`. Each may be null. `fonts_dir` is a
-/// folder of the stand-in fonts, or null. `player` is the
+/// folder of the stand-in fonts, or null. `beside_dir` is the folder the skin's file is in, where a
+/// skin it builds on is looked for, or null. `player` is the
 /// player the skin shows and drives; with null it shows a demo that plays nothing. On failure
 /// it gives null and, when `error` is not null, a message in `*error` to free with
 /// [`andamp_string_free`].
@@ -131,6 +132,7 @@ pub unsafe extern "C" fn andamp_skin_open(
     wasabi_len: usize,
     wasabi_dir: *const c_char,
     fonts_dir: *const c_char,
+    beside_dir: *const c_char,
     viewport_w: i32,
     viewport_h: i32,
     player: *mut AndampPlayer,
@@ -157,6 +159,7 @@ pub unsafe extern "C" fn andamp_skin_open(
             base,
             wasabi,
             fonts,
+            (!beside_dir.is_null()).then(|| string(beside_dir)).as_deref().map(Path::new),
             (viewport_w, viewport_h),
             |clock| match shown {
                 Some(player) => Box::new(player::SkinPlayer(player)),

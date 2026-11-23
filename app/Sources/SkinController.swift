@@ -93,8 +93,8 @@ final class SkinController {
                 wasabi.withUnsafeBytes { wasabi in
                     andamp_skin_open(
                         pointer(skin), skin.count, file.lastPathComponent, pointer(base), base.count,
-                        pointer(wasabi), wasabi.count, under.wasabiFolder?.path, under.fonts?.path, w, h,
-                        player, &error)
+                        pointer(wasabi), wasabi.count, under.wasabiFolder?.path, under.fonts?.path,
+                        file.deletingLastPathComponent().path, w, h, player, &error)
                 }
             }
         }

@@ -15,7 +15,7 @@ fn resources() -> PathBuf {
 fn open(name: &str, playing: bool) -> Skin {
     let bytes = std::fs::read(resources().join("skins").join(name)).expect("the built-in skin");
     let fonts = read_fonts(&resources().join("fonts"));
-    Skin::open(bytes, name, None, None, fonts, (1728, 1000), |clock| {
+    Skin::open(bytes, name, None, None, fonts, None, (1728, 1000), |clock| {
         let mut player = FakePlayer::new(clock);
         if playing {
             player.play();

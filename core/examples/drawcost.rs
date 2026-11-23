@@ -19,7 +19,7 @@ fn main() {
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../app/Resources");
     let bytes = std::fs::read(&skin_path).expect("the skin");
     let name = Path::new(&skin_path).file_name().unwrap().to_string_lossy().into_owned();
-    let mut skin = Skin::open(bytes, &name, None, None, read_fonts(&resources.join("fonts")), (1728, 1000), |clock| {
+    let mut skin = Skin::open(bytes, &name, None, None, read_fonts(&resources.join("fonts")), None, (1728, 1000), |clock| {
         let mut player = FakePlayer::new(clock);
         player.play();
         Box::new(player)

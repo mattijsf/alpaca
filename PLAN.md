@@ -111,8 +111,10 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   minimize, menu and clutter bar buttons; the skin's popup menus as Mac menus.
   - [ ] A click on a clear part of a shaped window goes to the app, not to what is under it.
   - [ ] More than one screen: the windows move on the main screen's visible part only.
-  - [ ] Bento shows its top bar and an empty frame: its player area is missing and its menu
-    words lie on top of each other. MMD3, Winamp3's default and CornerAmp show as they should.
+  - [x] A skin that builds on another finds it beside its own file: Bento reads Big Bento's
+    scripts and pictures from `../Big Bento/`, and shows whole with `BigBento.wal` or a
+    `Big Bento` folder next to `Bento.wal`. Checked with Bento, MMD3, Winamp3's default and
+    CornerAmp from the local corpus.
 - [x] 2. Playback: MP3, AAC, ALAC, FLAC, Ogg Vorbis, WAV and AIFF files; the playlist; play,
   pause, stop, next, previous, seek, shuffle, repeat; volume and balance; Winamp's keys.
   - [ ] The playlist window's own buttons (add, remove, select, sort) do nothing yet.

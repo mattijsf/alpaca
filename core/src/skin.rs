@@ -9,7 +9,7 @@
 
 use std::cell::{Cell, RefCell};
 use std::io::{Cursor, Read};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::time::Instant;
 
@@ -77,13 +77,16 @@ pub struct Skin {
 impl Skin {
     /// Opens the skin archive `bytes` named `file_name`, over the files of `base` when it is a
     /// classic skin and over those of `wasabi` when it is a modern one, with `fonts` under
-    /// both, on a screen of `viewport` layout pixels, driven by `player`.
+    /// both, on a screen of `viewport` layout pixels, driven by `player`. `beside` is the
+    /// folder the skin's file is in, where a skin it builds on is looked for.
+    #[allow(clippy::too_many_arguments)]
     pub fn open(
         bytes: Vec<u8>,
         file_name: &str,
         base: Option<MemoryFiles>,
         wasabi: Option<MemoryFiles>,
         fonts: MemoryFiles,
+        beside: Option<&Path>,
         viewport: (i32, i32),
         player: impl FnOnce(Clock) -> Box<dyn Player>,
     ) -> Result<Skin, String> {
@@ -94,6 +97,10 @@ impl Skin {
         } else {
             wasabi
         };
+        let siblings = Rc::new(Siblings {
+            folder: beside.map(Path::to_path_buf),
+            opened: RefCell::new(Vec::new()),
+        });
         // the engine and the host each read the files, so the host decodes wasabi-base/...
         // pictures and the stand-in fonts from under the skin too; the bytes are shared
         let layered = || -> Box<dyn SkinFiles> {
@@ -107,6 +114,7 @@ impl Skin {
             Box::new(WithFonts {
                 skin,
                 fonts: fonts.clone(),
+                siblings: siblings.clone(),
             })
         };
         let assets = Rc::new(RefCell::new(Assets::new(layered())));
@@ -231,11 +239,12 @@ impl Skin {
         let began = Instant::now();
         let mut flags = 0;
         let mut old = std::mem::take(&mut self.windows);
-        let same_order = old.len() == ids.len() && old.iter().zip(&ids).all(|(w, id)| w.id == id.0);
-        if !same_order {
-            flags |= MOVED;
-        }
+        let before: Vec<u32> = old.iter().map(|w| w.id).collect();
         for (id, d) in ids.into_iter().zip(drawn) {
+            // a skin's container for something it never shows comes out one pixel large
+            if d.rect.width < 2 || d.rect.height < 2 {
+                continue;
+            }
             let mut window = match old.iter().position(|w| w.id == id.0) {
                 Some(at) => old.swap_remove(at),
                 None => Window {
@@ -269,6 +278,10 @@ impl Skin {
                 flags |= DRAWN;
             }
             self.windows.push(window);
+        }
+        // another order, or a window more or less
+        if !self.windows.iter().map(|w| w.id).eq(before) {
+            flags |= MOVED;
         }
         self.stats.draw_nanos += began.elapsed().as_nanos() as u64;
         flags
@@ -361,16 +374,98 @@ impl Skin {
     }
 }
 
-/// A skin's files with the stand-in fonts where the engine looks for them, at `fonts/`. A
-/// file of the skin's own by the same path comes first.
+/// The skins beside the one opened, for a skin that builds on another: Winamp's Bento reads
+/// its scripts and pictures from `../Big Bento/`, the skin installed next to it.
+struct Siblings {
+    /// The folder the opened skin's file is in.
+    folder: Option<PathBuf>,
+    /// The siblings asked for so far, by the name the skin used: their files, or `None` for
+    /// one that is not there.
+    opened: RefCell<Vec<(String, Option<MemoryFiles>)>>,
+}
+
+impl Siblings {
+    /// The file a path like `../Big Bento/scripts/main.maki` names, from the archive or the
+    /// folder of that name beside the opened skin.
+    fn read(&self, path: &str) -> Option<Rc<[u8]>> {
+        // also as Winamp spells its skins folder: @SKINSPATH@\Big Bento\scripts\notifier.maki
+        let path = path.replace('\\', "/");
+        let rest = path.strip_prefix("../").or_else(|| {
+            let lower = path.to_lowercase();
+            lower.starts_with("@skinspath@/").then(|| &path["@skinspath@/".len()..])
+        })?;
+        let (name, inner) = rest.split_once('/')?;
+        let key = name.to_lowercase();
+        let mut opened = self.opened.borrow_mut();
+        if !opened.iter().any(|(known, _)| *known == key) {
+            let files = self.find(&key);
+            opened.push((key.clone(), files));
+        }
+        let (_, files) = opened.iter().find(|(known, _)| *known == key)?;
+        files.as_ref()?.read(inner)
+    }
+
+    /// The files of the skin called `name` beside the opened one: a folder, or a `.wal` or
+    /// `.zip` archive, its name compared without case and without spaces.
+    fn find(&self, name: &str) -> Option<MemoryFiles> {
+        let plain = |s: &str| s.to_lowercase().replace([' ', '_', '-'], "");
+        let wanted = plain(name);
+        for entry in std::fs::read_dir(self.folder.as_ref()?).ok()?.flatten() {
+            let path = entry.path();
+            let stem = path.file_stem().map(|s| plain(&s.to_string_lossy()))?;
+            if stem != wanted {
+                continue;
+            }
+            if path.is_dir() {
+                return Some(read_tree(&path));
+            }
+            let archive = path
+                .extension()
+                .is_some_and(|e| e.eq_ignore_ascii_case("wal") || e.eq_ignore_ascii_case("zip"));
+            if archive {
+                if let Some(files) = std::fs::read(&path).ok().and_then(|b| unzip(b).ok()) {
+                    return Some(files);
+                }
+            }
+        }
+        None
+    }
+}
+
+/// The files under the folder `dir`, by their paths from it.
+fn read_tree(dir: &Path) -> MemoryFiles {
+    fn walk(root: &Path, dir: &Path, files: &mut MemoryFiles) {
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            return;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                walk(root, &path, files);
+            } else if let (Ok(inner), Ok(bytes)) = (path.strip_prefix(root), std::fs::read(&path)) {
+                files.insert(&inner.to_string_lossy(), bytes);
+            }
+        }
+    }
+    let mut files = MemoryFiles::new();
+    walk(dir, dir, &mut files);
+    files
+}
+
+/// A skin's files with the stand-in fonts where the engine looks for them, at `fonts/`, and
+/// the skins beside it at `../<name>/`. A file of the skin's own by the same path comes first.
 struct WithFonts {
     skin: Box<dyn SkinFiles>,
     fonts: MemoryFiles,
+    siblings: Rc<Siblings>,
 }
 
 impl SkinFiles for WithFonts {
     fn read(&self, path: &str) -> Option<Rc<[u8]>> {
-        self.skin.read(path).or_else(|| self.fonts.read(path))
+        self.skin
+            .read(path)
+            .or_else(|| self.fonts.read(path))
+            .or_else(|| self.siblings.read(path))
     }
 
     fn names(&self) -> Vec<String> {
