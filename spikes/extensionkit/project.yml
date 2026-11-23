@@ -1,0 +1,54 @@
+name: ExtSpike
+options:
+  deploymentTarget:
+    macOS: "27.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    EX_ENABLE_EXTENSION_POINT_GENERATION: YES
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: YES
+    GENERATE_INFOPLIST_FILE: YES
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+    ARCHS: arm64
+targets:
+  SpikeHost:
+    type: application
+    platform: macOS
+    sources: [Host, Shared]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: nl.mattix.spike.host
+        CODE_SIGN_ENTITLEMENTS: Host/Host.entitlements
+        INFOPLIST_KEY_LSUIElement: YES
+    dependencies:
+      - target: EmbeddedSource
+  EmbeddedSource:
+    type: extensionkit-extension
+    platform: macOS
+    sources: [Ext, Shared]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: nl.mattix.spike.host.embedded-source
+        CODE_SIGN_ENTITLEMENTS: Ext/Ext.entitlements
+  ThirdPartyApp:
+    type: application
+    platform: macOS
+    sources: [ThirdParty]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.example.thirdparty.source
+        INFOPLIST_KEY_LSUIElement: YES
+    dependencies:
+      - target: ThirdPartySource
+  ThirdPartySource:
+    type: extensionkit-extension
+    platform: macOS
+    sources: [Ext, Shared]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.example.thirdparty.source.ext
+        CODE_SIGN_ENTITLEMENTS: Ext/Ext.entitlements
