@@ -74,14 +74,33 @@ codesign -f -s "<identity>" -o runtime --entitlements Host/Host.entitlements \
 walkit's macOS example (`examples/macos`, release build) with its built-in skins and the demo
 player running:
 
-| Skin | CPU | Memory |
-| --- | --- | --- |
-| Classic | 38 to 46% of one core | 62 to 75 MB |
-| Modern | 0.7 to 1.2% | 24 to 33 MB |
+| Skin | CPU | Memory | Zoom on a Retina screen |
+| --- | --- | --- | --- |
+| Classic | 47% of one core | 68 MB | 1, so 2 device pixels per layout pixel |
+| Modern | 99% | 69 MB | 2, so 4 |
+| No skin shown | 4% | 32 MB | |
 
-A profile of the classic skin has the time in the software renderer, in the color conversion
-of the picture the layer is given each frame, and in copies. Why the classic skin draws a new
-picture every frame was not traced. `--screenshot` took 1.5 s, of which 1.3 s is the waiting
+The window was 808 by 687 points, in front, on a 120 Hz screen.
+
+Where the time goes:
+
+- The engine asks for about 40 frames a second while a track plays: the visualizer steps every
+  25 ms, and a classic main window moves with every step of its title, time and visualizer.
+  A tick costs 5 to 35 microseconds.
+- For each of those frames the example draws every window from nothing, at the screen's
+  device pixels, and hands the layer a new picture, which is then converted to the screen's
+  colors. Drawing alone, measured outside the app:
+
+  | Device pixels per layout pixel | Classic, 275 by 348 | Modern, 300 by 292 |
+  | --- | --- | --- |
+  | 1 | 4.3 ms | 4.2 ms |
+  | 2 | 6.7 ms | 7.3 ms |
+  | 4 | 16.6 ms | 19.8 ms |
+
+- With no skin the display link still calls the app 120 times a second, which is the 4%.
+
+So a frame costs as much as it does because of where and how large it is drawn, and the
+engine's 40 frames a second are few. `--screenshot` took 1.5 s, of which 1.3 s is the waiting
 written into it, so the time to the first frame needs a measurement of its own. The app is
 12 MB.
 
