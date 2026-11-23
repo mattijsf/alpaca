@@ -34,9 +34,11 @@ final class SkinWindow: NSWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
 
-    /// Shows `width` x `height` pixels, rows top first, BGRA with the color multiplied by the alpha.
-    func show(pixels: UnsafePointer<UInt32>, width: Int, height: Int) {
-        surfaceView.show(pixels: pixels, width: width, height: height)
+    /// Shows `width` x `height` pixels, rows top first, BGRA with the color multiplied by the
+    /// alpha. `changed` is the part that differs from the pixels shown last, when that is
+    /// known; without it the whole picture is taken over.
+    func show(pixels: UnsafePointer<UInt32>, width: Int, height: Int, changed: CGRect?) {
+        surfaceView.show(pixels: pixels, width: width, height: height, changed: changed)
     }
 
     /// The pixels shown, as a picture, for `--dump`.
@@ -52,6 +54,9 @@ final class SurfaceView: NSView {
     private unowned let controller: SkinController
     /// Two surfaces taken in turn: the window server may still read the one shown.
     private var surfaces: [IOSurface] = []
+    /// For each surface, the part of the picture it does not have yet: what changed while the
+    /// other one was shown.
+    private var behind: [CGRect] = [.null, .null]
     private var shown = 0
     private var size = (width: 0, height: 0)
 
@@ -90,24 +95,30 @@ final class SurfaceView: NSView {
         return surface
     }
 
-    func show(pixels: UnsafePointer<UInt32>, width: Int, height: Int) {
+    func show(pixels: UnsafePointer<UInt32>, width: Int, height: Int, changed: CGRect?) {
         guard width > 0, height > 0 else { return }
+        let whole = CGRect(x: 0, y: 0, width: width, height: height)
+        var changed = changed ?? whole
         if size != (width, height) || surfaces.count < 2 {
             size = (width, height)
             surfaces = (0..<2).compactMap { _ in makeSurface(width: width, height: height) }
             shown = 0
+            changed = whole
         }
         guard surfaces.count == 2 else { return }
+        // both surfaces fall behind by what changed; the one written now catches up
+        behind = behind.map { $0.union(changed) }
         let next = 1 - shown
+        let part = behind[next].intersection(whole).integral
+        behind[next] = .null
         let surface = surfaces[next]
         surface.lock(options: [], seed: nil)
         let rowBytes = surface.bytesPerRow
         let base = surface.baseAddress
-        if rowBytes == width * 4 {
-            memcpy(base, pixels, width * height * 4)
-        } else {
-            for row in 0..<height {
-                memcpy(base + row * rowBytes, pixels + row * width, width * 4)
+        let (left, top, columns, rows) = (Int(part.minX), Int(part.minY), Int(part.width), Int(part.height))
+        if columns > 0 {
+            for row in top..<(top + rows) {
+                memcpy(base + row * rowBytes + left * 4, pixels + row * width + left, columns * 4)
             }
         }
         surface.unlock(options: [], seed: nil)

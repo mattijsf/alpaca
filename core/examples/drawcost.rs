@@ -52,7 +52,7 @@ fn main() {
         let rounds = 2000;
         let began = Instant::now();
         for _ in 0..rounds {
-            draw_window(&mut canvas, assets, &mut shapes, &window.cmds);
+            draw_window(&mut canvas, assets, &mut shapes, &window.cmds, None);
         }
         let each = began.elapsed().as_secs_f64() / f64::from(rounds) * 1e6;
         println!(

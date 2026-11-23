@@ -40,8 +40,10 @@ pub struct AndampSkin {
 
 /// One window of a skin, as [`andamp_skin_window`] gives it: where it is on the viewport in
 /// layout pixels, its `w * h` pixels (rows top first, each `0xAARRGGBB` with the color
-/// multiplied by the alpha, which in memory is BGRA), and a count that goes up whenever the
-/// pixels are drawn again. The pixels stay valid until the next step.
+/// multiplied by the alpha, which in memory is BGRA), a count that goes up whenever the
+/// pixels are drawn again, and the part of the window the last drawing changed: an app that
+/// showed the drawing before needs to take over only that part. The pixels stay valid until
+/// the next step.
 #[repr(C)]
 pub struct AndampWindow {
     pub id: u32,
@@ -51,6 +53,11 @@ pub struct AndampWindow {
     pub h: i32,
     pub pixels: *const u32,
     pub generation: u64,
+    /// The part of the window the last drawing changed, in its own pixels.
+    pub changed_x: i32,
+    pub changed_y: i32,
+    pub changed_w: i32,
+    pub changed_h: i32,
 }
 
 /// The `len` bytes at `ptr`, or `None` for a null pointer.
@@ -287,6 +294,10 @@ pub unsafe extern "C" fn andamp_skin_window(
             h: w.canvas.h,
             pixels: w.canvas.pixels.as_ptr(),
             generation: w.generation,
+            changed_x: w.changed.left,
+            changed_y: w.changed.top,
+            changed_w: w.changed.width,
+            changed_h: w.changed.height,
         };
         true
     })

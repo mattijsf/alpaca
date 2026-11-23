@@ -153,3 +153,40 @@ fn the_title_bar_buttons_and_the_clutter_bar_ask_the_app() {
     assert_eq!(click(&mut skin, 13, 52, 3), ["DOUBLESIZE"]);
     assert!(skin.take_actions().is_empty(), "an action is handed over once");
 }
+
+#[test]
+fn drawing_only_what_changed_gives_the_pixels_drawing_everything_gives() {
+    for name in ["AndAmp Dark.wsz", "walkit-classic.wsz", "walkit-modern.wal"] {
+        let mut skin = open(name, true);
+        skin.step();
+        let (mut parts, mut wholes) = (0, 0);
+        for step in 0..40 {
+            std::thread::sleep(std::time::Duration::from_millis(12));
+            // now and then a press on a button, which changes more than the visualizer
+            if step == 10 {
+                skin.runtime.pointer_down(40, 96, 1);
+            }
+            if step == 20 {
+                skin.runtime.pointer_up(40, 96);
+            }
+            let before: Vec<u64> = skin.windows().iter().map(|w| w.generation).collect();
+            skin.step();
+            for (index, window) in skin.windows().iter().enumerate() {
+                if before.get(index).is_some_and(|g| *g != window.generation) {
+                    let whole = window.changed.width == window.rect.width && window.changed.height == window.rect.height;
+                    if whole {
+                        wholes += 1;
+                    } else {
+                        parts += 1;
+                    }
+                }
+                assert!(
+                    window.canvas.pixels == skin.drawn_whole(index),
+                    "{name}: window {} at step {step} differs from its drawing in full",
+                    window.id
+                );
+            }
+        }
+        assert!(parts > 5, "{name}: most drawings are of a part: {parts} parts, {wholes} wholes");
+    }
+}

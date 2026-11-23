@@ -65,8 +65,10 @@ app this grew from is the baseline (see [spikes/](spikes/README.md)).
 
 | | Baseline | Aim | Now |
 | --- | --- | --- | --- |
-| Classic skin playing | 47% of a core | under 2% | 6%, at any zoom |
-| Modern skin playing | 99% | under 3% | 6.5% |
+| Classic skin playing (AndAmp Dark) | 47% of a core | under 2% | 5.4%, at any zoom |
+| Modern skin playing (walkit's) | 99% | under 3% | 5.0% |
+| Bento playing, its one window 1196 by 798 | | | 8% |
+| MMD3 playing, with its scripts | | | 10% |
 | Playing with every window covered or the app hidden | | | 0.5% |
 | Nothing playing | 4% | 0, no wakeups | 0.0%, no steps |
 | Drawing one window | 4 to 20 ms a frame | | 16 to 45 microseconds |
@@ -79,11 +81,12 @@ with the app 8%. Andamp on Android runs a graph a block at a time where nothing 
 sample the block has not made yet (`BlockRunner`); the engine here runs a frame at a time, and
 that is the first thing to port when an effect's cost matters.
 
-Where the 6% goes: the engine's tick and draw lists 1.3%, drawing pixels 0.6%, the rest is
+Where the 5% goes: the engine's tick and draw lists 1.2%, drawing pixels 0.3%, the rest is
 the 40 wakeups a second themselves (the timer, handing the layer its pixels, the window
 server's turn, the audio thread) and decoding. The processor is asleep in all but a few of
-every hundred samples; each wake runs cold. To get under 2%: draw only the part of a window
-that changed (the engine's planner, `walkit::plan`), and look at what the engine does in a tick
+every hundred samples; each wake runs cold. Only the part of a window that changed is drawn
+and handed over (`render::damage` compares the draw list with the last one), which is what
+keeps a large window like Bento's cheap. What is left is the engine's own work in a tick
 that changes nothing but the visualizer. Of the start, 30 to 60 ms is the skin opening
 (`--bench` prints it); the rest is the process and AppKit coming up.
 

@@ -20,7 +20,7 @@ use walkit::player::Player;
 use walkit::SkinRuntime;
 
 use crate::host::{Assets, Desk, Host, HostAction, MenuHandler};
-use crate::render::{draw_window, Canvas, ShapeCache};
+use crate::render::{damage, draw_window, Canvas, ShapeCache};
 
 /// The largest file read out of an archive, and the most read in all.
 const MAX_ENTRY: u64 = 32 * 1024 * 1024;
@@ -41,6 +41,8 @@ pub struct Window {
     pub canvas: Canvas,
     /// Counts up every time the pixels are drawn again.
     pub generation: u64,
+    /// The part of the window the last drawing changed; the whole window when it drew it all.
+    pub changed: Rect,
     /// The draw list the pixels were drawn from.
     cmds: Rc<Vec<DrawCmd>>,
     shapes: ShapeCache,
@@ -53,6 +55,8 @@ pub struct Stats {
     pub steps: u64,
     /// Windows drawn again.
     pub windows_drawn: u64,
+    /// Pixels those drawings covered.
+    pub pixels_drawn: u64,
     /// Nanoseconds spent in the engine's tick and draw lists.
     pub engine_nanos: u64,
     /// Nanoseconds spent drawing pixels.
@@ -252,6 +256,7 @@ impl Skin {
                     rect: d.rect,
                     canvas: Canvas::new(0, 0),
                     generation: 0,
+                    changed: Rect::new(0, 0, 0, 0),
                     cmds: Rc::new(Vec::new()),
                     shapes: ShapeCache::default(),
                 },
@@ -266,16 +271,29 @@ impl Skin {
             }
             // the engine hands out the same list for a window that did not change
             if resized || window.generation == 0 || !Rc::ptr_eq(&window.cmds, &d.cmds) {
-                draw_window(
-                    &mut window.canvas,
-                    &mut self.assets.borrow_mut(),
-                    &mut window.shapes,
-                    &d.cmds,
-                );
+                let whole = Rect::new(0, 0, d.rect.width, d.rect.height);
+                // a list that differs from the last one in a few commands draws only their part
+                let part = if resized || window.generation == 0 {
+                    None
+                } else {
+                    damage(&window.cmds, &d.cmds)
+                };
+                let nothing = part.is_some_and(|p| p.width <= 0 || p.height <= 0);
+                if !nothing {
+                    draw_window(
+                        &mut window.canvas,
+                        &mut self.assets.borrow_mut(),
+                        &mut window.shapes,
+                        &d.cmds,
+                        part,
+                    );
+                    window.changed = part.map_or(whole, |p| p.cut_to(&whole));
+                    window.generation += 1;
+                    self.stats.windows_drawn += 1;
+                    self.stats.pixels_drawn += (window.changed.width * window.changed.height).max(0) as u64;
+                    flags |= DRAWN;
+                }
                 window.cmds = d.cmds;
-                window.generation += 1;
-                self.stats.windows_drawn += 1;
-                flags |= DRAWN;
             }
             self.windows.push(window);
         }
@@ -290,6 +308,21 @@ impl Skin {
     /// The windows, bottom to top, as the last [`Skin::step`] left them.
     pub fn windows(&self) -> &[Window] {
         &self.windows
+    }
+
+    /// Window `index` drawn afresh from the draw list it shows, all of it: what its pixels
+    /// should be, however many partial drawings made them. For tests.
+    pub fn drawn_whole(&self, index: usize) -> Vec<u32> {
+        let window = &self.windows[index];
+        let mut canvas = Canvas::new(window.canvas.w, window.canvas.h);
+        draw_window(
+            &mut canvas,
+            &mut self.assets.borrow_mut(),
+            &mut ShapeCache::default(),
+            &window.cmds,
+            None,
+        );
+        canvas.pixels
     }
 
     /// Milliseconds until the skin next changes by itself: 0 for now, -1 for never.

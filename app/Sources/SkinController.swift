@@ -268,7 +268,13 @@ final class SkinController {
                 width: CGFloat(info.w) * z, height: CGFloat(info.h) * z)
             if window.frame != frame { window.setFrame(frame, display: false) }
             if window.shownGeneration != info.generation, let pixels = info.pixels {
-                window.show(pixels: pixels, width: Int(info.w), height: Int(info.h))
+                // the drawing right after the one shown differs from it only where it says
+                let next = window.shownGeneration != 0 && window.shownGeneration + 1 == info.generation
+                let changed = CGRect(
+                    x: Int(info.changed_x), y: Int(info.changed_y), width: Int(info.changed_w),
+                    height: Int(info.changed_h))
+                window.show(
+                    pixels: pixels, width: Int(info.w), height: Int(info.h), changed: next ? changed : nil)
                 window.shownGeneration = info.generation
             }
         }

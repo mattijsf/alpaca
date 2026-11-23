@@ -115,16 +115,26 @@ fn over(dst: &mut u32, rgb: u32, a: u32) {
     *dst = (alpha << 24) | mix(16) | mix(8) | mix(0);
 }
 
-/// Draws a window's commands into `canvas`, which is cleared first.
+/// Draws a window's commands into `canvas`: all of it, or with `only` just that part, which
+/// is cleared first; the rest of the canvas stays as it was.
 pub fn draw_window(
     canvas: &mut Canvas,
     assets: &mut Assets,
     shapes: &mut ShapeCache,
     commands: &[DrawCmd],
+    only: Option<Rect>,
 ) {
-    canvas.pixels.fill(0);
+    let part = only.map_or(canvas.bounds(), |r| r.cut_to(&canvas.bounds()));
+    if part.width <= 0 || part.height <= 0 {
+        return;
+    }
+    let w = canvas.w as usize;
+    for y in part.top..part.bottom() {
+        let start = y as usize * w + part.left as usize;
+        canvas.pixels[start..start + part.width as usize].fill(0);
+    }
     let mut pen = Pen {
-        clips: vec![canvas.bounds()],
+        clips: vec![part],
         mask: None,
         columns: Vec::new(),
     };
@@ -205,6 +215,47 @@ fn draw_command(
         // the engine spells bitmap text out as clips and images before the host sees it
         DrawCmd::BitmapText(_) => {}
     }
+}
+
+/// The part of a window that differs between two draw lists of it: the box around every
+/// command that changed. `None` when the lists differ in more than what single commands draw
+/// (another length, another clip or shape), and the whole window is drawn again.
+pub fn damage(old: &[DrawCmd], new: &[DrawCmd]) -> Option<Rect> {
+    if old.len() != new.len() {
+        return None;
+    }
+    // where a command draws; `None` for one that shapes what the others draw
+    let area = |cmd: &DrawCmd| -> Option<Rect> {
+        match cmd {
+            DrawCmd::Image { dst, .. } => Some(*dst),
+            DrawCmd::Fill { rect, .. } | DrawCmd::Pixels { rect, .. } => Some(*rect),
+            DrawCmd::Text(text) => Some(text.rect),
+            _ => None,
+        }
+    };
+    let mut changed: Option<Rect> = None;
+    for (a, b) in old.iter().zip(new) {
+        if a == b {
+            continue;
+        }
+        let (Some(a), Some(b)) = (area(a), area(b)) else {
+            return None;
+        };
+        for r in [a, b] {
+            if r.width <= 0 || r.height <= 0 {
+                continue;
+            }
+            changed = Some(match changed {
+                None => r,
+                Some(c) => {
+                    let (left, top) = (c.left.min(r.left), c.top.min(r.top));
+                    let (right, bottom) = (c.right().max(r.right()), c.bottom().max(r.bottom()));
+                    Rect::new(left, top, right - left, bottom - top)
+                }
+            });
+        }
+    }
+    Some(changed.unwrap_or(Rect::new(0, 0, 0, 0)))
 }
 
 /// Fills `rect` with `rgb` at `alpha`.

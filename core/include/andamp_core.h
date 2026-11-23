@@ -18,13 +18,16 @@ typedef struct AndampSkin AndampSkin;
 typedef struct AndampPlayer AndampPlayer;
 
 /// One window of a skin: where it is on the viewport in layout pixels, its `w * h` pixels
-/// (rows top first, BGRA in memory, the color multiplied by the alpha) and a count that goes
-/// up whenever the pixels are drawn again. The pixels stay valid until the next step.
+/// (rows top first, BGRA in memory, the color multiplied by the alpha), a count that goes up
+/// whenever the pixels are drawn again, and the part of the window the last drawing changed,
+/// in its own pixels: an app that showed the drawing before needs to take over only that
+/// part. The pixels stay valid until the next step.
 typedef struct {
     uint32_t id;
     int32_t x, y, w, h;
     const uint32_t *pixels;
     uint64_t generation;
+    int32_t changed_x, changed_y, changed_w, changed_h;
 } AndampWindow;
 
 /// andamp_skin_step: a window moved, opened, closed or changed its place in the order.
