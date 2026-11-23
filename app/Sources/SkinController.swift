@@ -78,6 +78,8 @@ final class SkinController {
     /// (each window's top left corner on the screen, by the engine's id) where those are given.
     /// Throws what the engine says when it cannot.
     func open(file: URL, under: Under, places: [UInt32: NSPoint] = [:]) throws {
+        let began = ProcessInfo.processInfo.systemUptime
+        defer { openTook = ProcessInfo.processInfo.systemUptime - began }
         let bytes = try Data(contentsOf: file)
         let base = under.base.flatMap { try? Data(contentsOf: $0) } ?? Data()
         let wasabi = under.wasabi.flatMap { try? Data(contentsOf: $0) } ?? Data()
@@ -233,9 +235,16 @@ final class SkinController {
         }
     }
 
+    /// How long the last skin took to open, in seconds.
+    private(set) var openTook: TimeInterval = 0
+
+    /// When the first window showed its pixels, as seconds since the Mac started; 0 before.
+    private(set) var firstShown: TimeInterval = 0
+
     /// Puts the app's windows where the engine's are and shows the pixels that changed.
     private func apply() {
         guard let skin else { return }
+        defer { if firstShown == 0, !windows.isEmpty { firstShown = ProcessInfo.processInfo.systemUptime } }
         let count = andamp_skin_window_count(skin)
         var seen: [UInt32] = []
         var info = AndampWindow()

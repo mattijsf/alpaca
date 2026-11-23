@@ -410,6 +410,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         exit(0)
     }
 
+    /// Seconds from the process starting to the skin's first window showing its pixels.
+    private var startup: Double {
+        var info = kinfo_proc()
+        var size = MemoryLayout<kinfo_proc>.stride
+        var name = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
+        guard sysctl(&name, 4, &info, &size, nil, 0) == 0, controller.firstShown > 0 else { return 0 }
+        let started = Double(info.kp_proc.p_starttime.tv_sec) + Double(info.kp_proc.p_starttime.tv_usec) / 1e6
+        // the first window's moment as a time of day: now, less how long ago it was
+        let shown = Date().timeIntervalSince1970 - (ProcessInfo.processInfo.systemUptime - controller.firstShown)
+        return shown - started
+    }
+
     /// Lets the skin run for `seconds` and prints what it cost.
     private func bench(_ seconds: Double) {
         /// Seconds of processor time so far, in the app's own code and in the system for it.
@@ -437,7 +449,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         format: "%@ zoom %d, %.0f s: %.1f%% of a core (%.1f%% own code, %.1f%% system); "
                             + "%.1f steps/s, %.1f windows drawn/s; "
                             + "engine %.2f ms/s, drawing %.2f ms/s (%.0f us a window); peak memory %.0f MB; "
-                            + "%d songs, %llu underruns",
+                            + "%d songs, %llu underruns; first window %.0f ms after the start, "
+                            + "of which the skin took %.0f ms to open",
                         self.controller.name, self.controller.zoom, seconds,
                         (after.1.user + after.1.system - before.1.user - before.1.system) / seconds * 100,
                         (after.1.user - before.1.user) / seconds * 100,
@@ -446,7 +459,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         engine / seconds * 1000, draw / seconds * 1000,
                         drawn > 0 ? draw / Double(drawn) * 1e6 : 0, Double(usage.ru_maxrss) / 1_048_576,
                         Int(andamp_player_count(self.controller.player)),
-                        andamp_player_underruns(self.controller.player)))
+                        andamp_player_underruns(self.controller.player), self.startup * 1000,
+                        self.controller.openTook * 1000))
                 exit(0)
             }
         }

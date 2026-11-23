@@ -70,7 +70,8 @@ app this grew from is the baseline (see [spikes/](spikes/README.md)).
 | Playing with every window covered or the app hidden | | | 0.5% |
 | Nothing playing | 4% | 0, no wakeups | 0.0%, no steps |
 | Drawing one window | 4 to 20 ms a frame | | 16 to 45 microseconds |
-| Memory, peak | 68 MB | under 50 MB | 89 MB |
+| Memory (footprint, as Activity Monitor shows it) | 75 MB | under 50 MB | 25 MB |
+| From the process starting to the first window | | under 150 ms | 190 to 250 ms |
 
 An effect adds what `cargo run --release --example effectcost` prints for it, about three
 times over in the app, where the audio thread runs cold: Bass & Treble 1%, all six that come
@@ -83,7 +84,8 @@ the 40 wakeups a second themselves (the timer, handing the layer its pixels, the
 server's turn, the audio thread) and decoding. The processor is asleep in all but a few of
 every hundred samples; each wake runs cold. To get under 2%: draw only the part of a window
 that changed (the engine's planner, `walkit::plan`), and look at what the engine does in a tick
-that changes nothing but the visualizer. Memory has not been looked at.
+that changes nothing but the visualizer. Of the start, 30 to 60 ms is the skin opening
+(`--bench` prints it); the rest is the process and AppKit coming up.
 
 ## Working on it
 
