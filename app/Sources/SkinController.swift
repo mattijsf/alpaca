@@ -22,13 +22,21 @@ final class SkinController {
     private var pressed = false
     /// The name of the skin shown.
     private(set) var name = ""
+    /// The app's player, which every skin shows and drives.
+    let player: OpaquePointer
+    /// Called when the skin's eject button asks for files to play.
+    var onOpenFiles: (() -> Void)?
 
     init(zoom: Int = 1) {
+        player = andamp_player_new()
         self.zoom = max(1, zoom)
         area = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
     }
 
-    deinit { close() }
+    deinit {
+        close()
+        andamp_player_free(player)
+    }
 
     /// The viewport in layout pixels.
     private var viewport: (Int32, Int32) {
@@ -44,7 +52,7 @@ final class SkinController {
         let opened = bytes.withUnsafeBytes { raw in
             andamp_skin_open(
                 raw.bindMemory(to: UInt8.self).baseAddress, raw.count, file.lastPathComponent,
-                nil, 0, nil, 0, fonts?.path, w, h, &error)
+                nil, 0, nil, 0, fonts?.path, w, h, player, &error)
         }
         guard let opened else {
             let message = error.map { String(cString: $0) } ?? "the skin did not open"
@@ -87,6 +95,38 @@ final class SkinController {
         let changed = andamp_skin_step(skin)
         if changed != 0 || force { apply() }
         schedule()
+        if andamp_player_take_requests(player) & UInt32(ANDAMP_REQUEST_OPEN_FILES) != 0 {
+            // after this turn of the run loop: the panel must not open inside a mouse event
+            DispatchQueue.main.async { [weak self] in self?.onOpenFiles?() }
+        }
+    }
+
+    // MARK: the player
+
+    /// Adds audio files to the playlist; how many of them were audio.
+    @discardableResult
+    func add(files: [URL]) -> Int {
+        let added = files.filter { andamp_player_add(player, $0.path) >= 0 }.count
+        pump(force: true)
+        return added
+    }
+
+    /// Empties the playlist, adds `files` and plays the first.
+    func play(files: [URL]) {
+        andamp_player_clear(player)
+        if add(files: files) > 0 { andamp_player_play_index(player, 0) }
+        pump(force: true)
+    }
+
+    /// The transport: `ANDAMP_PLAY` and the like.
+    func command(_ command: Int32) {
+        andamp_player_command(player, command)
+        pump(force: true)
+    }
+
+    func setVolume(_ volume: Int) {
+        andamp_player_set_volume(player, Int32(volume))
+        pump(force: true)
     }
 
     /// Puts the app's windows where the engine's are and shows the pixels that changed.

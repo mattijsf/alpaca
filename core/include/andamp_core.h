@@ -13,6 +13,10 @@
 /// A loaded skin.
 typedef struct AndampSkin AndampSkin;
 
+/// The app's player: the playlist, the transport and the audio. Every skin opened with it
+/// shows and drives it.
+typedef struct AndampPlayer AndampPlayer;
+
 /// One window of a skin: where it is on the viewport in layout pixels, its `w * h` pixels
 /// (rows top first, BGRA in memory, the color multiplied by the alpha) and a count that goes
 /// up whenever the pixels are drawn again. The pixels stay valid until the next step.
@@ -31,12 +35,14 @@ typedef struct {
 /// Opens the skin archive (.wsz or .wal) of `skin_len` bytes at `skin`, named `name` (its file
 /// name), on a screen of `viewport_w` x `viewport_h` layout pixels. `base` is a classic skin
 /// laid under a classic skin, `wasabi` a zip of a wasabi folder laid under a modern one; either
-/// may be null. `fonts_dir` is a folder of the stand-in fonts, or null. On failure it gives
-/// null and, when `error` is not null, a message in `*error` to free with andamp_string_free.
+/// may be null. `fonts_dir` is a folder of the stand-in fonts, or null. `player` is the player
+/// the skin shows and drives; with null it shows a demo that plays nothing. On failure it
+/// gives null and, when `error` is not null, a message in `*error` to free with
+/// andamp_string_free.
 AndampSkin *andamp_skin_open(const uint8_t *skin, size_t skin_len, const char *name,
                              const uint8_t *base, size_t base_len, const uint8_t *wasabi,
                              size_t wasabi_len, const char *fonts_dir, int32_t viewport_w,
-                             int32_t viewport_h, char **error);
+                             int32_t viewport_h, AndampPlayer *player, char **error);
 
 /// Frees a skin andamp_skin_open gave.
 void andamp_skin_free(AndampSkin *skin);
@@ -79,5 +85,43 @@ void andamp_skin_double_click(AndampSkin *skin, int32_t x, int32_t y, int32_t to
 
 /// A right click on what press `touch` landed on.
 void andamp_skin_right_click(AndampSkin *skin, int32_t touch);
+
+/// Makes the app's player. Free it with andamp_player_free, after every skin opened with it.
+AndampPlayer *andamp_player_new(void);
+
+/// Frees a player andamp_player_new gave.
+void andamp_player_free(AndampPlayer *player);
+
+/// Adds the audio file at `path` to the end of the playlist. Gives its place in the list, or
+/// -1 when the file cannot be read as audio.
+int32_t andamp_player_add(AndampPlayer *player, const char *path);
+
+/// Empties the playlist and stops.
+void andamp_player_clear(AndampPlayer *player);
+
+/// How many entries the playlist has.
+int32_t andamp_player_count(AndampPlayer *player);
+
+/// Makes entry `index` current and plays it.
+void andamp_player_play_index(AndampPlayer *player, int32_t index);
+
+/// The transport, for andamp_player_command.
+#define ANDAMP_PLAY 1
+#define ANDAMP_PAUSE 2
+#define ANDAMP_STOP 3
+#define ANDAMP_NEXT 4
+#define ANDAMP_PREVIOUS 5
+void andamp_player_command(AndampPlayer *player, int32_t command);
+
+/// Sets the volume, 0..255.
+void andamp_player_set_volume(AndampPlayer *player, int32_t volume);
+
+/// What the player asked the app for since the last call.
+/// ANDAMP_REQUEST_OPEN_FILES: let the listener pick files to play.
+#define ANDAMP_REQUEST_OPEN_FILES 1u
+uint32_t andamp_player_take_requests(AndampPlayer *player);
+
+/// Blocks of audio in which the output ran dry while a song went on, so far.
+uint64_t andamp_player_underruns(AndampPlayer *player);
 
 #endif

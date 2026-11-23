@@ -40,7 +40,8 @@ targets:
         INFOPLIST_KEY_NSPrincipalClass: NSApplication
         SWIFT_OBJC_BRIDGING_HEADER: ../core/include/andamp_core.h
         LIBRARY_SEARCH_PATHS: $(PROJECT_DIR)/../core/target/macos
-        OTHER_LDFLAGS: -landamp_core
+        # the Rust library and the system frameworks its audio output calls
+        OTHER_LDFLAGS: -landamp_core -framework AudioToolbox -framework AudioUnit -framework CoreAudio
         ONLY_ACTIVE_ARCH: YES
     preBuildScripts:
       - name: Build the andamp-core library

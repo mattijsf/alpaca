@@ -7,9 +7,11 @@ import UniformTypeIdentifiers
 /// The app: its menus, the skin it shows, and what the command line asks for.
 ///
 /// ```
-/// Andamp [skin.wsz|skin.wal] [--modern] [--zoom n]
+/// Andamp [skin.wsz|skin.wal] [song ...] [--modern] [--zoom n] [--volume 0..255]
 ///        [--dump <folder>]     writes every window as a PNG after two seconds, and quits
 ///        [--bench <seconds>]   prints what that many seconds cost, and quits
+///
+/// Songs named on the command line play at once.
 /// ```
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let controller: SkinController
@@ -17,6 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     struct Options {
         var skin: URL?
+        var songs: [URL] = []
+        var volume: Int?
         var modern = false
         var zoom = 1
         var dump: URL?
@@ -28,11 +32,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 switch arg {
                 case "--modern": modern = true
                 case "--zoom": zoom = args.popFirst().flatMap { Int($0) } ?? 1
+                case "--volume": volume = args.popFirst().flatMap { Int($0) }
                 case "--dump": dump = args.popFirst().map { URL(fileURLWithPath: $0) }
                 case "--bench": bench = args.popFirst().flatMap { Double($0) }
                 // the arguments Xcode and macOS add, such as -NSDocumentRevisionsDebugMode YES
                 case _ where arg.hasPrefix("-") && !arg.hasPrefix("--"): args = args.dropFirst()
-                default: skin = URL(fileURLWithPath: arg)
+                default:
+                    let file = URL(fileURLWithPath: arg)
+                    if AppDelegate.skinTypes.contains(file.pathExtension.lowercased()) {
+                        skin = file
+                    } else {
+                        songs.append(file)
+                    }
                 }
             }
         }
@@ -43,6 +54,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         super.init()
     }
 
+    /// The file name endings of a skin.
+    static let skinTypes = ["wsz", "wal", "zip"]
+
     private var fonts: URL? { Bundle.main.url(forResource: "fonts", withExtension: nil) }
 
     private func builtin(modern: Bool) -> URL? {
@@ -52,7 +66,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = makeMenu()
+        controller.onOpenFiles = { [weak self] in self?.openFiles() }
+        if let volume = options.volume { controller.setVolume(volume) }
         if let skin = options.skin ?? builtin(modern: options.modern) { open(skin) }
+        if !options.songs.isEmpty { controller.play(files: options.songs) }
         NSApp.activate(ignoringOtherApps: true)
         if let folder = options.dump {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.dump(to: folder) }
@@ -89,7 +106,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return item
         }
         add("Andamp", [item("Quit Andamp", #selector(NSApplication.terminate(_:)), "q")])
-        add("File", [item("Open Skin…", #selector(openSkin), "o")])
+        let openSkinItem = item("Open Skin…", #selector(openSkin), "o")
+        openSkinItem.keyEquivalentModifierMask = [.command, .shift]
+        add("File", [
+            item("Open Files…", #selector(openFiles), "o"),
+            item("Add Files…", #selector(addFiles), "l"),
+            .separator(),
+            openSkinItem,
+        ])
+        add("Play", [
+            item("Previous", #selector(previous), "z"),
+            item("Play", #selector(play), "x"),
+            item("Pause", #selector(pause), "c"),
+            item("Stop", #selector(stop), "v"),
+            item("Next", #selector(next), "b"),
+        ])
         add("Skins", [
             item("Classic", #selector(showClassic)),
             item("Modern", #selector(showModern)),
@@ -98,9 +129,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return main
     }
 
+    /// Lets the listener pick songs; nil when they picked none.
+    private func pickSongs() -> [URL]? {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.audio]
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        return panel.runModal() == .OK && !panel.urls.isEmpty ? panel.urls : nil
+    }
+
+    @objc private func openFiles() { pickSongs().map(controller.play(files:)) }
+    @objc private func addFiles() { pickSongs().map { _ = controller.add(files: $0) } }
+    // Winamp's keys, with the command key: Z X C V B
+    @objc private func previous() { controller.command(ANDAMP_PREVIOUS) }
+    @objc private func play() { controller.command(ANDAMP_PLAY) }
+    @objc private func pause() { controller.command(ANDAMP_PAUSE) }
+    @objc private func stop() { controller.command(ANDAMP_STOP) }
+    @objc private func next() { controller.command(ANDAMP_NEXT) }
+
     @objc private func openSkin() {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = ["wsz", "wal", "zip"].compactMap { UTType(filenameExtension: $0) }
+        panel.allowedContentTypes = Self.skinTypes.compactMap { UTType(filenameExtension: $0) }
         panel.allowsMultipleSelection = false
         if panel.runModal() == .OK, let file = panel.url { open(file) }
     }
@@ -154,11 +203,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 print(
                     String(
                         format: "%@ zoom %d, %.0f s: %.1f%% of a core; %.1f steps/s, %.1f windows drawn/s; "
-                            + "engine %.2f ms/s, drawing %.2f ms/s (%.0f us a window); peak memory %.0f MB",
+                            + "engine %.2f ms/s, drawing %.2f ms/s (%.0f us a window); peak memory %.0f MB; "
+                            + "%d songs, %llu underruns",
                         self.controller.name, self.controller.zoom, seconds,
                         (after.1 - before.1) / seconds * 100, Double(steps) / seconds, Double(drawn) / seconds,
                         engine / seconds * 1000, draw / seconds * 1000,
-                        drawn > 0 ? draw / Double(drawn) * 1e6 : 0, Double(usage.ru_maxrss) / 1_048_576))
+                        drawn > 0 ? draw / Double(drawn) * 1e6 : 0, Double(usage.ru_maxrss) / 1_048_576,
+                        Int(andamp_player_count(self.controller.player)),
+                        andamp_player_underruns(self.controller.player)))
                 exit(0)
             }
         }

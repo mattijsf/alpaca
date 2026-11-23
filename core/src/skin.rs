@@ -67,6 +67,8 @@ pub struct Skin {
     /// The windows, bottom to top.
     windows: Vec<Window>,
     stats: Stats,
+    /// The app's player, when the skin shows it: asked to move on before every step.
+    pub player: Option<Rc<RefCell<crate::player::Player>>>,
 }
 
 impl Skin {
@@ -151,6 +153,7 @@ impl Skin {
             redraw,
             windows: Vec::new(),
             stats: Stats::default(),
+            player: None,
         })
     }
 
@@ -178,6 +181,9 @@ impl Skin {
     /// Runs the engine's timers and animations and brings the windows up to date: their
     /// places, and the pixels of those that changed. Says what changed, [`MOVED`] and [`DRAWN`].
     pub fn step(&mut self) -> u32 {
+        if let Some(player) = &self.player {
+            player.borrow_mut().poll();
+        }
         let began = Instant::now();
         let ticked = self.runtime.tick();
         let asked = self.redraw.replace(false);
