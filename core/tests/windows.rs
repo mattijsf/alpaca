@@ -1,0 +1,124 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+//! The built-in skins on a desktop: which windows show, that only what changed is drawn again,
+//! and that a drag moves a window and what is docked to it.
+
+use std::path::{Path, PathBuf};
+
+use andamp_core::skin::{read_fonts, Skin, DRAWN, MOVED};
+use walkit::player::{FakePlayer, Player};
+
+fn resources() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../app/Resources")
+}
+
+fn open(name: &str, playing: bool) -> Skin {
+    let bytes = std::fs::read(resources().join("skins").join(name)).expect("the built-in skin");
+    let fonts = read_fonts(&resources().join("fonts"));
+    Skin::open(bytes, name, None, None, fonts, (1728, 1000), |clock| {
+        let mut player = FakePlayer::new(clock);
+        if playing {
+            player.play();
+        }
+        Box::new(player)
+    })
+    .expect("the skin opens")
+}
+
+#[test]
+fn the_classic_skin_shows_three_windows_with_pixels() {
+    let mut skin = open("walkit-classic.wsz", false);
+    let flags = skin.step();
+    assert_eq!(flags & DRAWN, DRAWN);
+    let windows = skin.windows();
+    assert_eq!(windows.len(), 3, "main, equalizer and playlist");
+    let main = &windows[0];
+    assert_eq!((main.rect.width, main.rect.height), (275, 116));
+    for w in windows {
+        assert_eq!(w.canvas.pixels.len(), (w.rect.width * w.rect.height) as usize);
+        let opaque = w.canvas.pixels.iter().filter(|p| (*p >> 24) == 0xff).count();
+        assert!(opaque > w.canvas.pixels.len() / 2, "window {} is mostly drawn", w.id);
+    }
+}
+
+#[test]
+fn the_modern_skin_opens_and_draws() {
+    let mut skin = open("walkit-modern.wal", false);
+    skin.step();
+    assert!(!skin.windows().is_empty());
+    for w in skin.windows() {
+        assert!(w.canvas.pixels.iter().any(|p| (*p >> 24) != 0));
+    }
+}
+
+#[test]
+fn only_the_window_that_changes_is_drawn_again() {
+    let mut skin = open("walkit-classic.wsz", true);
+    skin.step();
+    let before: Vec<(u32, u64)> = skin.windows().iter().map(|w| (w.id, w.generation)).collect();
+    let main = skin.runtime.main_window().expect("a main window").0;
+    let mut waits = Vec::new();
+    let began = std::time::Instant::now();
+    for _ in 0..30 {
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        skin.step();
+        waits.push(skin.next_due_ms());
+    }
+    // the main window's visualizer and time move; the equalizer has nothing that does
+    for (w, (id, generation)) in skin.windows().iter().zip(&before) {
+        assert_eq!(w.id, *id);
+        if w.id == main {
+            assert!(w.generation > *generation, "the main window moves while a song plays");
+            // the visualizer steps every 25 ms: no more draws than steps fit in the time
+            let steps = began.elapsed().as_millis() as u64 / 25 + 2;
+            assert!(
+                w.generation - generation <= steps,
+                "drawn {} times in {:?}",
+                w.generation - generation,
+                began.elapsed()
+            );
+        }
+    }
+    let still = skin.windows().iter().zip(&before).filter(|(w, b)| w.generation == b.1).count();
+    assert!(still >= 1, "a window with nothing moving keeps its pixels");
+    assert!(waits.iter().any(|w| *w > 0), "the skin says when it next changes: {waits:?}");
+}
+
+#[test]
+fn a_drag_on_the_title_bar_moves_the_main_window_and_what_is_docked_to_it() {
+    let mut skin = open("walkit-classic.wsz", false);
+    skin.move_windows(300, 200);
+    skin.step();
+    let places = |skin: &Skin| -> Vec<(u32, i32, i32)> {
+        let mut v: Vec<_> = skin.windows().iter().map(|w| (w.id, w.rect.left, w.rect.top)).collect();
+        v.sort_unstable();
+        v
+    };
+    let before = places(&skin);
+    let generations: Vec<u64> = skin.windows().iter().map(|w| w.generation).collect();
+    assert!(before.iter().any(|&(_, x, y)| (x, y) == (300, 200)), "the main window is where it was put");
+
+    // press on the main window's title bar and pull it 120 across and 80 down, in steps
+    skin.runtime.pointer_down(300 + 100, 200 + 6, 1);
+    for i in 1..=8 {
+        skin.runtime.pointer_move(400 + i * 15, 206 + i * 10);
+        skin.step();
+    }
+    skin.runtime.pointer_up(520, 286);
+    let flags = skin.step();
+    let _ = flags;
+    let after = places(&skin);
+    for (b, a) in before.iter().zip(&after) {
+        assert_eq!(b.0, a.0);
+        assert_eq!((a.1 - b.1, a.2 - b.2), (120, 80), "window {} moved with the main window", b.0);
+    }
+    // a window that only moved is not drawn again, beyond the title bar's change of focus
+    let drawn_again: u64 = skin
+        .windows()
+        .iter()
+        .zip(&generations)
+        .map(|(w, g)| w.generation - g)
+        .sum();
+    assert!(drawn_again <= 6, "moving does not draw every step: {drawn_again}");
+    let _ = MOVED;
+}

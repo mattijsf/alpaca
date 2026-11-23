@@ -1,1 +1,4 @@
+/build/
+/app/Andamp.xcodeproj/
+/core/target/
 .DS_Store
