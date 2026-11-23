@@ -37,6 +37,29 @@ const SPECTRUM_FLOOR_DB: f32 = 66.0;
 /// How many samples of the wave a skin's oscilloscope gets.
 const WAVE_SAMPLES: usize = 576;
 
+/// The equalizer's seventeen factory presets: a name, the preamp and the ten bands, on
+/// Winamp's slider scale of 0..63 with 32 in the middle. The same table as Andamp on Android,
+/// which has it from webamp's reading of Winamp's preset file.
+pub const EQ_PRESETS: [(&str, i32, [i32; 10]); 17] = [
+    ("Classical", 32, [32, 32, 32, 32, 32, 32, 19, 19, 19, 15]),
+    ("Club", 32, [32, 32, 37, 41, 41, 41, 37, 32, 32, 32]),
+    ("Dance", 32, [47, 43, 35, 31, 31, 21, 19, 19, 31, 31]),
+    ("Laptop speakers/headphones", 32, [39, 49, 40, 25, 27, 34, 39, 47, 52, 55]),
+    ("Large hall", 32, [48, 48, 41, 41, 32, 23, 23, 23, 32, 32]),
+    ("Party", 32, [43, 43, 32, 32, 32, 32, 32, 32, 43, 43]),
+    ("Pop", 32, [28, 39, 43, 44, 40, 29, 27, 27, 28, 28]),
+    ("Reggae", 32, [32, 32, 30, 21, 32, 42, 42, 32, 32, 32]),
+    ("Rock", 32, [44, 39, 22, 18, 25, 38, 46, 49, 49, 49]),
+    ("Soft", 32, [39, 34, 29, 27, 29, 38, 45, 47, 49, 51]),
+    ("Ska", 32, [27, 23, 24, 30, 38, 41, 46, 47, 49, 47]),
+    ("Full Bass", 32, [47, 47, 47, 41, 34, 24, 17, 14, 13, 13]),
+    ("Soft Rock", 32, [38, 38, 35, 30, 24, 22, 25, 30, 36, 46]),
+    ("Full Treble", 32, [15, 15, 15, 24, 36, 49, 57, 57, 57, 59]),
+    ("Full Bass & Treble", 32, [43, 41, 32, 19, 23, 34, 45, 49, 51, 51]),
+    ("Live", 32, [23, 32, 38, 40, 41, 41, 38, 36, 36, 35]),
+    ("Techno", 32, [44, 41, 32, 22, 23, 32, 44, 47, 47, 46]),
+];
+
 /// A request the player cannot answer by itself: the app does.
 pub const REQUEST_OPEN_FILES: u32 = 1;
 
@@ -538,6 +561,61 @@ impl Player {
             *slot = value.clamp(0, 255);
             self.shared.eq_bands[band].store(*slot, Ordering::Relaxed);
             self.shared.eq_version.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    /// The switches and sliders a run leaves for the next, as one line of text: the equalizer
+    /// with its bands and preamp, the balance, shuffle and repeat.
+    pub fn state(&self) -> String {
+        let bands: Vec<String> = self.eq_bands.iter().map(i32::to_string).collect();
+        format!(
+            "eq={};bands={};preamp={};pan={};shuffle={};repeat={}",
+            u8::from(self.eq_on),
+            bands.join(","),
+            self.eq_preamp,
+            self.pan,
+            u8::from(self.shuffle),
+            u8::from(self.repeat)
+        )
+    }
+
+    /// Puts back what [`Player::state`] gave; what the text does not say stays as it is.
+    pub fn restore(&mut self, state: &str) {
+        for part in state.split(';') {
+            let Some((key, value)) = part.split_once('=') else {
+                continue;
+            };
+            let number = value.parse::<i32>().ok();
+            match (key, number) {
+                ("eq", Some(on)) => self.set_eq_enabled(on != 0),
+                ("preamp", Some(v)) => self.set_eq_preamp(v),
+                ("pan", Some(v)) => self.set_pan(v),
+                ("shuffle", Some(on)) => self.shuffle = on != 0,
+                ("repeat", Some(on)) => self.repeat = on != 0,
+                ("bands", _) => {
+                    for (band, v) in value.split(',').filter_map(|v| v.parse().ok()).enumerate() {
+                        self.set_eq_band(band, v);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// Sets the equalizer to factory preset `index` and switches it on; `None` sets it flat.
+    pub fn apply_eq_preset(&mut self, index: Option<usize>) {
+        // the slider's 0..63 on the player's 0..255
+        let wide = |v: i32| (v * 255 + 31) / 63;
+        let (preamp, bands) = match index.and_then(|i| EQ_PRESETS.get(i)) {
+            Some((_, preamp, bands)) => (wide(*preamp), bands.map(wide)),
+            None => (128, [128; 10]),
+        };
+        for (band, value) in bands.into_iter().enumerate() {
+            self.set_eq_band(band, value);
+        }
+        self.set_eq_preamp(preamp);
+        if index.is_some() {
+            self.set_eq_enabled(true);
         }
     }
 

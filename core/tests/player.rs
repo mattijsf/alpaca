@@ -202,3 +202,41 @@ fn a_list_is_saved_and_read_back() {
     let mut third = Player::silent();
     assert_eq!(third.add_list(&pls), Ok(1));
 }
+
+#[test]
+fn a_factory_preset_sets_the_bands_and_switches_the_equalizer_on() {
+    use walkit::player::Player as _;
+    let player = std::rc::Rc::new(std::cell::RefCell::new(Player::silent()));
+    let skin = andamp_core::player::SkinPlayer(player.clone());
+    assert!(!skin.eq_enabled());
+    // Full Bass: the low bands up, the high ones down
+    let full_bass = andamp_core::player::EQ_PRESETS.iter().position(|p| p.0 == "Full Bass").unwrap();
+    player.borrow_mut().apply_eq_preset(Some(full_bass));
+    let bands = skin.eq_bands();
+    assert!(skin.eq_enabled());
+    assert!(bands[0] > 170 && bands[9] < 70, "{bands:?}");
+    assert!((skin.eq_preamp() - 128).abs() <= 2, "the preamp in the middle: {}", skin.eq_preamp());
+    player.borrow_mut().apply_eq_preset(None);
+    assert_eq!(skin.eq_bands(), vec![128; 10]);
+}
+
+#[test]
+fn what_a_run_leaves_is_put_back_in_the_next() {
+    use walkit::player::Player as _;
+    let first = std::rc::Rc::new(std::cell::RefCell::new(Player::silent()));
+    let mut skin = andamp_core::player::SkinPlayer(first.clone());
+    skin.set_eq_enabled(true);
+    skin.set_eq_band(3, 200);
+    skin.set_eq_preamp(90);
+    skin.set_pan(-40);
+    skin.set_shuffle(true);
+    let left = first.borrow().state();
+    let second = std::rc::Rc::new(std::cell::RefCell::new(Player::silent()));
+    second.borrow_mut().restore(&left);
+    let skin = andamp_core::player::SkinPlayer(second.clone());
+    assert!(skin.eq_enabled() && skin.shuffle() && !skin.repeat());
+    assert_eq!((skin.eq_bands()[3], skin.eq_preamp(), skin.pan()), (200, 90, -40));
+    // text from somewhere else changes nothing it does not name, and breaks nothing
+    second.borrow_mut().restore("nonsense;eq=x;bands=1,2,three;pan=900");
+    assert_eq!(skin.pan(), 127);
+}

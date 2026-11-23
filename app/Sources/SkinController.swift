@@ -229,6 +229,7 @@ final class SkinController {
         case "ALWAYS_ON_TOP": setOnTop(!onTop)
         case "MENU", "SYSMENU", "CONTROLMENU": onMenu?(at ?? NSEvent.mouseLocation)
         case "ABOUT": NSApp.orderFrontStandardAboutPanel(nil)
+        case "EQ_PRESETS": showEqPresets(at: at ?? NSEvent.mouseLocation)
         case "PE_ADD": onPlaylist?("add_file")
         case "PLAYLIST" where parts.count >= 2: onPlaylist?(parts[1])
         default: break
@@ -330,6 +331,35 @@ final class SkinController {
         // a timer in the common modes also fires while the mouse is held on a slider
         RunLoop.main.add(next, forMode: .common)
         timer = next
+    }
+
+    /// The equalizer's presets as a menu, for the equalizer window's Presets button.
+    private func showEqPresets(at point: NSPoint) {
+        guard let names = andamp_eq_presets() else { return }
+        defer { andamp_string_free(names) }
+        let pick = MenuPick()
+        pick.picked = -2
+        let menu = NSMenu()
+        func add(_ title: String, _ tag: Int) {
+            let item = NSMenuItem(title: title, action: #selector(MenuPick.pick(_:)), keyEquivalent: "")
+            item.target = pick
+            item.tag = tag
+            menu.addItem(item)
+        }
+        add("Flat", -1)
+        menu.addItem(.separator())
+        for (index, name) in String(cString: names).split(separator: "\n").enumerated() { add(String(name), index) }
+        menu.popUp(positioning: nil, at: point, in: nil)
+        guard pick.picked >= -1 else { return }
+        andamp_player_apply_eq_preset(player, Int32(pick.picked))
+        pump(force: true)
+    }
+
+    /// The mouse wheel anywhere on the skin turns the volume, as in Winamp.
+    func scrollWheel(_ event: NSEvent) {
+        let turn = event.hasPreciseScrollingDeltas ? event.scrollingDeltaY / 4 : event.scrollingDeltaY * 4
+        guard abs(turn) >= 0.5 else { return }
+        setVolume(Int(andamp_player_volume(player)) + Int(turn.rounded()))
     }
 
     // MARK: the skin's menus

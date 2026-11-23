@@ -936,3 +936,42 @@ pub unsafe extern "C" fn andamp_player_apply_preset(player: *mut AndampPlayer, i
         }
     });
 }
+
+/// The names of the equalizer's factory presets, one to a line, to free with
+/// [`andamp_string_free`].
+#[no_mangle]
+pub extern "C" fn andamp_eq_presets() -> *mut c_char {
+    let names: Vec<&str> = player::EQ_PRESETS.iter().map(|p| p.0).collect();
+    CString::new(names.join("\n")).unwrap_or_default().into_raw()
+}
+
+/// Sets the equalizer to factory preset `index` and switches it on; -1 sets it flat.
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_apply_eq_preset(player: *mut AndampPlayer, index: i32) {
+    with_player(player, (), |p| p.apply_eq_preset(usize::try_from(index).ok()));
+}
+
+/// The switches and sliders a run leaves for the next (the equalizer, the balance, shuffle and
+/// repeat) as one line of text, to free with [`andamp_string_free`] and hand to
+/// [`andamp_player_restore`] in the next run.
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_state(player: *mut AndampPlayer) -> *mut c_char {
+    let state = with_player(player, String::new(), |p| p.state());
+    CString::new(state).unwrap_or_default().into_raw()
+}
+
+/// Puts back what [`andamp_player_state`] gave.
+///
+/// # Safety
+/// `player` is null or a live player; `state` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_restore(player: *mut AndampPlayer, state: *const c_char) {
+    let state = string(state);
+    with_player(player, (), |p| p.restore(&state));
+}

@@ -118,6 +118,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.onPlaylist = { [weak self] choice in self?.playlist(choice) }
         if let volume = options.volume ?? settings.volume { controller.setVolume(volume) }
         if settings.onTop { controller.setOnTop(true) }
+        if let state = settings.player { andamp_player_restore(controller.player, state) }
         effects.loadIfLeftOn()
         options.effects.forEach(effects.switchOn(id:))
         if options.showEffects { DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.effects.show() } }
@@ -187,6 +188,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings.songs = controller.songs
         settings.song = Int(andamp_player_index(controller.player))
         settings.setPlaces(controller.places, skin: controller.name)
+        if let state = andamp_player_state(controller.player) {
+            settings.player = String(cString: state)
+            andamp_string_free(state)
+        }
         effects.save()
     }
 

@@ -219,4 +219,18 @@ void andamp_player_set_effect_value(AndampPlayer *player, int32_t index, int32_t
 /// defaults; either way in one step, so nothing sweeps.
 void andamp_player_apply_preset(AndampPlayer *player, int32_t index, int32_t preset);
 
+/// The names of the equalizer's factory presets, one to a line, to free with andamp_string_free.
+char *andamp_eq_presets(void);
+
+/// Sets the equalizer to factory preset `index` and switches it on; -1 sets it flat.
+void andamp_player_apply_eq_preset(AndampPlayer *player, int32_t index);
+
+/// The switches and sliders a run leaves for the next (the equalizer, the balance, shuffle and
+/// repeat) as one line of text, to free with andamp_string_free and hand to
+/// andamp_player_restore in the next run.
+char *andamp_player_state(AndampPlayer *player);
+
+/// Puts back what andamp_player_state gave.
+void andamp_player_restore(AndampPlayer *player, const char *state);
+
 #endif

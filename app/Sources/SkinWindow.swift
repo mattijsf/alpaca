@@ -145,6 +145,7 @@ final class SurfaceView: NSView {
     override func mouseDragged(with event: NSEvent) { controller.mouseDragged(event) }
     override func mouseUp(with event: NSEvent) { controller.mouseUp(event) }
     override func rightMouseDown(with event: NSEvent) { controller.rightMouseDown(event) }
+    override func scrollWheel(with event: NSEvent) { controller.scrollWheel(event) }
 
     override var acceptsFirstResponder: Bool { true }
 

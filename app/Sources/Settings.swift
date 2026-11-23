@@ -18,6 +18,14 @@ struct Settings {
         static let song = "song"
         static let places = "places"
         static let effects = "effects"
+        static let player = "player"
+    }
+
+    /// The player's switches and sliders as the library wrote them down: the equalizer, the
+    /// balance, shuffle and repeat.
+    var player: String? {
+        get { kept ? store.string(forKey: Key.player) : nil }
+        nonmutating set { if kept { store.set(newValue, forKey: Key.player) } }
     }
 
     /// The effects as the listener left them, by plug-in id: whether each is on ("on") and
