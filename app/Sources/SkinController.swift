@@ -17,6 +17,8 @@ final class SkinController {
     private(set) var zoom: Int
     /// Whether the windows stay above other apps' windows.
     private(set) var onTop = false
+    /// How much of the windows shows over what is behind them: 1 for all of it.
+    private(set) var opacity: CGFloat = 1
     /// The part of the screen the windows move on, in points.
     private var area: NSRect
     private var timer: Timer?
@@ -189,6 +191,12 @@ final class SkinController {
         }
     }
 
+    /// Lets what is behind the windows show through them: 1 for not at all.
+    func setOpacity(_ opacity: CGFloat) {
+        self.opacity = max(0.2, min(1, opacity))
+        for window in windows.values { window.alphaValue = self.opacity }
+    }
+
     /// Keeps the windows above other apps' windows, or not.
     func setOnTop(_ onTop: Bool) {
         self.onTop = onTop
@@ -255,6 +263,7 @@ final class SkinController {
             let window = windows[info.id] ?? {
                 let made = SkinWindow(skinId: info.id, controller: self)
                 made.level = onTop ? .floating : .normal
+                made.alphaValue = opacity
                 windows[info.id] = made
                 watchers.append(
                     NotificationCenter.default.addObserver(

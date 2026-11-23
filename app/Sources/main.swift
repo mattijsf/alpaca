@@ -118,6 +118,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.onPlaylist = { [weak self] choice in self?.playlist(choice) }
         if let volume = options.volume ?? settings.volume { controller.setVolume(volume) }
         if settings.onTop { controller.setOnTop(true) }
+        controller.setOpacity(CGFloat(settings.opacity))
         if let state = settings.player { andamp_player_restore(controller.player, state) }
         effects.loadIfLeftOn()
         options.effects.forEach(effects.switchOn(id:))
@@ -157,7 +158,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     "skin \(self.controller.name) zoom \(self.controller.zoom) on top \(self.controller.onTop)"
                         + " volume \(andamp_player_volume(self.controller.player))"
                         + " songs \(self.controller.songs.count) at \(andamp_player_index(self.controller.player))"
-                        + " status \(andamp_player_status(self.controller.player)) windows \(corner)")
+                        + " status \(andamp_player_status(self.controller.player))"
+                        + " position \(andamp_player_position_ms(self.controller.player)) ms windows \(corner)")
                 NSApp.terminate(nil)
             }
         }
@@ -184,6 +186,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings.skin = worn
         settings.zoom = controller.zoom
         settings.onTop = controller.onTop
+        settings.opacity = Double(controller.opacity)
         settings.volume = Int(andamp_player_volume(controller.player))
         settings.songs = controller.songs
         settings.song = Int(andamp_player_index(controller.player))
@@ -293,6 +296,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
         item("Double Size", #selector(toggleDoubleSize), on: controller.zoom > 1)
         item("Always on Top", #selector(toggleOnTop), on: controller.onTop)
+        menu.addItem(opacityItem())
         item("Effects…", #selector(showEffects))
         menu.addItem(.separator())
         item("Quit Andamp", #selector(NSApplication.terminate(_:)))
@@ -335,6 +339,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         add("View", [
             item("Double Size", #selector(toggleDoubleSize), "d"),
             item("Always on Top", #selector(toggleOnTop), "a"),
+            opacityItem(),
             .separator(),
             item("Effects…", #selector(showEffects), "e"),
         ])
@@ -389,6 +394,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func toggleDoubleSize() { controller.setZoom(controller.zoom == 1 ? 2 : 1) }
     @objc private func toggleOnTop() { controller.setOnTop(!controller.onTop) }
     @objc private func showEffects() { effects.show() }
+
+    /// The Opacity menu: how much of the windows shows over what is behind them.
+    private func opacityItem() -> NSMenuItem {
+        let item = NSMenuItem(title: "Opacity", action: nil, keyEquivalent: "")
+        let menu = NSMenu(title: "Opacity")
+        for percent in stride(from: 100, through: 40, by: -10) {
+            let entry = NSMenuItem(title: "\(percent) %", action: #selector(pickOpacity(_:)), keyEquivalent: "")
+            entry.target = self
+            entry.tag = percent
+            entry.state = Int((controller.opacity * 100).rounded()) == percent ? .on : .off
+            menu.addItem(entry)
+        }
+        item.submenu = menu
+        return item
+    }
+
+    @objc private func pickOpacity(_ item: NSMenuItem) {
+        controller.setOpacity(CGFloat(item.tag) / 100)
+        NSApp.mainMenu = makeMenu()
+    }
 
     // MARK: --dump and --bench
 

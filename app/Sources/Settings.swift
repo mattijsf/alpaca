@@ -19,6 +19,16 @@ struct Settings {
         static let places = "places"
         static let effects = "effects"
         static let player = "player"
+        static let opacity = "opacity"
+    }
+
+    /// How much of the windows shows over what is behind them, 0.2..1.
+    var opacity: Double {
+        get {
+            let kept = kept ? store.double(forKey: Key.opacity) : 0
+            return kept >= 0.2 ? min(kept, 1) : 1
+        }
+        nonmutating set { if kept { store.set(newValue, forKey: Key.opacity) } }
     }
 
     /// The player's switches and sliders as the library wrote them down: the equalizer, the
