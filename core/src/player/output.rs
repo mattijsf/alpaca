@@ -25,6 +25,10 @@ pub const EQ_BANDS: [f32; 10] = [
 const EQ_RANGE_DB: f32 = 12.0;
 /// How wide a band is.
 const EQ_Q: f32 = 1.2;
+/// `kAudioDevicePropertyBufferFrameSize`: how many frames the device asks for at a time.
+const DEVICE_BUFFER_FRAME_SIZE: u32 = 0x6673_697a;
+/// How many frames the output asks for at a time.
+const BLOCK_FRAMES: u32 = 2048;
 /// How many of the last samples the visualizer can read.
 pub const TAP_SAMPLES: usize = 2048;
 
@@ -344,6 +348,14 @@ impl Output {
         };
         unit.set_stream_format(format, Scope::Input, Element::Output)
             .map_err(error)?;
+        // a block of 2048 frames wakes the audio thread about 22 times a second, where the
+        // default of 512 wakes it 86 times; a volume change is heard 46 ms later at most
+        let _ = unit.set_property(
+            DEVICE_BUFFER_FRAME_SIZE,
+            Scope::Global,
+            Element::Output,
+            Some(&BLOCK_FRAMES),
+        );
         let (sources, incoming) = rtrb::RingBuffer::new(8);
         let (done, replaced) = rtrb::RingBuffer::new(8);
         let mut voice = Voice {

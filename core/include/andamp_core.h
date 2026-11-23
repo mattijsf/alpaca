@@ -160,6 +160,10 @@ int32_t andamp_player_volume(AndampPlayer *player);
 /// Moves the song by `ms` milliseconds, back for a negative number.
 void andamp_player_seek_by(AndampPlayer *player, int32_t ms);
 
+/// Moves the player on when its song has ended. A skin's step does this by itself; the app
+/// calls it while no skin steps, so that the playlist goes on with every window out of sight.
+void andamp_player_poll(AndampPlayer *player);
+
 /// What the transport is doing: 0 stopped, 1 playing, 2 paused.
 int32_t andamp_player_status(AndampPlayer *player);
 

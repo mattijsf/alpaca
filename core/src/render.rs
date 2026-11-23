@@ -40,6 +40,40 @@ pub struct Mask {
     bits: Vec<bool>,
     /// Whether every pixel shows: such a shape cuts nothing.
     full: bool,
+    /// For every row, the columns from the first pixel that shows to after the last, and
+    /// whether every pixel between them shows. A window's shape is most often its box with the
+    /// corners cut, so a row is one run, and drawing it asks about no single pixel.
+    rows: Vec<(i32, i32, bool)>,
+}
+
+impl Mask {
+    /// Works out what a row holds, once the bits are final.
+    fn seal(&mut self, width: i32) {
+        self.full = self.bits.iter().all(|b| *b);
+        self.rows = self
+            .bits
+            .chunks(width.max(1) as usize)
+            .map(|row| {
+                let first = row.iter().position(|b| *b);
+                let last = row.iter().rposition(|b| *b);
+                match (first, last) {
+                    (Some(first), Some(last)) => {
+                        let solid = row[first..=last].iter().all(|b| *b);
+                        (first as i32, last as i32 + 1, solid)
+                    }
+                    _ => (0, 0, true),
+                }
+            })
+            .collect();
+    }
+
+    /// The part of columns `left..right` of row `y` that shows, when the row is one run:
+    /// `None` asks the caller to go pixel by pixel.
+    #[inline]
+    fn run(&self, y: i32, left: i32, right: i32) -> Option<(i32, i32)> {
+        let (first, last, solid) = self.rows[y as usize];
+        solid.then(|| (left.max(first), right.min(last)))
+    }
 }
 
 /// The shape a window was last drawn with, kept so that a window whose shape did not change
@@ -158,7 +192,7 @@ fn draw_command(
                 }
                 _ => {
                     let mut mask = rasterize(region, canvas.bounds(), assets);
-                    mask.full = mask.bits.iter().all(|b| *b);
+                    mask.seal(canvas.w);
                     let mask = Rc::new(mask);
                     shapes.last = Some((region.clone(), mask.clone()));
                     mask
@@ -187,14 +221,25 @@ fn fill(canvas: &mut Canvas, pen: &Pen, rect: Rect, rgb: u32, alpha: i32) {
         match &pen.mask {
             None if a == 255 => row.fill(0xff00_0000 | (rgb & 0x00ff_ffff)),
             None => row.iter_mut().for_each(|p| over(p, rgb, a)),
-            Some(mask) => {
-                let shown = &mask.bits[start..start + d.width as usize];
-                for (p, show) in row.iter_mut().zip(shown) {
-                    if *show {
-                        over(p, rgb, a);
+            Some(mask) => match mask.run(y, d.left, d.right()) {
+                Some((from, to)) if from < to => {
+                    let run = &mut row[(from - d.left) as usize..(to - d.left) as usize];
+                    if a == 255 {
+                        run.fill(0xff00_0000 | (rgb & 0x00ff_ffff));
+                    } else {
+                        run.iter_mut().for_each(|p| over(p, rgb, a));
                     }
                 }
-            }
+                Some(_) => {}
+                None => {
+                    let shown = &mask.bits[start..start + d.width as usize];
+                    for (p, show) in row.iter_mut().zip(shown) {
+                        if *show {
+                            over(p, rgb, a);
+                        }
+                    }
+                }
+            },
         }
     }
 }
@@ -224,21 +269,27 @@ fn stretch(
     let w = canvas.w as usize;
     // most of a skin is opaque pictures at their own size: those rows are copied as they are
     let first = src.left + (visible.left - dst.left);
-    if opaque
-        && alpha == 255
-        && pen.mask.is_none()
-        && dst.width == src.width
-        && first >= 0
-        && first + visible.width <= pic_w
+    let runs = pen.mask.as_ref().is_none_or(|m| {
+        (visible.top..visible.bottom()).all(|y| m.rows[y as usize].2)
+    });
+    if opaque && alpha == 255 && runs && dst.width == src.width && first >= 0 && first + visible.width <= pic_w
     {
         for y in visible.top..visible.bottom() {
             let sy = src.top + (y - dst.top) * src.height / dst.height;
             if sy < 0 || sy >= pic_h {
                 continue;
             }
-            let from = (sy * pic_w + first) as usize;
-            let to = y as usize * w + visible.left as usize;
-            let n = visible.width as usize;
+            // the part of the row inside the window's shape
+            let (left, right) = match &pen.mask {
+                Some(mask) => mask.run(y, visible.left, visible.right()).unwrap_or((0, 0)),
+                None => (visible.left, visible.right()),
+            };
+            if left >= right {
+                continue;
+            }
+            let from = (sy * pic_w + first + (left - visible.left)) as usize;
+            let to = y as usize * w + left as usize;
+            let n = (right - left) as usize;
             canvas.pixels[to..to + n].copy_from_slice(&data[from..from + n]);
         }
         return;
@@ -357,6 +408,7 @@ fn rasterize(region: &Region, area: Rect, assets: &mut Assets) -> Mask {
     let mut mask = Mask {
         bits: vec![false; (area.width * area.height) as usize],
         full: false,
+        rows: Vec::new(),
     };
     let merge = |into: &mut Mask, other: &Mask, op: fn(bool, bool) -> bool| {
         for (a, b) in into.bits.iter_mut().zip(&other.bits) {
@@ -410,6 +462,7 @@ fn rasterize(region: &Region, area: Rect, assets: &mut Assets) -> Mask {
                 let mut kept = Mask {
                     bits: vec![false; mask.bits.len()],
                     full: false,
+                    rows: Vec::new(),
                 };
                 for k in keep {
                     merge(&mut kept, &rasterize(k, area, assets), |a, b| a || b);

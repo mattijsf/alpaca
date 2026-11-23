@@ -608,6 +608,16 @@ pub unsafe extern "C" fn andamp_player_seek_by(player: *mut AndampPlayer, ms: i3
     });
 }
 
+/// Moves the player on when its song has ended. A skin's step does this by itself; the app
+/// calls it while no skin steps, so that the playlist goes on with every window out of sight.
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_poll(player: *mut AndampPlayer) {
+    with_player(player, (), player::Player::poll);
+}
+
 /// What the transport is doing: 0 stopped, 1 playing, 2 paused.
 ///
 /// # Safety

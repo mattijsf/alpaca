@@ -20,6 +20,8 @@ final class SkinController {
     /// The part of the screen the windows move on, in points.
     private var area: NSRect
     private var timer: Timer?
+    /// What watches the windows going out of sight and coming back.
+    private var watchers: [NSObjectProtocol] = []
     private var touch: Int32 = 0
     private var pressed = false
     /// Set while one of the skin's menus is open: the engine waits for the answer inside a
@@ -149,6 +151,8 @@ final class SkinController {
         if let skin { mainCorner = places[andamp_skin_main_window(skin)] }
         timer?.invalidate()
         timer = nil
+        watchers.forEach(NotificationCenter.default.removeObserver)
+        watchers.removeAll()
         for window in windows.values { window.close() }
         windows.removeAll()
         order.removeAll()
@@ -242,6 +246,10 @@ final class SkinController {
                 let made = SkinWindow(skinId: info.id, controller: self)
                 made.level = onTop ? .floating : .normal
                 windows[info.id] = made
+                watchers.append(
+                    NotificationCenter.default.addObserver(
+                        forName: NSWindow.didChangeOcclusionStateNotification, object: made, queue: .main
+                    ) { [weak self] _ in self?.sightChanged() })
                 return made
             }()
             // the engine counts from the top left of the area, the screen from its bottom left
@@ -267,11 +275,37 @@ final class SkinController {
         }
     }
 
+    /// Whether any window of the skin can be seen: not when the app is hidden or every window
+    /// lies under other windows.
+    private var inSight: Bool {
+        !NSApp.isHidden && windows.values.contains { $0.occlusionState.contains(.visible) }
+    }
+
+    /// A window came into sight or went out of it.
+    func sightChanged() {
+        if inSight { pump(force: true) } else { schedule() }
+    }
+
     /// Wakes the controller when the skin next changes by itself; not at all when it will not.
     private func schedule() {
         timer?.invalidate()
         timer = nil
         guard let skin else { return }
+        guard inSight || windows.isEmpty else {
+            // nobody sees the skin: it is not run or drawn. While a song plays the player is
+            // asked twice a second whether the song is over, so the playlist goes on.
+            guard andamp_player_status(player) == 1 else { return }
+            let next = Timer(timeInterval: 0.5, repeats: false) { [weak self] _ in
+                guard let self else { return }
+                andamp_player_poll(self.player)
+                self.onStep?()
+                self.schedule()
+            }
+            next.tolerance = 0.2
+            RunLoop.main.add(next, forMode: .common)
+            timer = next
+            return
+        }
         let due = andamp_skin_next_due_ms(skin)
         guard due >= 0 else { return }
         // "now" means the next frame of the screen
