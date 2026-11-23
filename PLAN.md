@@ -123,14 +123,16 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   - [ ] The playlist window's own buttons (add, remove, select, sort) do nothing yet.
   - [ ] Gapless play from one song to the next; the song's sample rate changing reopens the output.
 - [x] 3. Equalizer (ten bands, preamp) and the skin's spectrum and oscilloscope from what is heard.
-  - [ ] Equalizer presets.
 - [x] 4. The Mac around it: the skin, its size and places, the volume, the playlist and the
   effects are kept between runs; media keys and Now Playing; Finder opens songs, folders,
   playlist files and skins with the app; files dropped on a window; nothing runs or draws
   while no window is in sight.
-  - [ ] Internet radio.
+  - [x] Internet radio: an `http(s)` address in the playlist plays as a stream (MP3, AAC,
+    Ogg, FLAC), with the station's name and the song's title from the stream. File > Add
+    Radio Stream…, the playlist's Add menu, a playlist file, or the command line.
+  - [x] The equalizer's factory presets, the mouse wheel for the volume, View > Opacity.
   - [ ] An icon.
-  - [ ] The mouse wheel and hovering: the engine has no call for either.
+  - [ ] Hovering, and the mouse wheel on a list: the engine has no call for either.
 - [x] 5. Effects: Andamp's `.lua` plug-in format (`core/src/dsp`): the loader in a shut-in
   Lua, the checks, the program and the engine, with the arithmetic of the Kotlin original;
   the six plug-ins Andamp ships; the rack after the equalizer, each effect fading when

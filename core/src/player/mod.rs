@@ -73,8 +73,16 @@ pub struct Entry {
 }
 
 impl Entry {
-    /// Reads the file at `path`: what it is and what it is called.
+    /// Reads the file at `path`: what it is and what it is called. A radio stream's address is
+    /// taken as it is: what the stream is shows when it plays.
     pub fn read(path: &Path) -> Result<Entry, String> {
+        if decode::is_url(path) {
+            return Ok(Entry {
+                path: path.to_path_buf(),
+                title: path.to_string_lossy().into_owned(),
+                info: FileInfo::default(),
+            });
+        }
         let info = decode::probe(path)?;
         let name = path
             .file_stem()
@@ -100,6 +108,9 @@ struct Playing {
     /// The ring's reading end when there is no output to hand it to: the player empties it
     /// itself, as fast as the decoder fills it.
     unheard: Option<rtrb::Consumer<f32>>,
+    /// The ring's reading end until the stream's sample rate is known and an output can be
+    /// opened for it: at once for a file, after its first bytes for a radio stream.
+    waiting: Option<rtrb::Consumer<f32>>,
 }
 
 /// The player.
@@ -248,10 +259,14 @@ impl Player {
                 _ if line.contains('=') && !Path::new(line).exists() => continue,
                 _ => line,
             };
-            if name.contains("://") {
+            // a radio stream by its address, a file beside the list or by its whole path
+            let path = if decode::is_url(Path::new(name)) {
+                PathBuf::from(name)
+            } else if name.contains("://") {
                 continue;
-            }
-            let path = folder.join(name);
+            } else {
+                folder.join(name)
+            };
             if self.add(&path).is_ok() {
                 added += 1;
             }
@@ -292,7 +307,7 @@ impl Player {
         match &self.playing {
             Some(p) => {
                 let frames = p.stream.frames_played.load(Ordering::Relaxed);
-                let rate = u64::from(p.stream.sample_rate.max(1));
+                let rate = u64::from(p.stream.sample_rate.load(Ordering::Relaxed).max(1));
                 let at = p.start_ms + (frames * 1000 / rate) as i32;
                 match self.length_ms() {
                     0 => at,
@@ -314,8 +329,36 @@ impl Player {
             self.status = Status::Stopped;
             return;
         };
-        let rate = entry.info.sample_rate.max(8000);
+        // a radio stream says its sample rate once its first bytes are read
+        let rate = if decode::is_url(&entry.path) {
+            0
+        } else {
+            entry.info.sample_rate.max(8000)
+        };
         let (stream, ring) = decode::spawn(entry.path.clone(), start_ms, rate);
+        self.playing = Some(Playing {
+            stream,
+            start_ms,
+            unheard: None,
+            waiting: Some(ring),
+        });
+        self.resume_ms = start_ms;
+        self.status = if play { Status::Playing } else { Status::Paused };
+        self.attach();
+    }
+
+    /// Hands the loaded song to an output for its sample rate, once that is known.
+    fn attach(&mut self) {
+        let Some(playing) = &mut self.playing else {
+            return;
+        };
+        let rate = playing.stream.sample_rate.load(Ordering::Acquire);
+        if rate == 0 || playing.waiting.is_none() {
+            return;
+        }
+        let Some(ring) = playing.waiting.take() else {
+            return;
+        };
         if self.audible {
             // the unit takes one sample rate: a song at another gets a unit of its own
             if self.output.as_ref().is_some_and(|o| o.sample_rate != rate) {
@@ -330,23 +373,14 @@ impl Player {
                 }
             }
         }
-        let unheard = match &mut self.output {
-            Some(output) => {
-                output.play(Source {
-                    stream: stream.clone(),
-                    ring,
-                });
-                None
-            }
-            None => Some(ring),
-        };
-        self.playing = Some(Playing {
-            stream,
-            start_ms,
-            unheard,
-        });
-        self.resume_ms = start_ms;
-        self.run(play);
+        match &mut self.output {
+            Some(output) => output.play(Source {
+                stream: playing.stream.clone(),
+                ring,
+            }),
+            None => playing.unheard = Some(ring),
+        }
+        self.run(self.status == Status::Playing);
     }
 
     /// Lets the output run or holds it.
@@ -472,6 +506,10 @@ impl Player {
     }
 
     pub fn seek_to(&mut self, ms: i32) {
+        // a radio stream has no other place to go to
+        if self.entry().is_some_and(|e| decode::is_url(&e.path)) {
+            return;
+        }
         let ms = ms.clamp(0, self.length_ms().max(0));
         match self.status {
             Status::Stopped => self.resume_ms = ms,
@@ -485,6 +523,15 @@ impl Player {
             output.collect();
         }
         self.rack.collect();
+        self.hear_news();
+        self.attach();
+        // a stream that ended before it said what it is could not be opened
+        let failed = self.playing.as_ref().is_some_and(|p| {
+            p.waiting.is_some() && p.stream.decoded_all.load(Ordering::Acquire)
+        });
+        if failed {
+            self.stop();
+        }
         // with no output the player takes what the decoder made, and the song is over when
         // the decoder is done and the ring is empty
         if let (Status::Playing, Some(p)) = (self.status, &mut self.playing) {
@@ -526,6 +573,36 @@ impl Player {
                 self.stop();
                 self.index = 0;
             }
+        }
+    }
+
+    /// Takes over what a radio stream said of itself: its format, the station and the song.
+    fn hear_news(&mut self) {
+        let Some(playing) = &self.playing else {
+            return;
+        };
+        let Ok(mut news) = playing.stream.news.lock() else {
+            return;
+        };
+        let (info, station, title) = (news.info.take(), news.station.take(), news.title.take());
+        drop(news);
+        let Some(entry) = self.playlist.get_mut(self.index) else {
+            return;
+        };
+        if let Some(info) = info {
+            entry.info = info;
+        }
+        if let Some(station) = station {
+            entry.info.tags.insert("album".into(), station.clone());
+            entry.title = station;
+        }
+        if let Some(title) = title {
+            // the song, with the station after it when there is one
+            entry.title = match entry.info.tags.get("album") {
+                Some(station) => format!("{title} ({station})"),
+                None => title.clone(),
+            };
+            entry.info.tags.insert("title".into(), title);
         }
     }
 
@@ -630,7 +707,10 @@ impl Player {
         if self.status != Status::Playing {
             return Vec::new();
         }
-        let rate = self.playing.as_ref().map_or(44100, |p| p.stream.sample_rate);
+        let rate = self
+            .playing
+            .as_ref()
+            .map_or(44100, |p| p.stream.sample_rate.load(Ordering::Relaxed).max(1));
         spectrum(&self.shared.tap.last(FFT_SIZE), rate, &*self.fft)
     }
 

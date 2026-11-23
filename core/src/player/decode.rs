@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! Reading audio files: what a file is ([`probe`]) and its samples ([`spawn`]), decoded on a
-//! thread of their own into a ring the output empties.
+//! Reading audio: what a file is ([`probe`]) and the samples of a file or an internet radio
+//! stream ([`spawn`]), decoded on a thread of their own into a ring the output empties.
 
 use std::collections::BTreeMap;
 use std::fs::File;
+use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use symphonia::core::audio::SampleBuffer;
 use symphonia::core::codecs::{DecoderOptions, CODEC_TYPE_NULL};
 use symphonia::core::errors::Error;
 use symphonia::core::formats::{FormatOptions, FormatReader, SeekMode, SeekTo};
-use symphonia::core::io::MediaSourceStream;
+use symphonia::core::io::{MediaSourceStream, ReadOnlySource};
 use symphonia::core::meta::{MetadataOptions, MetadataRevision, StandardTagKey};
 use symphonia::core::probe::{Hint, ProbeResult};
 use symphonia::core::units::Time;
@@ -46,8 +47,106 @@ pub struct Stream {
     pub ended: AtomicBool,
     /// Set to make the decoder stop.
     pub cancel: AtomicBool,
-    /// Samples a second.
-    pub sample_rate: u32,
+    /// Samples a second; 0 for a radio stream until its first bytes say.
+    pub sample_rate: AtomicU32,
+    /// What a radio stream told since it was last asked: what it is, and the song it plays.
+    pub news: Mutex<News>,
+}
+
+/// What a radio stream says of itself as it plays.
+#[derive(Debug, Default)]
+pub struct News {
+    /// The stream's format, once its first bytes are read.
+    pub info: Option<FileInfo>,
+    /// The station's name, from the answer's `icy-name`.
+    pub station: Option<String>,
+    /// The song playing, from the stream's own titles.
+    pub title: Option<String>,
+}
+
+/// Whether `location` is a stream on the internet and not a file.
+pub fn is_url(location: &Path) -> bool {
+    let text = location.to_string_lossy();
+    text.starts_with("http://") || text.starts_with("https://")
+}
+
+/// A radio stream's bytes with its titles taken out. A server asked for them puts a block of
+/// text after every `every` bytes of audio: one byte with its length in sixteens, then
+/// `StreamTitle='...';`.
+pub struct IcyReader<R: Read> {
+    inner: R,
+    every: usize,
+    /// Bytes of audio until the next block.
+    left: usize,
+    news: Option<Arc<Stream>>,
+    /// The last title, kept so that only a new one is told.
+    last: String,
+}
+
+impl<R: Read> IcyReader<R> {
+    pub fn new(inner: R, every: usize, news: Option<Arc<Stream>>) -> Self {
+        IcyReader {
+            inner,
+            every,
+            left: every,
+            news,
+            last: String::new(),
+        }
+    }
+
+    /// The last title read.
+    pub fn title(&self) -> &str {
+        &self.last
+    }
+
+    fn read_block(&mut self) -> std::io::Result<()> {
+        let mut length = [0u8; 1];
+        self.inner.read_exact(&mut length)?;
+        let mut block = vec![0u8; usize::from(length[0]) * 16];
+        self.inner.read_exact(&mut block)?;
+        let text = String::from_utf8_lossy(&block);
+        if let Some(start) = text.find("StreamTitle='") {
+            let rest = &text[start + 13..];
+            let title = rest.split("';").next().unwrap_or("").trim_end_matches(['\0', '\'']).trim();
+            if !title.is_empty() && title != self.last {
+                self.last = title.to_string();
+                if let Some(stream) = &self.news {
+                    if let Ok(mut news) = stream.news.lock() {
+                        news.title = Some(self.last.clone());
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<R: Read> Read for IcyReader<R> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        if self.every == 0 {
+            return self.inner.read(buf);
+        }
+        if self.left == 0 {
+            self.read_block()?;
+            self.left = self.every;
+        }
+        let want = buf.len().min(self.left);
+        let got = self.inner.read(&mut buf[..want])?;
+        self.left -= got;
+        Ok(got)
+    }
+}
+
+/// A reader other threads may hold but only one reads at a time.
+struct Shared<R>(Mutex<R>);
+
+impl<R: Read> Read for Shared<R> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        match self.0.get_mut() {
+            Ok(inner) => inner.read(buf),
+            Err(_) => Ok(0),
+        }
+    }
 }
 
 /// The ring's size in samples: two seconds of stereo at 48 kHz.
@@ -71,12 +170,61 @@ fn open(path: &Path) -> Result<Opened, String> {
     if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
         hint.with_extension(ext);
     }
+    probed(source, &hint)
+}
+
+/// Opens the radio stream at `url`: asks for it with its titles, and reads on from the answer.
+fn open_url(url: &str, stream: &Arc<Stream>) -> Result<Opened, String> {
+    let agent: ureq::Agent = ureq::Agent::config_builder()
+        .timeout_connect(Some(Duration::from_secs(10)))
+        .timeout_recv_response(Some(Duration::from_secs(15)))
+        .build()
+        .into();
+    let answer = agent
+        .get(url)
+        .header("Icy-MetaData", "1")
+        .header("User-Agent", "Andamp")
+        .call()
+        .map_err(|e| e.to_string())?;
+    let header = |name: &str| {
+        answer
+            .headers()
+            .get(name)
+            .and_then(|v| v.to_str().ok())
+            .map(str::to_string)
+    };
+    let every = header("icy-metaint").and_then(|v| v.parse().ok()).unwrap_or(0);
+    let kbps = header("icy-br").and_then(|v| v.split(',').next()?.trim().parse::<i32>().ok());
+    if let Ok(mut news) = stream.news.lock() {
+        news.station = header("icy-name").filter(|n| !n.trim().is_empty());
+    }
+    let mut hint = Hint::new();
+    match header("content-type").as_deref() {
+        Some("audio/mpeg" | "audio/mp3") => hint.with_extension("mp3"),
+        Some("audio/aac" | "audio/aacp") => hint.with_extension("aac"),
+        Some("audio/ogg" | "application/ogg") => hint.with_extension("ogg"),
+        Some("audio/flac") => hint.with_extension("flac"),
+        Some("audio/wav" | "audio/x-wav") => hint.with_extension("wav"),
+        _ => &mut hint,
+    };
+    let body = Shared(Mutex::new(answer.into_body().into_reader()));
+    let reader = IcyReader::new(body, every, Some(stream.clone()));
+    let source = MediaSourceStream::new(Box::new(ReadOnlySource::new(reader)), Default::default());
+    let mut opened = probed(source, &hint)?;
+    if let Some(kbps) = kbps {
+        opened.tags.insert("icy-br".into(), kbps.to_string());
+    }
+    Ok(opened)
+}
+
+/// Finds out what `source` is and picks the track that plays.
+fn probed(source: MediaSourceStream, hint: &Hint) -> Result<Opened, String> {
     let ProbeResult {
         mut format,
         mut metadata,
     } = symphonia::default::get_probe()
         .format(
-            &hint,
+            hint,
             source,
             &FormatOptions::default(),
             &MetadataOptions::default(),
@@ -157,23 +305,26 @@ pub fn probe(path: &Path) -> Result<FileInfo, String> {
     })
 }
 
-/// Starts decoding the file at `path` from `start_ms` on a thread of its own. Gives the stream
-/// and the end of the ring the output reads: stereo, 32-bit float, left and right in turn.
-pub fn spawn(path: PathBuf, start_ms: i32, sample_rate: u32) -> (Arc<Stream>, rtrb::Consumer<f32>) {
+/// Starts decoding the file or radio stream at `location` from `start_ms` on a thread of its
+/// own. Gives the stream and the end of the ring the output reads: stereo, 32-bit float, left
+/// and right in turn. `sample_rate` is the file's, or 0 for a radio stream, whose rate the
+/// stream says once it is known.
+pub fn spawn(location: PathBuf, start_ms: i32, sample_rate: u32) -> (Arc<Stream>, rtrb::Consumer<f32>) {
     let (producer, consumer) = rtrb::RingBuffer::new(RING_SAMPLES);
     let stream = Arc::new(Stream {
         frames_played: AtomicU64::new(0),
         decoded_all: AtomicBool::new(false),
         ended: AtomicBool::new(false),
         cancel: AtomicBool::new(false),
-        sample_rate,
+        sample_rate: AtomicU32::new(sample_rate),
+        news: Mutex::new(News::default()),
     });
     let state = stream.clone();
     let spawned = std::thread::Builder::new()
         .name("andamp-decode".into())
         .spawn(move || {
-            if let Err(message) = decode(&path, start_ms, producer, &state) {
-                eprintln!("andamp: {}: {message}", path.display());
+            if let Err(message) = decode(&location, start_ms, producer, &state) {
+                eprintln!("andamp: {}: {message}", location.display());
             }
             state.decoded_all.store(true, Ordering::Release);
         });
@@ -183,23 +334,46 @@ pub fn spawn(path: PathBuf, start_ms: i32, sample_rate: u32) -> (Arc<Stream>, rt
     (stream, consumer)
 }
 
-/// Decodes the file into `ring` until it ends or the stream is cancelled.
+/// Decodes the file or stream into `ring` until it ends or the stream is cancelled.
 fn decode(
-    path: &Path,
+    location: &Path,
     start_ms: i32,
     mut ring: rtrb::Producer<f32>,
-    stream: &Stream,
+    stream: &Arc<Stream>,
 ) -> Result<(), String> {
+    let radio = is_url(location);
     let Opened {
         mut format,
         track_id,
         params,
-        ..
-    } = open(path)?;
+        tags,
+    } = if radio {
+        open_url(&location.to_string_lossy(), stream)?
+    } else {
+        open(location)?
+    };
     let mut decoder = symphonia::default::get_codecs()
         .make(&params, &DecoderOptions::default())
         .map_err(|e| e.to_string())?;
-    if start_ms > 0 {
+    if radio {
+        // what the stream is, for the player to show and to open the output for
+        let rate = params.sample_rate.unwrap_or(44_100);
+        if let Ok(mut news) = stream.news.lock() {
+            news.info = Some(FileInfo {
+                length_ms: 0,
+                sample_rate: rate,
+                channels: params.channels.map_or(2, |c| c.count() as u32),
+                bitrate_kbps: tags.get("icy-br").and_then(|v| v.parse().ok()).unwrap_or(0),
+                tags: BTreeMap::new(),
+                codec: symphonia::default::get_codecs()
+                    .get_codec(params.codec)
+                    .map(|d| d.short_name.to_string())
+                    .unwrap_or_default(),
+            });
+        }
+        stream.sample_rate.store(rate, Ordering::Release);
+    }
+    if start_ms > 0 && !radio {
         let time = Time::new(
             (start_ms / 1000) as u64,
             f64::from(start_ms % 1000) / 1000.0,

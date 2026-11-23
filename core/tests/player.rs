@@ -240,3 +240,71 @@ fn what_a_run_leaves_is_put_back_in_the_next() {
     second.borrow_mut().restore("nonsense;eq=x;bands=1,2,three;pan=900");
     assert_eq!(skin.pan(), 127);
 }
+
+/// `audio` as a radio stream sends it: after every `every` bytes a block with the song's title.
+fn with_titles(audio: &[u8], every: usize, title: &str) -> Vec<u8> {
+    let mut text = format!("StreamTitle='{title}';").into_bytes();
+    text.resize(text.len().div_ceil(16) * 16, 0);
+    let mut out = Vec::new();
+    for chunk in audio.chunks(every) {
+        out.extend(chunk);
+        if chunk.len() == every {
+            out.push((text.len() / 16) as u8);
+            out.extend(&text);
+        }
+    }
+    out
+}
+
+#[test]
+fn a_radio_streams_titles_are_taken_out_of_its_audio() {
+    use andamp_core::player::decode::IcyReader;
+    use std::io::Read;
+    let audio: Vec<u8> = (0..1000u32).map(|i| (i % 251) as u8).collect();
+    let sent = with_titles(&audio, 64, "Artist - Song");
+    let mut reader = IcyReader::new(&sent[..], 64, None);
+    let mut heard = Vec::new();
+    reader.read_to_end(&mut heard).unwrap();
+    assert_eq!(heard, audio, "what is left is the audio, byte for byte");
+    assert_eq!(reader.title(), "Artist - Song");
+}
+
+#[test]
+fn a_radio_stream_plays_and_says_what_it_is() {
+    use std::io::{Read, Write};
+    let wav = std::fs::read(tone_file("radio.wav", 440.0, 1.0, 48000)).unwrap();
+    let body = with_titles(&wav, 8192, "Artist - Song");
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    let server = std::thread::spawn(move || {
+        let (mut socket, _) = listener.accept().unwrap();
+        let mut request = [0u8; 2048];
+        let _ = socket.read(&mut request);
+        let asked = String::from_utf8_lossy(&request).to_lowercase();
+        let head = "HTTP/1.0 200 OK\r\nContent-Type: audio/wav\r\nicy-name: Test FM\r\nicy-br: 128\r\nicy-metaint: 8192\r\n\r\n";
+        let _ = socket.write_all(head.as_bytes());
+        let _ = socket.write_all(&body);
+        asked.contains("icy-metadata: 1")
+    });
+    let mut player = Player::silent();
+    let url = format!("http://{address}/stream");
+    assert_eq!(player.add(std::path::Path::new(&url)), Ok(0));
+    assert_eq!(player.entries()[0].title, url, "before it plays a stream is known by its address");
+    player.play();
+    assert_eq!(player.status(), Status::Playing);
+    wait(&mut player, |p| p.entries()[0].title.contains("Artist - Song"));
+    let entry = &player.entries()[0];
+    assert_eq!(entry.title, "Artist - Song (Test FM)");
+    assert_eq!((entry.info.sample_rate, entry.info.channels, entry.info.bitrate_kbps), (48000, 2, 128));
+    // a stream has no other place to seek to: asking changes nothing
+    player.seek_to(500);
+    assert_eq!(player.entries()[0].title, "Artist - Song (Test FM)");
+    // the server hangs up: the stream is over, and the list with it
+    wait(&mut player, |p| p.status() == Status::Stopped);
+    assert!(server.join().unwrap(), "the stream was asked for with its titles");
+    // an address nothing answers at stops the player and does not hang it
+    let mut player = Player::silent();
+    player.add(std::path::Path::new("http://127.0.0.1:1/none")).unwrap();
+    player.play();
+    wait(&mut player, |p| p.status() == Status::Stopped);
+}

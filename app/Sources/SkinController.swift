@@ -413,10 +413,13 @@ final class SkinController {
 
     // MARK: the player
 
-    /// Adds audio files to the playlist; how many of them were audio.
+    /// A song as the library takes it: a file by its path, a radio stream by its address.
+    static func location(_ song: URL) -> String { song.isFileURL ? song.path : song.absoluteString }
+
+    /// Adds audio files and radio streams to the playlist; how many of them were taken.
     @discardableResult
     func add(files: [URL]) -> Int {
-        let added = files.filter { andamp_player_add(player, $0.path) >= 0 }.count
+        let added = files.filter { andamp_player_add(player, Self.location($0)) >= 0 }.count
         pump(force: true)
         return added
     }
@@ -457,7 +460,8 @@ final class SkinController {
             var path: UnsafeMutablePointer<CChar>?
             guard andamp_player_entry(player, index, nil, nil, nil, &path) >= 0, let path else { return nil }
             defer { andamp_string_free(path) }
-            return URL(fileURLWithPath: String(cString: path))
+            let location = String(cString: path)
+            return location.contains("://") ? URL(string: location) : URL(fileURLWithPath: location)
         }
     }
 

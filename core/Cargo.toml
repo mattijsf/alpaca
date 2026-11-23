@@ -19,6 +19,8 @@ symphonia = { version = "0.5.5", default-features = false, features = ["mp3", "a
 coreaudio-rs = { version = "0.14.2", default-features = false, features = ["audio_unit", "core_audio"] }
 rtrb = "0.4.1"
 rustfft = "6.4.1"
+# internet radio: the stream over HTTP
+ureq = "3"
 # effect plug-ins are Lua files: the interpreter, built from its own sources
 mlua = { version = "0.10", features = ["lua54", "vendored"] }
 

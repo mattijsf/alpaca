@@ -71,15 +71,17 @@ struct Settings {
         nonmutating set { if kept { store.set(newValue, forKey: Key.volume) } }
     }
 
-    /// The playlist's files, those that are still there, and which one was current.
+    /// The playlist's files, those that are still there, with its radio streams, and which
+    /// one was current.
     var songs: [URL] {
         get {
             guard kept else { return [] }
-            return (store.stringArray(forKey: Key.songs) ?? [])
-                .filter { FileManager.default.fileExists(atPath: $0) }
-                .map { URL(fileURLWithPath: $0) }
+            return (store.stringArray(forKey: Key.songs) ?? []).compactMap { location in
+                if location.contains("://") { return URL(string: location) }
+                return FileManager.default.fileExists(atPath: location) ? URL(fileURLWithPath: location) : nil
+            }
         }
-        nonmutating set { if kept { store.set(newValue.map(\.path), forKey: Key.songs) } }
+        nonmutating set { if kept { store.set(newValue.map(SkinController.location), forKey: Key.songs) } }
     }
 
     var song: Int {

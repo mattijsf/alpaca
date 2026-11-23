@@ -69,6 +69,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 case "--quit-after": quitAfter = args.popFirst().flatMap { Double($0) }
                 // the arguments Xcode and macOS add, such as -NSDocumentRevisionsDebugMode YES
                 case _ where arg.hasPrefix("-") && !arg.hasPrefix("--"): args = args.dropFirst()
+                case _ where arg.hasPrefix("http://") || arg.hasPrefix("https://"):
+                    if let stream = URL(string: arg) { songs.append(stream) }
                 default:
                     let file = URL(fileURLWithPath: arg)
                     if AppDelegate.skinTypes.contains(file.pathExtension.lowercased()) {
@@ -205,6 +207,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             try controller.open(
                 file: skin, under: under, places: settings.places(skin: skin.lastPathComponent))
             worn = skin
+            if launched { NSApp.mainMenu = makeMenu() }
         } catch {
             if options.dump != nil || options.bench != nil {
                 FileHandle.standardError.write(Data("andamp: \(error.localizedDescription)\n".utf8))
@@ -254,6 +257,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func playlist(_ choice: String) {
         switch choice {
         case "add_file": addFiles()
+        case "add_url": addLocation()
         case "add_dir":
             let panel = NSOpenPanel()
             panel.canChooseDirectories = true
@@ -287,6 +291,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         item("Open Files…", #selector(openFiles))
         item("Add Files…", #selector(addFiles))
+        item("Add Radio Stream…", #selector(addLocation))
         menu.addItem(.separator())
         item("Open Skin…", #selector(openSkin))
         let skins = NSMenuItem(title: "Skins", action: nil, keyEquivalent: "")
@@ -325,6 +330,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         add("File", [
             item("Open Files…", #selector(openFiles), "o"),
             item("Add Files…", #selector(addFiles), "l"),
+            item("Add Radio Stream…", #selector(addLocation), "u"),
             .separator(),
             openSkinItem,
         ])
@@ -353,6 +359,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = true
         return panel.runModal() == .OK && !panel.urls.isEmpty ? panel.urls.flatMap(songs(in:)) : nil
+    }
+
+    /// Asks for the address of a radio stream and adds it to the playlist.
+    @objc private func addLocation() {
+        let alert = NSAlert()
+        alert.messageText = "Add a radio stream"
+        alert.informativeText = "The address of the stream, starting with http:// or https://"
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 360, height: 24))
+        field.placeholderString = "https://"
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Add")
+        alert.addButton(withTitle: "Cancel")
+        alert.window.initialFirstResponder = field
+        guard alert.runModal() == .alertFirstButtonReturn,
+            let url = URL(string: field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)),
+            ["http", "https"].contains(url.scheme?.lowercased() ?? "")
+        else { return }
+        let wasEmpty = andamp_player_count(controller.player) == 0
+        if controller.add(files: [url]) > 0, wasEmpty { andamp_player_play_index(controller.player, 0) }
+        controller.pump(force: true)
     }
 
     @objc private func openFiles() { pickSongs().map(controller.play(files:)) }
