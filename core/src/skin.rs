@@ -19,7 +19,7 @@ use walkit::host::{Clock, SkinSetup, WindowId};
 use walkit::player::Player;
 use walkit::SkinRuntime;
 
-use crate::host::{Assets, Host};
+use crate::host::{Assets, Desk, Host, HostAction, MenuHandler};
 use crate::render::{draw_window, Canvas, ShapeCache};
 
 /// The largest file read out of an archive, and the most read in all.
@@ -67,6 +67,7 @@ pub struct Skin {
     /// The windows, bottom to top.
     windows: Vec<Window>,
     stats: Stats,
+    desk: Rc<Desk>,
     /// The app's player, when the skin shows it: asked to move on before every step.
     pub player: Option<Rc<RefCell<crate::player::Player>>>,
 }
@@ -109,9 +110,11 @@ impl Skin {
         };
         let assets = Rc::new(RefCell::new(Assets::new(layered())));
         let redraw = Rc::new(Cell::new(true));
+        let desk = Rc::new(Desk::default());
         let host = Host {
             assets: assets.clone(),
             redraw: redraw.clone(),
+            desk: desk.clone(),
         };
         let start = Instant::now();
         let clock: Clock = Rc::new(move || start.elapsed().as_millis() as i64);
@@ -126,6 +129,8 @@ impl Skin {
             player(clock.clone()),
             SkinSetup {
                 skin_name: name,
+                // the app answers close, minimize, the menus and the clutter bar
+                host_actions: true,
                 ..SkinSetup::default()
             },
             clock,
@@ -153,6 +158,7 @@ impl Skin {
             redraw,
             windows: Vec::new(),
             stats: Stats::default(),
+            desk,
             player: None,
         })
     }
@@ -274,6 +280,24 @@ impl Skin {
             Some(at) => (at - self.runtime.now()).max(0),
             None => -1,
         }
+    }
+
+    /// What the skin's buttons asked of the app since the last call.
+    pub fn take_actions(&mut self) -> Vec<HostAction> {
+        std::mem::take(&mut *self.desk.actions.borrow_mut())
+    }
+
+    /// Tells the skin whether one of the app's switches is on ("doublesize", "ontop"), so the
+    /// button for it lights up.
+    pub fn set_switch(&mut self, name: &str, on: bool) {
+        self.desk.switches.borrow_mut().insert(name.to_string(), on);
+        self.runtime.invalidate();
+        self.redraw.set(true);
+    }
+
+    /// Sets how a skin's popup menu is shown.
+    pub fn set_menu_handler(&mut self, handler: Option<MenuHandler>) {
+        *self.desk.menu.borrow_mut() = handler;
     }
 
     /// What drawing has cost so far.

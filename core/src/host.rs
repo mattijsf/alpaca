@@ -13,7 +13,7 @@ use std::rc::Rc;
 use walkit::draw::{FontDef, Gamma};
 use walkit::files::SkinFiles;
 use walkit::gdi::FontFace;
-use walkit::host::SkinHost;
+use walkit::host::{ActionFrom, MenuItem, SkinHost, SkinMenu};
 use walkit::truetype::{em, Font, Style};
 
 /// The font for text that names none, and the one a missing font falls back to: the stand-in
@@ -198,11 +198,73 @@ fn decode(bytes: &[u8]) -> Option<Picture> {
     })
 }
 
+/// Something a button of the skin asks of the app, as Winamp answered it outside the skin:
+/// `CLOSE`, `MINIMIZE`, `DOUBLESIZE`, `MENU` and the like.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HostAction {
+    /// The action, uppercase.
+    pub name: String,
+    /// Its param or window name.
+    pub param: Option<String>,
+    /// Where on the viewport a menu for it opens: under the thing that sent it.
+    pub at: Option<(i32, i32)>,
+}
+
+/// Shows a menu, given as text ([`menu_text`]), and gives the id the listener picked, 0 for none.
+pub type MenuHandler = Box<dyn Fn(&str) -> i32>;
+
+/// What the app and the host share besides pictures: what the skin asked for, the app's
+/// switches the skin shows, and how a menu is shown.
+#[derive(Default)]
+pub struct Desk {
+    /// Actions not yet taken by the app.
+    pub actions: RefCell<Vec<HostAction>>,
+    /// The app's switches a skin's buttons light up for: "doublesize", "ontop" and the like.
+    pub switches: RefCell<HashMap<String, bool>>,
+    /// Shows a skin's popup menu.
+    pub menu: RefCell<Option<MenuHandler>>,
+}
+
+/// A menu as lines of text, for the app to build its own from: `C`, the id, 1 when checked, 1
+/// when disabled and the text, with tabs between, for a command; `S` for a separator; `>` and
+/// the text where a submenu starts and `<` where it ends.
+pub fn menu_text(menu: &SkinMenu) -> String {
+    fn walk(menu: &SkinMenu, out: &mut String) {
+        for item in &menu.items {
+            match item {
+                MenuItem::Command {
+                    id,
+                    text,
+                    checked,
+                    disabled,
+                } => {
+                    let text = text.replace(['\t', '\n'], " ");
+                    out.push_str(&format!(
+                        "C\t{id}\t{}\t{}\t{text}\n",
+                        u8::from(*checked),
+                        u8::from(*disabled)
+                    ));
+                }
+                MenuItem::Separator => out.push_str("S\n"),
+                MenuItem::Submenu { text, menu } => {
+                    out.push_str(&format!(">\t{}\n", text.replace(['\t', '\n'], " ")));
+                    walk(menu, out);
+                    out.push_str("<\n");
+                }
+            }
+        }
+    }
+    let mut out = String::new();
+    walk(menu, &mut out);
+    out
+}
+
 /// What the engine asks of the app. It shares [`Assets`] with the renderer, and raises
 /// `redraw` when the engine asks for a frame.
 pub struct Host {
     pub assets: Rc<RefCell<Assets>>,
     pub redraw: Rc<Cell<bool>>,
+    pub desk: Rc<Desk>,
 }
 
 impl Host {
@@ -305,6 +367,26 @@ impl SkinHost for Host {
     }
 
     fn invalidate(&mut self) {
+        self.redraw.set(true);
+    }
+
+    fn window_open(&mut self, kind: &str) -> Option<bool> {
+        self.desk.switches.borrow().get(kind).copied()
+    }
+
+    fn choose_from_menu(&mut self, menu: &SkinMenu) -> Option<i32> {
+        match &*self.desk.menu.borrow() {
+            Some(show) => Some(show(&menu_text(menu))),
+            None => Some(0),
+        }
+    }
+
+    fn host_action(&mut self, action: &str, param: Option<&str>, from: Option<ActionFrom>) {
+        self.desk.actions.borrow_mut().push(HostAction {
+            name: action.to_string(),
+            param: param.map(str::to_string),
+            at: from.map(|f| (f.rect.left, f.rect.bottom())),
+        });
         self.redraw.set(true);
     }
 }

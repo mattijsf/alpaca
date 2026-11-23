@@ -15,7 +15,7 @@ pub mod render;
 pub mod skin;
 
 use std::cell::RefCell;
-use std::ffi::{c_char, CStr, CString};
+use std::ffi::{c_char, c_void, CStr, CString};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::path::Path;
 use std::rc::Rc;
@@ -352,6 +352,70 @@ pub unsafe extern "C" fn andamp_skin_right_click(skin: *mut AndampSkin, touch: i
     with_skin(skin, (), |s| s.runtime.right_click(touch));
 }
 
+/// What the skin's buttons asked of the app since the last call, or null for nothing: one line
+/// for each, the action (`CLOSE`, `MINIMIZE`, `DOUBLESIZE`, `ALWAYS_ON_TOP`, `MENU` and the
+/// like), its param, and the place on the viewport a menu for it opens at as `x` and `y`, with
+/// tabs between; an action from nothing on screen has no place. Free it with
+/// [`andamp_string_free`].
+///
+/// # Safety
+/// `skin` is null or a live skin.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_skin_take_actions(skin: *mut AndampSkin) -> *mut c_char {
+    let actions = with_skin(skin, Vec::new(), Skin::take_actions);
+    if actions.is_empty() {
+        return std::ptr::null_mut();
+    }
+    let text: String = actions
+        .iter()
+        .map(|a| {
+            let at = a.at.map(|(x, y)| format!("{x}\t{y}")).unwrap_or_default();
+            let param = a.param.as_deref().unwrap_or("").replace(['\t', '\n'], " ");
+            format!("{}\t{param}\t{at}\n", a.name)
+        })
+        .collect();
+    CString::new(text).unwrap_or_default().into_raw()
+}
+
+/// Tells the skin whether one of the app's switches is on, so its button lights up:
+/// "doublesize" and "ontop" for a classic skin's clutter bar.
+///
+/// # Safety
+/// `skin` is null or a live skin; `name` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_skin_set_switch(skin: *mut AndampSkin, name: *const c_char, on: bool) {
+    let name = string(name);
+    with_skin(skin, (), |s| s.set_switch(&name, on));
+}
+
+/// Shows a skin's popup menu: `menu` is its items as lines of text (`C`, the id, 1 when
+/// checked, 1 when disabled and the text, with tabs between, for a command; `S` for a
+/// separator; `>` and the text where a submenu starts, `<` where it ends). It gives the id of
+/// the command picked, or 0. It is called from inside a mouse call, and must not call the skin.
+pub type AndampMenuHandler = unsafe extern "C" fn(context: *mut c_void, menu: *const c_char) -> i32;
+
+/// Sets how the skin's popup menus are shown; `context` is handed back to `handler`.
+///
+/// # Safety
+/// `skin` is null or a live skin; `handler` stays callable, with `context`, for as long as the
+/// skin lives.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_skin_set_menu_handler(
+    skin: *mut AndampSkin,
+    handler: Option<AndampMenuHandler>,
+    context: *mut c_void,
+) {
+    with_skin(skin, (), |s| {
+        s.set_menu_handler(handler.map(|show| -> host::MenuHandler {
+            Box::new(move |menu: &str| {
+                let text = CString::new(menu.replace('\0', " ")).unwrap_or_default();
+                // SAFETY: the caller promised the handler and its context for the skin's life
+                unsafe { show(context, text.as_ptr()) }
+            })
+        }));
+    });
+}
+
 /// Runs `f` on the player at `player`; a panic gives `fallback`.
 unsafe fn with_player<T>(
     player: *mut AndampPlayer,
@@ -461,6 +525,27 @@ pub unsafe extern "C" fn andamp_player_command(player: *mut AndampPlayer, comman
 #[no_mangle]
 pub unsafe extern "C" fn andamp_player_set_volume(player: *mut AndampPlayer, volume: i32) {
     with_player(player, (), |p| p.set_volume(volume));
+}
+
+/// The volume, 0..255.
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_volume(player: *mut AndampPlayer) -> i32 {
+    with_player(player, 0, |p| p.volume())
+}
+
+/// Moves the song by `ms` milliseconds, back for a negative number.
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_seek_by(player: *mut AndampPlayer, ms: i32) {
+    with_player(player, (), |p| {
+        let to = p.position_ms().saturating_add(ms);
+        p.seek_to(to);
+    });
 }
 
 /// What the player asked the app for since the last call: bit 1, to let the listener pick

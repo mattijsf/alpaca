@@ -86,6 +86,26 @@ void andamp_skin_double_click(AndampSkin *skin, int32_t x, int32_t y, int32_t to
 /// A right click on what press `touch` landed on.
 void andamp_skin_right_click(AndampSkin *skin, int32_t touch);
 
+/// What the skin's buttons asked of the app since the last call, or null for nothing: one line
+/// for each, the action (CLOSE, MINIMIZE, DOUBLESIZE, ALWAYS_ON_TOP, MENU and the like), its
+/// param, and the place on the viewport a menu for it opens at as x and y, with tabs between;
+/// an action from nothing on screen has no place. Free it with andamp_string_free.
+char *andamp_skin_take_actions(AndampSkin *skin);
+
+/// Tells the skin whether one of the app's switches is on, so its button lights up:
+/// "doublesize" and "ontop" for a classic skin's clutter bar.
+void andamp_skin_set_switch(AndampSkin *skin, const char *name, bool on);
+
+/// Shows a skin's popup menu: `menu` is its items as lines of text (C, the id, 1 when checked,
+/// 1 when disabled and the text, with tabs between, for a command; S for a separator; > and
+/// the text where a submenu starts, < where it ends). It gives the id of the command picked,
+/// or 0. It is called from inside a mouse call, and must not call the skin.
+typedef int32_t (*AndampMenuHandler)(void *context, const char *menu);
+
+/// Sets how the skin's popup menus are shown; `context` is handed back to `handler`. Both
+/// stay valid for as long as the skin lives.
+void andamp_skin_set_menu_handler(AndampSkin *skin, AndampMenuHandler handler, void *context);
+
 /// Makes the app's player. Free it with andamp_player_free, after every skin opened with it.
 AndampPlayer *andamp_player_new(void);
 
@@ -115,6 +135,12 @@ void andamp_player_command(AndampPlayer *player, int32_t command);
 
 /// Sets the volume, 0..255.
 void andamp_player_set_volume(AndampPlayer *player, int32_t volume);
+
+/// The volume, 0..255.
+int32_t andamp_player_volume(AndampPlayer *player);
+
+/// Moves the song by `ms` milliseconds, back for a negative number.
+void andamp_player_seek_by(AndampPlayer *player, int32_t ms);
 
 /// What the player asked the app for since the last call.
 /// ANDAMP_REQUEST_OPEN_FILES: let the listener pick files to play.

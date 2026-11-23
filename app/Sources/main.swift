@@ -8,6 +8,8 @@ import UniformTypeIdentifiers
 ///
 /// ```
 /// Andamp [skin.wsz|skin.wal] [song ...] [--modern] [--zoom n] [--volume 0..255]
+///        [--click x,y]         clicks there on the screen, in layout pixels from its top left
+///                              corner, a second after the start; may be given more than once
 ///        [--dump <folder>]     writes every window as a PNG after two seconds, and quits
 ///        [--bench <seconds>]   prints what that many seconds cost, and quits
 ///
@@ -25,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         var zoom = 1
         var dump: URL?
         var bench: Double?
+        var clicks: [(Int32, Int32)] = []
 
         init() {
             var args = CommandLine.arguments.dropFirst()
@@ -34,6 +37,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 case "--zoom": zoom = args.popFirst().flatMap { Int($0) } ?? 1
                 case "--volume": volume = args.popFirst().flatMap { Int($0) }
                 case "--dump": dump = args.popFirst().map { URL(fileURLWithPath: $0) }
+                case "--click":
+                    let at = (args.popFirst() ?? "").split(separator: ",").compactMap { Int32($0) }
+                    if at.count == 2 { clicks.append((at[0], at[1])) }
                 case "--bench": bench = args.popFirst().flatMap { Double($0) }
                 // the arguments Xcode and macOS add, such as -NSDocumentRevisionsDebugMode YES
                 case _ where arg.hasPrefix("-") && !arg.hasPrefix("--"): args = args.dropFirst()
@@ -67,10 +73,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = makeMenu()
         controller.onOpenFiles = { [weak self] in self?.openFiles() }
+        controller.onMenu = { [weak self] at in self?.popUpMenu(at: at) }
+        controller.onDrop = { [weak self] files in self?.dropped(files) }
         if let volume = options.volume { controller.setVolume(volume) }
         if let skin = options.skin ?? builtin(modern: options.modern) { open(skin) }
         if !options.songs.isEmpty { controller.play(files: options.songs) }
         NSApp.activate(ignoringOtherApps: true)
+        for (n, at) in options.clicks.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1 + Double(n) * 0.2) {
+                self.controller.click(x: at.0, y: at.1)
+            }
+        }
         if let folder = options.dump {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.dump(to: folder) }
         }
@@ -87,6 +100,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             NSAlert(error: error).runModal()
         }
+    }
+
+    /// Files dropped on a window: a skin is worn, songs are played.
+    private func dropped(_ files: [URL]) {
+        if let skin = files.first(where: { Self.skinTypes.contains($0.pathExtension.lowercased()) }) {
+            open(skin)
+        }
+        let songs = files.filter { !Self.skinTypes.contains($0.pathExtension.lowercased()) }
+        if !songs.isEmpty { controller.play(files: songs) }
+    }
+
+    /// The app's menu as a popup, for the skin's menu button: what the menu bar has, in one list.
+    private func popUpMenu(at point: NSPoint) {
+        let menu = NSMenu()
+        func item(_ title: String, _ action: Selector, on: Bool = false) {
+            let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+            item.target = action == #selector(NSApplication.terminate(_:)) ? NSApp : self
+            item.state = on ? .on : .off
+            menu.addItem(item)
+        }
+        item("Open Files…", #selector(openFiles))
+        item("Add Files…", #selector(addFiles))
+        menu.addItem(.separator())
+        item("Open Skin…", #selector(openSkin))
+        item("Classic Skin", #selector(showClassic))
+        item("Modern Skin", #selector(showModern))
+        menu.addItem(.separator())
+        item("Double Size", #selector(toggleDoubleSize), on: controller.zoom > 1)
+        item("Always on Top", #selector(toggleOnTop), on: controller.onTop)
+        menu.addItem(.separator())
+        item("Quit Andamp", #selector(NSApplication.terminate(_:)))
+        menu.popUp(positioning: nil, at: point, in: nil)
     }
 
     // MARK: menus
@@ -125,7 +170,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             item("Classic", #selector(showClassic)),
             item("Modern", #selector(showModern)),
         ])
-        add("View", [item("Double Size", #selector(toggleDoubleSize), "d")])
+        add("View", [
+            item("Double Size", #selector(toggleDoubleSize), "d"),
+            item("Always on Top", #selector(toggleOnTop), "a"),
+        ])
         return main
     }
 
@@ -157,6 +205,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func showClassic() { builtin(modern: false).map(open) }
     @objc private func showModern() { builtin(modern: true).map(open) }
     @objc private func toggleDoubleSize() { controller.setZoom(controller.zoom == 1 ? 2 : 1) }
+    @objc private func toggleOnTop() { controller.setOnTop(!controller.onTop) }
 
     // MARK: --dump and --bench
 

@@ -26,6 +26,8 @@ final class SkinWindow: NSWindow {
         isReleasedWhenClosed = false
         animationBehavior = .none
         contentView = surfaceView
+        // the keys go to the view
+        initialFirstResponder = surfaceView
     }
 
     // a window without a title bar takes the keyboard only when it says it can
@@ -63,6 +65,7 @@ final class SurfaceView: NSView {
         layer?.minificationFilter = .nearest
         // a change of pixels shows at once, with no fade
         layer?.actions = ["contents": NSNull(), "bounds": NSNull(), "position": NSNull()]
+        registerForDraggedTypes([.fileURL])
     }
 
     required init?(coder: NSCoder) { fatalError("not from a nib") }
@@ -131,4 +134,28 @@ final class SurfaceView: NSView {
     override func mouseDragged(with event: NSEvent) { controller.mouseDragged(event) }
     override func mouseUp(with event: NSEvent) { controller.mouseUp(event) }
     override func rightMouseDown(with event: NSEvent) { controller.rightMouseDown(event) }
+
+    override var acceptsFirstResponder: Bool { true }
+
+    override func keyDown(with event: NSEvent) {
+        if !controller.keyDown(event) { super.keyDown(with: event) }
+    }
+
+    // files dropped on a window: songs to play, or a skin to wear
+
+    private func files(_ sender: NSDraggingInfo) -> [URL] {
+        let options: [NSPasteboard.ReadingOptionKey: Any] = [.urlReadingFileURLsOnly: true]
+        return sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: options) as? [URL] ?? []
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        files(sender).isEmpty ? [] : .copy
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        let dropped = files(sender)
+        guard !dropped.isEmpty else { return false }
+        controller.onDrop?(dropped)
+        return true
+    }
 }

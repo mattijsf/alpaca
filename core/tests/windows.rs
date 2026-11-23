@@ -122,3 +122,21 @@ fn a_drag_on_the_title_bar_moves_the_main_window_and_what_is_docked_to_it() {
     assert!(drawn_again <= 6, "moving does not draw every step: {drawn_again}");
     let _ = MOVED;
 }
+
+#[test]
+fn the_title_bar_buttons_and_the_clutter_bar_ask_the_app() {
+    let mut skin = open("walkit-classic.wsz", false);
+    skin.step();
+    let main = skin.runtime.main_window().expect("a main window");
+    let click = |skin: &mut Skin, x: i32, y: i32, touch: i32| {
+        skin.runtime.pointer_down_in(main, x, y, touch);
+        skin.runtime.pointer_up_in(main, x, y);
+        skin.step();
+        skin.take_actions().into_iter().map(|a| a.name).collect::<Vec<_>>()
+    };
+    // Winamp's places: close at 264,3, minimize at 244,3, the D of the clutter bar at 10,49
+    assert_eq!(click(&mut skin, 268, 7, 1), ["CLOSE"]);
+    assert_eq!(click(&mut skin, 248, 7, 2), ["MINIMIZE"]);
+    assert_eq!(click(&mut skin, 13, 52, 3), ["DOUBLESIZE"]);
+    assert!(skin.take_actions().is_empty(), "an action is handed over once");
+}
