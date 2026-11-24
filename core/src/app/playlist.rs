@@ -134,6 +134,22 @@ impl App {
         true
     }
 
+    /// Brings the current song into view in a classic playlist when another song became
+    /// current: the list follows what plays, as Winamp's does. The listener's own scrolling
+    /// in between stays as it is.
+    pub(super) fn follow_the_song(&mut self) {
+        let current = {
+            let player = self.player.borrow();
+            (!player.entries().is_empty()).then(|| player.index())
+        };
+        if current != self.followed {
+            self.followed = current;
+            if let Some(row) = current {
+                self.show_row(row);
+            }
+        }
+    }
+
     /// Rows a classic playlist's window surely shows: one at least.
     fn rows_in_view(&mut self) -> i32 {
         let height = self.list_window().and_then(|id| {

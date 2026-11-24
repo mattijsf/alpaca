@@ -125,6 +125,9 @@ impl App {
         }
         self.skin = Some(Box::new(skin));
         self.worn = Some(file.to_path_buf());
+        // the new skin's list starts at its top, and is brought to the current song again
+        self.list_top = 0;
+        self.followed = None;
         self.give_menu_handler();
         self.tell_switches();
         self.apply_switches();
@@ -214,6 +217,7 @@ impl App {
         if self.playlist_due == 2 {
             self.playlist_due = 1;
         }
+        self.follow_the_song();
         if self.player.borrow_mut().take_requests() & REQUEST_OPEN_FILES != 0 {
             self.request(Request::Ask(Ask::OpenSongs));
         }

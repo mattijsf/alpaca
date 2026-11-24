@@ -88,6 +88,8 @@ pub struct App {
     wheel_volume: f32,
     /// The first row a classic playlist shows, as far as the app has counted its scrolling.
     list_top: i32,
+    /// The song that was current when the playlist was last brought to it.
+    followed: Option<usize>,
 }
 
 impl App {
@@ -151,6 +153,7 @@ impl App {
             wheel_rows: 0.0,
             wheel_volume: 0.0,
             list_top: 0,
+            followed: None,
             settings,
             options,
         };

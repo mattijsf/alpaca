@@ -667,6 +667,63 @@ fn the_wheel_scrolls_the_playlist_under_it_and_turns_the_volume_elsewhere() {
 }
 
 #[test]
+fn the_playlist_follows_the_song_that_plays() {
+    let dir = scratch("follow");
+    let mut app = start("", &dir);
+    let one = song(&dir, "a.wav");
+    app.picked(Ask::AddSongs, &vec![one; 30]);
+    app.wear(&resources().join("skins/walkit-classic.wsz"));
+    app.step();
+    let list = {
+        let skin = app.skin().unwrap();
+        let id = skin.runtime.window_of("pledit").expect("a playlist window");
+        skin.runtime.window_rect(id)
+    };
+    // the row under a press near the list's top says how far it scrolled
+    let first_row = |app: &mut App| {
+        let skin = app.skin().unwrap();
+        skin.runtime.pointer_down(list.left + 60, list.top + 26, 1);
+        skin.runtime.pointer_up(list.left + 60, list.top + 26);
+        app.step();
+        app.selection()[0]
+    };
+    assert_eq!(first_row(&mut app), 0);
+    // the song after the next, and so on: past what the window shows the list comes along
+    for _ in 0..14 {
+        app.command(command::NEXT);
+        app.step();
+    }
+    app.command(command::STOP);
+    assert_eq!(app.player.borrow().index(), 14);
+    let top = first_row(&mut app);
+    assert!(
+        (12..=14).contains(&top),
+        "song 14 is in view: the first row is {top}"
+    );
+    // the listener scrolls away, and the list stays there while the same song is current
+    app.wheel((list.left + 60, list.top + 40), 50.0, false);
+    app.step();
+    app.step();
+    assert_eq!(first_row(&mut app), 0);
+    // another song, and the list is back with it; another skin, and its list is too
+    app.player.borrow_mut().select(20);
+    app.step();
+    let top = first_row(&mut app);
+    assert!(
+        (18..=20).contains(&top),
+        "song 20 is in view: the first row is {top}"
+    );
+    app.wear(&resources().join("skins/AndAmp Dark.wsz"));
+    app.step();
+    app.step();
+    let top = first_row(&mut app);
+    assert!(
+        (18..=20).contains(&top),
+        "the new skin's list is at song 20 too: the first row is {top}"
+    );
+}
+
+#[test]
 fn the_arrow_keys_move_the_selection_in_the_playlists_window() {
     let dir = scratch("arrows");
     let mut app = start("", &dir);

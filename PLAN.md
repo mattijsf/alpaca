@@ -174,7 +174,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   removes the selected entries and return plays the first; in the playlist's window the
   arrows, page up and down, home and end move the selection, and the list follows it. The
   wheel and the trackpad scroll a classic playlist under them and turn the volume over the
-  volume slider, and do nothing elsewhere. Command-` goes through the app's windows.
+  volume slider, and do nothing elsewhere. Command-` goes through the app's windows. A classic playlist follows the
+  song that plays: when another song becomes current the list brings it into view.
 - [ ] The Mac's shell does not yet tell the app when the screen changes
   (`andamp_app_set_screen`): the windows keep the screen of the start.
 - [ ] A shell for Windows: not started. PORTING.md has what is known.
