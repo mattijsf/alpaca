@@ -19,7 +19,18 @@ use walkit::truetype::{em, Font, Style};
 /// The font for text that names none, and the one a missing font falls back to: the stand-in
 /// for Arial, read from the skin's files, else a font of the system.
 const DEFAULT_FONT: &str = "fonts/LiberationSans.ttf";
-const SYSTEM_FONT: &str = "/System/Library/Fonts/Helvetica.ttc";
+/// Fonts of the system to fall back to when the app brought none, the first that is there.
+#[cfg(target_os = "macos")]
+const SYSTEM_FONTS: &[&str] = &["/System/Library/Fonts/Helvetica.ttc"];
+#[cfg(target_os = "windows")]
+const SYSTEM_FONTS: &[&str] = &["C:\\Windows\\Fonts\\arial.ttf", "C:\\Windows\\Fonts\\segoeui.ttf"];
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+const SYSTEM_FONTS: &[&str] = &[
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    "/usr/share/fonts/liberation-sans/LiberationSans-Regular.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/TTF/DejaVuSans.ttf",
+];
 
 /// Its bold cut.
 const DEFAULT_BOLD_FONT: &str = "fonts/LiberationSans-Bold.ttf";
@@ -153,7 +164,7 @@ impl Assets {
         };
         let font = self
             .skin_font(file)
-            .or_else(|| self.system_font(SYSTEM_FONT))?;
+            .or_else(|| SYSTEM_FONTS.iter().find_map(|path| self.system_font(path)))?;
         Some(TextFace {
             font,
             fake_bold: false,

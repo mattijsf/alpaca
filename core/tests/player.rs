@@ -308,3 +308,39 @@ fn a_radio_stream_plays_and_says_what_it_is() {
     player.play();
     wait(&mut player, |p| p.status() == Status::Stopped);
 }
+
+#[test]
+fn a_song_at_one_rate_keeps_its_pitch_and_its_time_on_a_device_at_another() {
+    use andamp_core::player::device::resample::Resampler;
+    // a 1 kHz tone at 44.1 kHz, asked for by a device at 48 kHz in blocks of 512 frames
+    let mut resampler = Resampler::new(44_100, 48_000);
+    let mut source_frame = 0u64;
+    let mut fill = |block: &mut [f32]| {
+        for frame in block.chunks_exact_mut(2) {
+            let v = (2.0 * PI * 1000.0 * source_frame as f32 / 44_100.0).sin();
+            frame[0] = v;
+            frame[1] = -v;
+            source_frame += 1;
+        }
+    };
+    let mut out = Vec::new();
+    for _ in 0..94 {
+        let mut block = vec![0f32; 1024];
+        resampler.run(&mut block, &mut fill);
+        out.extend(block);
+    }
+    let frames = out.len() / 2;
+    // a second of the device's time took a second of the song's, give or take a block
+    let taken = source_frame as f64 / 44_100.0;
+    let played = frames as f64 / 48_000.0;
+    assert!((taken - played).abs() < 0.02, "took {taken} s of song for {played} s of output");
+    // the tone is still at 1 kHz: it crosses zero going up a thousand times a second
+    let left: Vec<f32> = out.chunks_exact(2).map(|f| f[0]).collect();
+    let crossings = left.windows(2).filter(|w| w[0] < 0.0 && w[1] >= 0.0).count();
+    let hz = crossings as f64 / played;
+    assert!((hz - 1000.0).abs() < 3.0, "{hz} Hz");
+    // and the sides stay their own
+    assert!(out.chunks_exact(2).skip(8).all(|f| (f[0] + f[1]).abs() < 1e-5));
+    let loudest = left.iter().fold(0f32, |m, v| m.max(v.abs()));
+    assert!((0.95..=1.0).contains(&loudest), "{loudest}");
+}

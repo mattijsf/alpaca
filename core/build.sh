@@ -21,7 +21,8 @@ for arch in ${ARCHS:-$(uname -m)}; do
         x86_64) target=x86_64-apple-darwin ;;
         *) echo "build.sh: no Rust target for $arch" >&2; exit 1 ;;
     esac
-    cargo build --release --target "$target"
+    # ANDAMP_CORE_FEATURES names cargo features to build with, such as portable-output
+    cargo build --release --target "$target" ${ANDAMP_CORE_FEATURES:+--features "$ANDAMP_CORE_FEATURES"}
     libs="$libs target/$target/release/libandamp_core.a"
 done
 

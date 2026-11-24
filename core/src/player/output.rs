@@ -1,21 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The way out: the Mac's default output unit, fed from the decoder's ring.
+//! The way out: the system's default audio device ([`device`](super::device)), fed from the
+//! decoder's ring.
 //!
-//! The unit takes the song's own sample rate and converts it for the device. Its callback
-//! runs on the audio thread: it takes no lock and allocates nothing. What the rest of the
+//! The device asks for blocks of stereo samples at the song's own sample rate. What fills
+//! them runs on the audio thread: it takes no lock and allocates nothing. What the rest of the
 //! player sets (volume, balance, the equalizer) and reads (the last samples, the levels)
 //! crosses in atomics ([`Shared`]); a new stretch of audio crosses in a small ring of its own.
+//! Nothing in this file knows which system it runs on.
 
 use std::f32::consts::PI;
 use std::sync::atomic::{AtomicBool, AtomicI32, AtomicU32, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 
-use coreaudio::audio_unit::audio_format::LinearPcmFlags;
-use coreaudio::audio_unit::render_callback::{self, data};
-use coreaudio::audio_unit::{AudioUnit, Element, IOType, SampleFormat, Scope, StreamFormat};
-
 use super::decode::Stream;
+use super::device::Device;
 use crate::dsp::rack::RackVoice;
 
 /// The equalizer's bands, as Winamp has them, in Hz.
@@ -26,10 +25,6 @@ pub const EQ_BANDS: [f32; 10] = [
 const EQ_RANGE_DB: f32 = 12.0;
 /// How wide a band is.
 const EQ_Q: f32 = 1.2;
-/// `kAudioDevicePropertyBufferFrameSize`: how many frames the device asks for at a time.
-const DEVICE_BUFFER_FRAME_SIZE: u32 = 0x6673_697a;
-/// How many frames the output asks for at a time.
-const BLOCK_FRAMES: u32 = 2048;
 /// How many of the last samples the visualizer can read.
 pub const TAP_SAMPLES: usize = 2048;
 
@@ -343,12 +338,12 @@ impl Voice {
     }
 }
 
-/// The output unit, set to one sample rate.
+/// The output: the device, set to one sample rate, and the rings to its audio thread.
 pub struct Output {
-    unit: AudioUnit,
+    device: Device,
     sources: rtrb::Producer<Source>,
     replaced: rtrb::Consumer<Source>,
-    /// The sample rate the unit takes.
+    /// The sample rate the device is asked for.
     pub sample_rate: u32,
     running: bool,
 }
@@ -356,25 +351,6 @@ pub struct Output {
 impl Output {
     /// Opens the default output for stereo float at `sample_rate`, with `rack` as its effects.
     pub fn new(sample_rate: u32, shared: Arc<Shared>, rack: RackVoice) -> Result<Output, String> {
-        let error = |e: coreaudio::Error| format!("the audio output did not open: {e}");
-        let mut unit = AudioUnit::new(IOType::DefaultOutput).map_err(error)?;
-        unit.uninitialize().map_err(error)?;
-        let format = StreamFormat {
-            sample_rate: f64::from(sample_rate),
-            sample_format: SampleFormat::F32,
-            flags: LinearPcmFlags::IS_FLOAT | LinearPcmFlags::IS_PACKED,
-            channels: 2,
-        };
-        unit.set_stream_format(format, Scope::Input, Element::Output)
-            .map_err(error)?;
-        // a block of 2048 frames wakes the audio thread about 22 times a second, where the
-        // default of 512 wakes it 86 times; a volume change is heard 46 ms later at most
-        let _ = unit.set_property(
-            DEVICE_BUFFER_FRAME_SIZE,
-            Scope::Global,
-            Element::Output,
-            Some(&BLOCK_FRAMES),
-        );
         let (sources, incoming) = rtrb::RingBuffer::new(8);
         let (done, replaced) = rtrb::RingBuffer::new(8);
         let mut voice = Voice {
@@ -386,15 +362,10 @@ impl Output {
             rack,
             tap_at: 0,
         };
-        type Args = render_callback::Args<data::Interleaved<f32>>;
-        unit.set_render_callback(move |args: Args| {
-            voice.render(args.data.buffer);
-            Ok(())
-        })
-        .map_err(error)?;
-        unit.initialize().map_err(error)?;
+        let device = Device::open(sample_rate, Box::new(move |out: &mut [f32]| voice.render(out)))
+            .map_err(|e| format!("the audio output did not open: {e}"))?;
         Ok(Output {
-            unit,
+            device,
             sources,
             replaced,
             sample_rate,
@@ -405,7 +376,7 @@ impl Output {
     /// Hands the output a new stretch of audio, in place of the one it plays.
     pub fn play(&mut self, source: Source) {
         self.collect();
-        // full only when the unit does not run and many seeks piled up: the newest wins later
+        // full only when the device does not run and many seeks piled up: the newest wins later
         let _ = self.sources.push(source);
     }
 
@@ -414,17 +385,17 @@ impl Output {
         while self.replaced.pop().is_ok() {}
     }
 
-    /// Starts the unit; its callback runs from now on.
+    /// Starts the device; its callback runs from now on.
     pub fn start(&mut self) {
         if !self.running {
-            self.running = self.unit.start().is_ok();
+            self.running = self.device.start();
         }
     }
 
-    /// Stops the unit: no callback, no wakeups.
+    /// Stops the device: no callback, no wakeups.
     pub fn stop(&mut self) {
         if self.running {
-            let _ = self.unit.stop();
+            self.device.stop();
             self.running = false;
         }
     }

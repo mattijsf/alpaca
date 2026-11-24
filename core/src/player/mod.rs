@@ -9,6 +9,7 @@
 //! while a song plays.
 
 pub mod decode;
+pub mod device;
 pub mod output;
 
 use std::cell::RefCell;
