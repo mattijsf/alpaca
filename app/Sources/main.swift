@@ -22,6 +22,7 @@ import UniformTypeIdentifiers
 ///                              the menu's Quit does
 ///        [--dump <folder>]     writes every window as a PNG after two seconds, and quits
 ///        [--bench <seconds>]   prints what that many seconds cost, and quits
+///        [--then-skin <file>]  wears that skin a second after the start, as the Skins menu does
 ///        [--hidden]            hides the app once it is up, as the Hide command does
 ///
 /// Songs named on the command line play at once.
@@ -56,6 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         var bench: Double?
         var quitAfter: Double?
         var hidden = false
+        var thenSkin: URL?
         var clicks: [(Int32, Int32)] = []
 
         init() {
@@ -77,6 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     if at.count == 2 { clicks.append((at[0], at[1])) }
                 case "--bench": bench = args.popFirst().flatMap { Double($0) }
                 case "--hidden": hidden = true
+                case "--then-skin": thenSkin = args.popFirst().map { URL(fileURLWithPath: $0) }
                 case "--quit-after": quitAfter = args.popFirst().flatMap { Double($0) }
                 // the arguments Xcode and macOS add, such as -NSDocumentRevisionsDebugMode YES
                 case _ where arg.hasPrefix("-") && !arg.hasPrefix("--"): args = args.dropFirst()
@@ -167,6 +170,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.dump(to: folder) }
         }
         if let seconds = options.bench { bench(seconds) }
+        if let skin = options.thenSkin {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.open(skin) }
+        }
         if options.hidden { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { NSApp.hide(nil) } }
         if let seconds = options.quitAfter {
             DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {

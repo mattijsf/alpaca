@@ -60,6 +60,9 @@ pub const EQ_PRESETS: [(&str, i32, [i32; 10]); 17] = [
     ("Techno", 32, [44, 41, 32, 22, 23, 32, 44, 47, 47, 46]),
 ];
 
+/// The volume a player starts at, of 255.
+const FIRST_VOLUME: i32 = 200;
+
 /// A request the player cannot answer by itself: the app does.
 pub const REQUEST_OPEN_FILES: u32 = 1;
 
@@ -152,15 +155,18 @@ impl Default for Player {
 
 impl Player {
     pub fn new() -> Player {
+        let shared = Shared::new();
+        // not all the way up at the first start
+        shared.volume.set(FIRST_VOLUME as f32 / 255.0);
         Player {
-            shared: Shared::new(),
+            shared,
             output: None,
             playlist: Vec::new(),
             index: 0,
             status: Status::Stopped,
             playing: None,
             resume_ms: 0,
-            volume: 255,
+            volume: FIRST_VOLUME,
             pan: 0,
             shuffle: false,
             repeat: false,

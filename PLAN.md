@@ -161,6 +161,26 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 - [ ] 7. The App Store
 - [ ] 8. Music sources
 
+### What to do next, in this order
+
+1. Look at it. Everything above was checked by tests, by pictures the app wrote of its own
+   windows (`--dump`) and by measurements, with the sound turned down to nothing; nobody has
+   yet dragged a window, heard a song or watched Milkdrop move. The first hour with it will
+   find things.
+   - Does a click on a clear part of a shaped window (MMD3's corner) reach what is under it?
+   - Dragging, docking and snapping are the engine's, and tested through it; how they feel
+     on the desktop is not.
+   - The Effects and Visualizer windows are plain Mac windows.
+2. What the engine could offer, since the rest of the cost is its own: a tick that says what
+   changed without building the draw lists; the playlist as something that says when it
+   changed (it is asked for whole, several times a tick); the mouse wheel and hovering; a
+   skin's visualizer frame that the app can draw into.
+3. The effects' block runner, when an effect's cost matters.
+4. Milkdrop's cost, and its window as a skin's own.
+5. Step 7, the App Store: the sandbox (files by bookmark, the network for radio), signing,
+   an icon. The plug-in folder and the settings are already under the app's own names.
+6. AVS.
+
 What comes with the app: AndAmp Dark (the skin shown first, and the one under every classic
 skin), Light and Spot, from Andamp's own `skin/dist`; walkit's two example skins; Andamp's
 own element set under modern skins (`app/Resources/wasabi`, from Andamp's `defaultset`); the
