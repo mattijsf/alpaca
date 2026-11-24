@@ -171,9 +171,15 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 ### Known about the engine
 
 - With debug assertions on (`cargo test` without `--release`), walkit 0.10.4's own check
-  that a window drawn in parts equals the window drawn whole fails in two tests of
-  `tests/windows.rs`, with the classic example skin while a song plays. The release build has
-  no such check and its tests compare the pixels, which are equal. Not looked into from here.
+  that a window drawn in parts equals the window drawn whole stops two tests of
+  `tests/windows.rs`, one always and one now and then. The drawing is right; the check is
+  not. It paints the window a second time, a moment later, and the classic analyzer paints
+  its peaks one step lower the second time, a real clock may have moved on to the next frame,
+  and a visualizer's picture is made anew at every painting. A fix is written in the walkit
+  repository (branch `fix/classic-vis-painted-twice`, not released): with it all tests here
+  pass in debug, the window tests ten times out of ten. Until a release has it, the gate
+  tests in release. What stays: the check can still trip when the player's own time moves
+  between the two paintings, such as the second changing.
 - A window's new place (`place_window`) shows in `window_rect` after the next tick.
 
 ### What to do next, in this order
