@@ -47,6 +47,58 @@ pub mod command {
     pub const QUIT: i32 = 26;
     /// Take the app's windows out of sight.
     pub const HIDE: i32 = 27;
+    /// Show the Preferences window.
+    pub const PREFERENCES: i32 = 28;
+    /// Pick the next song at random, or not.
+    pub const SHUFFLE: i32 = 30;
+    /// Start the list over after its last song, or not.
+    pub const REPEAT: i32 = 31;
+    /// Show the time left of the song.
+    pub const TIME_REMAINING: i32 = 32;
+    /// Show the time played of the song.
+    pub const TIME_ELAPSED: i32 = 33;
+    /// Take the selected entries out of the playlist.
+    pub const REMOVE_SELECTED: i32 = 40;
+    /// Keep only the selected entries.
+    pub const CROP: i32 = 41;
+    /// Empty the playlist.
+    pub const CLEAR: i32 = 42;
+    /// Take out the entries whose file is gone.
+    pub const REMOVE_DEAD: i32 = 43;
+    /// Take out the entries that name a file an earlier entry names.
+    pub const REMOVE_DUPLICATES: i32 = 44;
+    /// Select every entry.
+    pub const SELECT_ALL: i32 = 45;
+    /// Select no entry.
+    pub const SELECT_NONE: i32 = 46;
+    /// Select what is not selected, and the other way round.
+    pub const SELECT_INVERT: i32 = 47;
+    /// Sort the playlist by title.
+    pub const SORT_TITLE: i32 = 48;
+    /// Sort the playlist by file name.
+    pub const SORT_FILENAME: i32 = 49;
+    /// Sort the playlist by path and file name.
+    pub const SORT_PATH: i32 = 50;
+    /// Turn the playlist round.
+    pub const REVERSE: i32 = 51;
+    /// Put the playlist in a random order.
+    pub const RANDOMIZE: i32 = 52;
+    /// Show what is known of a file: the first selected entry's, or the current song's.
+    pub const FILE_INFO: i32 = 53;
+    /// Let the listener say where to write the playlist as a web page.
+    pub const HTML_LIST: i32 = 54;
+    /// Read the selected files again: their tags and length as they are now.
+    pub const REREAD: i32 = 55;
+    /// Play the first selected entry.
+    pub const PLAY_SELECTED: i32 = 56;
+    /// Show the first selected entry's file in its folder.
+    pub const REVEAL: i32 = 57;
+    /// The classic visualizer as a spectrum analyzer.
+    pub const VIS_ANALYZER: i32 = 60;
+    /// The classic visualizer as an oscilloscope.
+    pub const VIS_SCOPE: i32 = 61;
+    /// The classic visualizer off.
+    pub const VIS_OFF: i32 = 62;
     /// Opacity 100 %, and one more for every 10 % less, down to 40 %.
     pub const OPACITY: i32 = 100;
     /// The first skin that comes with the app, and one more for each after it, by name.
@@ -64,14 +116,52 @@ pub enum Menu {
     Popup = 1,
     /// The equalizer's factory presets, for the equalizer window's Presets button.
     Equalizer = 2,
+    /// The options: preferences, skins, the time shown, the size, shuffle and repeat.
+    Options = 3,
+    /// What the visualizer shows.
+    Visualization = 4,
+    /// A playlist's Add button.
+    PlaylistAdd = 5,
+    /// A playlist's Remove button.
+    PlaylistRemove = 6,
+    /// A playlist's Select button.
+    PlaylistSelect = 7,
+    /// A playlist's Misc button.
+    PlaylistMisc = 8,
+    /// A playlist's List button.
+    PlaylistList = 9,
+    /// A right click on a row of the playlist.
+    PlaylistRow = 10,
+    /// The ways to sort the playlist.
+    Sort = 11,
+    /// The playlist's less common removals: dead files and duplicates.
+    RemoveMisc = 12,
+    /// The playlist's other options: as a web page, and reading files again.
+    MiscOptions = 13,
 }
 
 impl Menu {
+    /// Every menu, in the order of their numbers.
+    pub const ALL: [Menu; 14] = [
+        Menu::Bar,
+        Menu::Popup,
+        Menu::Equalizer,
+        Menu::Options,
+        Menu::Visualization,
+        Menu::PlaylistAdd,
+        Menu::PlaylistRemove,
+        Menu::PlaylistSelect,
+        Menu::PlaylistMisc,
+        Menu::PlaylistList,
+        Menu::PlaylistRow,
+        Menu::Sort,
+        Menu::RemoveMisc,
+        Menu::MiscOptions,
+    ];
+
     /// The menu with the number `kind`, as the C interface names it.
     pub fn from_number(kind: i32) -> Option<Menu> {
-        [Menu::Bar, Menu::Popup, Menu::Equalizer]
-            .into_iter()
-            .find(|m| *m as i32 == kind)
+        Menu::ALL.into_iter().find(|m| *m as i32 == kind)
     }
 }
 
@@ -94,10 +184,12 @@ pub enum Ask {
     Presets,
     /// The address of a radio stream, as text.
     Url,
+    /// Where to write the playlist as a web page.
+    SaveHtml,
 }
 
 impl Ask {
-    const ALL: [(Ask, &'static str); 8] = [
+    const ALL: [(Ask, &'static str); 9] = [
         (Ask::OpenSongs, "open_songs"),
         (Ask::AddSongs, "add_songs"),
         (Ask::AddFolders, "add_folders"),
@@ -106,6 +198,7 @@ impl Ask {
         (Ask::Skin, "skin"),
         (Ask::Presets, "presets"),
         (Ask::Url, "url"),
+        (Ask::SaveHtml, "save_html"),
     ];
 
     /// The word the C interface names it by.
@@ -152,6 +245,15 @@ pub enum Request {
     Menu,
     /// Show the Effects window.
     Effects,
+    /// Show the Preferences window ([`App::preferences`](super::App::preferences)).
+    Preferences,
+    /// Show what is known of the playlist's entry at this row
+    /// ([`App::file_info`](super::App::file_info)).
+    Info(usize),
+    /// Open this file with whatever the system opens it with.
+    Open(PathBuf),
+    /// Show this file in its folder.
+    Reveal(PathBuf),
     /// Open the Visualizer window, or close it; [`App::vis_shown`](super::App::vis_shown) says when it is done.
     Vis(bool),
     /// Show this preset in the Visualizer window, blending into it or cutting to it, with
@@ -171,7 +273,8 @@ pub enum Request {
 impl Request {
     /// The request as a line of text, its parts with tabs between, for a shell behind the C
     /// interface: `quit`, `hide`, `about`, `ask` and what, `popup` with the menu's number and
-    /// the place when there is one, `skin`, `look`, `menu`, `effects`, `vis` with 1 or 0,
+    /// the place when there is one, `skin`, `look`, `menu`, `effects`, `preferences`, `info` with the playlist's row, `open`
+    /// and `reveal` with a file, `vis` with 1 or 0,
     /// `preset` with 1 for blending, the title and the file, `error` and the message.
     pub fn line(&self) -> String {
         let plain = |text: &str| text.replace(['\t', '\n'], " ");
@@ -189,6 +292,10 @@ impl Request {
             Request::Look => "look".into(),
             Request::Menu => "menu".into(),
             Request::Effects => "effects".into(),
+            Request::Preferences => "preferences".into(),
+            Request::Info(row) => format!("info\t{row}"),
+            Request::Open(file) => format!("open\t{}", file.to_string_lossy()),
+            Request::Reveal(file) => format!("reveal\t{}", file.to_string_lossy()),
             Request::Vis(open) => format!("vis\t{}", u8::from(*open)),
             Request::Preset { file, title, blend } => {
                 format!(

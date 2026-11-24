@@ -182,7 +182,8 @@ int64_t andamp_app_next_due_ms(AndampApp *app);
 ///
 /// - `quit`, `hide`, `about`
 /// - `ask` and what to let the listener pick: `open_songs`, `add_songs`, `add_folders`,
-///   `load_list`, `save_list`, `skin`, `presets`, or `url` for the address of a radio stream.
+///   `load_list`, `save_list`, `save_html`, `skin`, `presets`, or `url` for the address of a
+///   radio stream.
 ///   The answer goes to andamp_app_picked.
 /// - `popup`, the number of one of the app's menus (andamp_app_menu) and, when there is one,
 ///   the place for it in points from the screen's top left corner; without a place it opens
@@ -191,16 +192,19 @@ int64_t andamp_app_next_due_ms(AndampApp *app);
 /// - `look`: the size, the opacity or staying on top changed.
 /// - `menu`: the menu bar changed.
 /// - `effects`: show the Effects window.
+/// - `preferences`: show the Preferences window (andamp_app_preferences).
+/// - `info` and a row of the playlist: show what is known of it (andamp_app_file_info).
+/// - `open` and a file: open it with whatever the system opens it with.
+/// - `reveal` and a file or folder: show it in its folder.
 /// - `vis` and 1 to open the Visualizer window, 0 to close it; andamp_app_vis_shown says when
 ///   it is done.
 /// - `preset`, 1 for blending into it, the window's title and the preset's file.
 /// - `error` and a message for the listener.
 char *andamp_app_take_requests(AndampApp *app);
 
-/// The app's menus, by number.
+/// The app's menus, by number. A request `popup` names the others by theirs.
 #define ANDAMP_MENU_BAR 0
 #define ANDAMP_MENU_POPUP 1
-#define ANDAMP_MENU_EQ_PRESETS 2
 
 /// One of the app's menus as lines of text, to free with andamp_string_free. A line is as a
 /// skin's menu gives it (AndampMenuHandler), with the command's key after the text: a letter,
@@ -251,9 +255,29 @@ void andamp_app_vis_shown(AndampApp *app, bool open);
 /// before, `r` one at random, `space` holds the one shown or lets it go. False for any other.
 bool andamp_app_vis_key(AndampApp *app, const char *key);
 
-/// Seconds a preset stays: the shell calls andamp_app_vis_tick that often while the
-/// Visualizer window can be seen.
-int32_t andamp_app_vis_stay(void);
+/// Seconds a preset stays, as the listener set it: the shell calls andamp_app_vis_tick that
+/// often while the Visualizer window can be seen.
+int32_t andamp_app_vis_stay(AndampApp *app);
+
+/// Frames a second the Visualizer window draws, as the listener set it: 30 or 60.
+int32_t andamp_app_vis_fps(AndampApp *app);
+
+/// The preferences as JSON, to free with andamp_string_free, for the shell to draw as a
+/// window: {"pages": [...]}, each page a `title` and its `rows`. A row has an `id`, a `kind`
+/// (toggle, choice, slider, action, text or heading), a `label` and a `value` as text: 1 or 0
+/// for a toggle, an option's value for a choice, a number for a slider. A choice also has its
+/// `options`, each a `name` and a `value`; a slider its `min`, `max`, `step` and `unit`.
+char *andamp_app_preferences(AndampApp *app);
+
+/// Sets the preference `id` to `value`, as andamp_app_preferences spells values out, or does
+/// the action `id` (its value is not looked at). The shell then asks for the preferences
+/// again: one change may move another row.
+void andamp_app_set_preference(AndampApp *app, const char *id, const char *value);
+
+/// What is known of the playlist's entry at `row`, to free with andamp_string_free, for a
+/// request `info`: its title on the first line, then a line for each thing known, a name and
+/// its value with a colon between. Null when the playlist has no such row.
+char *andamp_app_file_info(AndampApp *app, int32_t row);
 
 /// A preset's stay is over: the next one blends in, unless the listener holds the one shown.
 void andamp_app_vis_tick(AndampApp *app);
@@ -281,8 +305,9 @@ void andamp_app_save(AndampApp *app);
 
 /// What the command line gave for one of the options the shell answers itself, to free with
 /// andamp_string_free, or null when it was not given: `dump`, `bench`, `quit-after`,
-/// `then-skin`, `presets` with their value, `hidden`, `show-vis`, `show-effects` with `1`, and
-/// `click` with a line for each.
+/// `then-skin`, `presets` with their value, `hidden`, `show-vis`, `show-effects`, `show-prefs`
+/// with `1`, and
+/// `click` and `press-pref` with a line for each.
 char *andamp_app_option(AndampApp *app, const char *name);
 
 /// What the app would keep for the next run, in a line, to free with andamp_string_free.

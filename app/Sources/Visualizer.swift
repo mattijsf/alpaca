@@ -62,10 +62,15 @@ final class MilkdropView: NSOpenGLView {
     /// The preset to load at the next frame, and whether to blend into it.
     private var wanted: (file: String, blend: Bool)?
     var onKey: ((NSEvent) -> Bool)?
-    /// Frames a second. A frame costs about 5 ms of processor time whatever the preset, most of
-    /// it in the system's OpenGL, so 30 it is until that is looked into; `ANDAMP_VIS_FPS` in the
-    /// environment sets another number, for measuring.
-    static let fps: Double = ProcessInfo.processInfo.environment["ANDAMP_VIS_FPS"].flatMap(Double.init) ?? 30
+    /// Frames a second, as the listener set them. A frame costs about 5 ms of processor time
+    /// whatever the preset, most of it in the system's OpenGL.
+    var fps: Double = 30 {
+        didSet {
+            guard fps != oldValue, let handle else { return }
+            openGLContext?.makeCurrentContext()
+            engine.setFps(handle, Int32(fps))
+        }
+    }
 
     init?(engine: ProjectM, player: OpaquePointer) {
         self.engine = engine
@@ -105,7 +110,7 @@ final class MilkdropView: NSOpenGLView {
         var sync: GLint = 0
         openGLContext?.setValues(&sync, for: .swapInterval)
         handle = engine.create()
-        engine.setFps(handle, Int32(Self.fps))
+        engine.setFps(handle, Int32(fps))
         engine.setMeshSize(handle, 48, 32)
         engine.setSoftCut(handle, 2)
         // the window changes presets itself
@@ -130,7 +135,7 @@ final class MilkdropView: NSOpenGLView {
         timer?.invalidate()
         timer = nil
         guard running else { return }
-        let next = Timer(timeInterval: 1.0 / Self.fps, repeats: true) { [weak self] _ in self?.frame() }
+        let next = Timer(timeInterval: 1.0 / fps, repeats: true) { [weak self] _ in self?.frame() }
         RunLoop.main.add(next, forMode: .common)
         timer = next
     }
@@ -248,11 +253,12 @@ final class Visualizer: NSObject, NSWindowDelegate {
     /// Draws while the window can be seen, and tells the library when a preset's stay is over.
     private func run() {
         let seen = window?.isVisible == true && window?.occlusionState.contains(.visible) == true
+        view?.fps = Double(andamp_app_vis_fps(app))
         view?.run(seen)
         changer?.invalidate()
         changer = nil
         guard seen else { return }
-        let next = Timer(timeInterval: TimeInterval(andamp_app_vis_stay()), repeats: true) { [weak self] _ in
+        let next = Timer(timeInterval: TimeInterval(andamp_app_vis_stay(app)), repeats: true) { [weak self] _ in
             guard let self else { return }
             andamp_app_vis_tick(self.app)
             self.onChange?()
@@ -260,6 +266,9 @@ final class Visualizer: NSObject, NSWindowDelegate {
         RunLoop.main.add(next, forMode: .common)
         changer = next
     }
+
+    /// The listener changed how fast it draws or how long a preset stays.
+    func settingsChanged() { if isShown { run() } }
 
     func windowDidChangeOcclusionState(_ notification: Notification) { run() }
 

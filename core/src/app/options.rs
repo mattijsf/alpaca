@@ -16,14 +16,16 @@ use crate::player::{location_kind, LocationKind};
 ///        [--show-vis]          opens the Visualizer window
 ///        [--presets <folder>]  the Milkdrop presets it shows
 ///        [--show-effects]      opens the Effects window
+///        [--show-prefs]        opens the Preferences window
 ///        [--base skin.wsz]     a classic skin laid under classic skins, in place of AndAmp Dark
 ///        [--wasabi base.zip]   a zip of a wasabi folder laid under modern skins, in place of
 ///                              Andamp's own element set
 /// ```
 ///
 /// Songs named on the command line play at once. The rest is for checking and measuring, and
-/// the shell does it: `--click x,y` (may be given more than once), `--quit-after <seconds>`,
-/// `--dump <folder>`, `--bench <seconds>`, `--then-skin <file>` and `--hidden`.
+/// the shell does it: `--click x,y` and `--press-pref <id>` (each may be given more than once),
+/// `--quit-after <seconds>`, `--dump <folder>`, `--bench <seconds>`, `--then-skin <file>` and
+/// `--hidden`.
 #[derive(Debug, Default, Clone)]
 pub struct Options {
     /// The skin to wear in place of the one last worn.
@@ -46,6 +48,8 @@ pub struct Options {
     pub show_effects: bool,
     /// `--show-vis`: open the Visualizer window.
     pub show_vis: bool,
+    /// `--show-prefs`: open the Preferences window.
+    pub show_prefs: bool,
     /// `--presets`: the folder of Milkdrop presets to show.
     pub presets: Option<PathBuf>,
     /// `--dump`: the folder the shell writes every window into as a picture, before it quits.
@@ -60,6 +64,8 @@ pub struct Options {
     pub then_skin: Option<String>,
     /// `--click`: places the shell clicks at, each `x,y` in layout pixels.
     pub clicks: Vec<String>,
+    /// `--press-pref`: rows of the Preferences window the shell presses, by their id.
+    pub pref_presses: Vec<String>,
 }
 
 impl Options {
@@ -76,11 +82,13 @@ impl Options {
                 "--dump" => options.dump = value(),
                 "--show-effects" => options.show_effects = true,
                 "--show-vis" => options.show_vis = true,
+                "--show-prefs" => options.show_prefs = true,
                 "--presets" => options.presets = value().map(|v| whole(&v)),
                 "--effect" => options.effects.extend(value()),
                 "--base" => options.base = value().map(|v| whole(&v)),
                 "--wasabi" => options.wasabi = value().map(|v| whole(&v)),
                 "--click" => options.clicks.extend(value()),
+                "--press-pref" => options.pref_presses.extend(value()),
                 "--bench" => options.bench = value(),
                 "--hidden" => options.hidden = true,
                 "--then-skin" => options.then_skin = value(),
@@ -121,8 +129,10 @@ impl Options {
             "modern" => on(self.modern),
             "show-vis" => on(self.show_vis),
             "show-effects" => on(self.show_effects),
+            "show-prefs" => on(self.show_prefs),
             "presets" => path(&self.presets),
             "click" => (!self.clicks.is_empty()).then(|| self.clicks.join("\n")),
+            "press-pref" => (!self.pref_presses.is_empty()).then(|| self.pref_presses.join("\n")),
             _ => None,
         }
     }
@@ -130,7 +140,10 @@ impl Options {
     /// Whether this run reads the settings and leaves them: not one that only looks or
     /// measures, which starts from nothing.
     pub(super) fn kept(&self) -> bool {
-        self.dump.is_none() && self.bench.is_none() && self.clicks.is_empty()
+        self.dump.is_none()
+            && self.bench.is_none()
+            && self.clicks.is_empty()
+            && self.pref_presses.is_empty()
     }
 }
 

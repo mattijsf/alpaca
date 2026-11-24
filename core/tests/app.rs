@@ -7,6 +7,7 @@
 use std::path::{Path, PathBuf};
 
 use andamp_core::app::{command, App, Ask, Menu, Options, Request};
+use andamp_core::host::HostAction;
 use andamp_core::player::Player;
 use andamp_core::vis::{by_name, Key, Presets};
 
@@ -134,6 +135,10 @@ fn the_menu_shows_the_skins_and_the_switches() {
         "C\t200\t1\t0\tAndAmp Dark\t",
         "C\t201\t0\t0\tAndAmp Light\t",
         "C\t20\t0\t0\tDouble Size\td",
+        "C\t21\t0\t0\tAlways on Top\tt",
+        "C\t28\t0\t0\tPreferences…\t,",
+        ">\tPlaylist",
+        "C\t45\t0\t0\tSelect All\ta",
         "C\t100\t1\t0\t100 %\t",
         "C\t23\t0\t0\tVisualizer\tshift+k",
     ] {
@@ -515,4 +520,440 @@ fn presets_go_round_by_name() {
     assert_eq!(app.take_requests().len(), 1);
     app.command(command::VISUALIZER);
     assert_eq!(app.take_requests(), [Request::Vis(false)]);
+}
+
+/// Something a button of the skin asks, as the engine hands it over.
+fn asks(name: &str, param: Option<&str>) -> HostAction {
+    HostAction {
+        name: name.into(),
+        param: param.map(str::to_string),
+        at: Some((10, 20)),
+    }
+}
+
+/// The app with the songs `names` in its playlist, in a folder of their own.
+fn with_songs(scratch_name: &str, names: &[&str]) -> (App, PathBuf) {
+    let dir = scratch(scratch_name);
+    let mut app = start("", &dir);
+    let songs: Vec<String> = names.iter().map(|name| song(&dir, name)).collect();
+    app.picked(Ask::AddSongs, &songs);
+    app.step();
+    app.take_requests();
+    (app, dir)
+}
+
+fn titles(app: &App) -> Vec<String> {
+    app.player
+        .borrow()
+        .entries()
+        .iter()
+        .map(|e| e.title.clone())
+        .collect()
+}
+
+#[test]
+fn the_playlists_selection_follows_its_commands() {
+    let (mut app, _) = with_songs("select", &["a.wav", "b.wav", "c.wav", "d.wav"]);
+    assert!(app.selection().is_empty());
+    app.command(command::SELECT_ALL);
+    assert_eq!(app.selection(), [0, 1, 2, 3]);
+    app.select(&[2, 0]);
+    assert_eq!(app.selection(), [0, 2], "lowest first");
+    app.command(command::SELECT_INVERT);
+    assert_eq!(app.selection(), [1, 3]);
+    app.command(command::SELECT_NONE);
+    assert!(app.selection().is_empty());
+
+    // what a classic playlist's Sel button picks is those commands
+    app.asked(&asks("PLAYLIST", Some("select_all")));
+    assert_eq!(app.selection(), [0, 1, 2, 3]);
+    app.asked(&asks("PLAYLIST", Some("select_invert")));
+    assert!(app.selection().is_empty());
+    app.asked(&asks("PLAYLIST", Some("select_invert")));
+    app.asked(&asks("PLAYLIST", Some("select_none")));
+    assert!(app.selection().is_empty());
+}
+
+#[test]
+fn removing_takes_the_selection_or_what_is_not_selected() {
+    let (mut app, dir) = with_songs("remove", &["a.wav", "b.wav", "c.wav", "d.wav"]);
+    app.command(command::REMOVE_SELECTED);
+    assert_eq!(titles(&app).len(), 4, "nothing selected: nothing goes");
+    app.command(command::CROP);
+    assert_eq!(
+        titles(&app).len(),
+        4,
+        "nothing selected: cropping keeps the list"
+    );
+
+    app.select(&[1]);
+    app.asked(&asks("PLAYLIST", Some("remove_selected")));
+    assert_eq!(titles(&app), ["a", "c", "d"]);
+    assert!(app.selection().is_empty(), "the rows are other entries now");
+
+    app.select(&[0, 2]);
+    app.asked(&asks("PLAYLIST", Some("crop")));
+    assert_eq!(titles(&app), ["a", "d"]);
+
+    // a file that is gone, and one that is there twice
+    let d = dir.join("d.wav").to_string_lossy().into_owned();
+    app.picked(Ask::AddSongs, &[d.clone(), song(&dir, "e.wav"), d]);
+    assert_eq!(titles(&app), ["a", "d", "d", "e", "d"]);
+    app.command(command::REMOVE_DUPLICATES);
+    assert_eq!(titles(&app), ["a", "d", "e"]);
+    std::fs::remove_file(dir.join("a.wav")).unwrap();
+    app.command(command::REMOVE_DEAD);
+    assert_eq!(titles(&app), ["d", "e"]);
+
+    app.asked(&asks("PLAYLIST", Some("remove_misc")));
+    let asked = app.take_requests();
+    assert!(
+        matches!(
+            asked.as_slice(),
+            [Request::Popup {
+                menu: Menu::RemoveMisc,
+                at: Some((10, 20))
+            }]
+        ),
+        "the Rem button's Misc asked {asked:?}"
+    );
+    app.asked(&asks("PLAYLIST", Some("list_new")));
+    assert!(titles(&app).is_empty());
+}
+
+#[test]
+fn sorting_keeps_the_song_that_is_current() {
+    let dir = scratch("sort");
+    let mut app = start("", &dir);
+    std::fs::create_dir_all(dir.join("x")).unwrap();
+    std::fs::create_dir_all(dir.join("y")).unwrap();
+    let songs = [
+        song(&dir.join("y"), "Alpha.wav"),
+        song(&dir.join("x"), "beta.wav"),
+        song(&dir.join("x"), "Gamma.wav"),
+    ];
+    app.picked(Ask::AddSongs, &songs);
+    app.player.borrow_mut().select(1);
+    app.select(&[0]);
+
+    app.command(command::SORT_PATH);
+    assert_eq!(
+        titles(&app),
+        ["beta", "Gamma", "Alpha"],
+        "by folder, then name"
+    );
+    assert_eq!(
+        app.player.borrow().index(),
+        0,
+        "beta is still the current song"
+    );
+    assert!(
+        app.selection().is_empty(),
+        "the rows moved under the selection"
+    );
+    app.command(command::SORT_FILENAME);
+    assert_eq!(
+        titles(&app),
+        ["Alpha", "beta", "Gamma"],
+        "without regard to case"
+    );
+    assert_eq!(app.player.borrow().index(), 1);
+    app.command(command::REVERSE);
+    assert_eq!(titles(&app), ["Gamma", "beta", "Alpha"]);
+    app.command(command::SORT_TITLE);
+    assert_eq!(titles(&app), ["Alpha", "beta", "Gamma"]);
+    app.command(command::RANDOMIZE);
+    let mut shuffled = titles(&app);
+    shuffled.sort_by_key(|title| title.to_lowercase());
+    assert_eq!(
+        shuffled,
+        ["Alpha", "beta", "Gamma"],
+        "the same songs in some order"
+    );
+    let current = app.player.borrow().index();
+    assert_eq!(titles(&app)[current], "beta");
+
+    // the Misc button's Sort is a menu of these
+    app.take_requests();
+    app.asked(&asks("PLAYLIST", Some("sort")));
+    assert!(matches!(
+        app.take_requests().as_slice(),
+        [Request::Popup {
+            menu: Menu::Sort,
+            ..
+        }]
+    ));
+    let sort = app.menu(Menu::Sort);
+    assert!(
+        sort.lines()
+            .any(|l| l == "C\t49\t0\t0\tSort by File Name\t"),
+        "{sort}"
+    );
+}
+
+#[test]
+fn a_file_tells_what_it_is_and_the_list_becomes_a_page() {
+    let (mut app, dir) = with_songs("info", &["first.wav", "second & <third>.wav"]);
+    // with nothing selected a question is about the current song
+    app.asked(&asks("PLAYLIST", Some("file_info")));
+    assert_eq!(app.take_requests(), [Request::Info(0)]);
+    app.asked(&asks("TRACKINFO", None));
+    assert_eq!(app.take_requests(), [Request::Info(0)]);
+    // a right click on a row is about that row
+    app.asked(&asks("PLAYLIST_MENU", Some("1")));
+    assert_eq!(app.selection(), [1]);
+    assert!(matches!(
+        app.take_requests().as_slice(),
+        [Request::Popup {
+            menu: Menu::PlaylistRow,
+            ..
+        }]
+    ));
+    app.command(command::FILE_INFO);
+    assert_eq!(app.take_requests(), [Request::Info(1)]);
+    app.command(command::REVEAL);
+    assert_eq!(
+        app.take_requests(),
+        [Request::Reveal(dir.join("second & <third>.wav"))]
+    );
+    app.command(command::PLAY_SELECTED);
+    assert_eq!(app.player.borrow().index(), 1);
+    app.command(command::STOP);
+
+    let info = app.file_info(0).expect("the first song");
+    let lines: Vec<&str> = info.lines().collect();
+    assert_eq!(lines[0], "first");
+    assert!(lines.contains(&"Length: 0:01"), "{info}");
+    assert!(
+        lines.contains(&"Format: pcm_s16le, 44100 Hz, stereo, 1411 kbps"),
+        "{info}"
+    );
+    assert_eq!(
+        *lines.last().unwrap(),
+        format!("File: {}", dir.join("first.wav").display())
+    );
+    assert_eq!(app.file_info(7), None);
+
+    app.asked(&asks("PLAYLIST", Some("misc_options")));
+    assert!(matches!(
+        app.take_requests().as_slice(),
+        [Request::Popup {
+            menu: Menu::MiscOptions,
+            ..
+        }]
+    ));
+    app.command(command::HTML_LIST);
+    assert_eq!(app.take_requests(), [Request::Ask(Ask::SaveHtml)]);
+    let page = dir.join("list.html");
+    app.picked(Ask::SaveHtml, &[page.to_string_lossy().into_owned()]);
+    assert_eq!(app.take_requests(), [Request::Open(page.clone())]);
+    let html = std::fs::read_to_string(page).unwrap();
+    assert!(
+        html.contains("<li>first <small>(0:01)</small></li>"),
+        "{html}"
+    );
+    assert!(
+        html.contains("<li>second &amp; &lt;third&gt; <small>(0:01)</small></li>"),
+        "{html}"
+    );
+    assert!(html.contains("<p>2 songs, 0:02</p>"));
+}
+
+#[test]
+fn the_skin_itself_selects_a_row_and_its_button_removes_it() {
+    // through the engine: a press on a row of a classic playlist selects it, and a double
+    // click on the Rem button picks its lowest item, Remove Selected. The engine clears what
+    // it shows as selected right after the pick; the app still removes the row that was
+    let (mut app, _) = with_songs("engine", &["a.wav", "b.wav", "c.wav"]);
+    app.wear(&resources().join("skins/walkit-classic.wsz"));
+    app.step();
+    let playlist = {
+        let windows = app.skin().unwrap().windows();
+        // the playlist is the lowest of the three on the screen
+        windows
+            .iter()
+            .map(|w| (w.rect.left, w.rect.top, w.rect.height))
+            .max_by_key(|w| w.1)
+            .unwrap()
+    };
+    let (left, top, height) = playlist;
+    let skin = app.skin().unwrap();
+    // the second row: rows are 13 high from 20 down
+    skin.runtime.pointer_down(left + 60, top + 20 + 13 + 6, 1);
+    skin.runtime.pointer_up(left + 60, top + 20 + 13 + 6);
+    app.step();
+    assert_eq!(app.selection(), [1]);
+    // the Rem button: 43 from the left, 30 from the bottom
+    let (x, y) = (left + 43 + 10, top + height - 30 + 8);
+    let skin = app.skin().unwrap();
+    skin.runtime.pointer_down(x, y, 2);
+    skin.runtime.double_tap(x, y, 2);
+    skin.runtime.pointer_up(x, y);
+    app.step();
+    assert_eq!(titles(&app), ["a", "c"]);
+    assert!(app.selection().is_empty());
+}
+
+#[test]
+fn a_skins_other_buttons_reach_their_menus() {
+    let (mut app, _) = with_songs("others", &["a.wav"]);
+    let popup = |app: &mut App, name: &str, param: Option<&str>| {
+        app.asked(&asks(name, param));
+        match app.take_requests().as_slice() {
+            [Request::Popup { menu, .. }] => Some(*menu),
+            _ => None,
+        }
+    };
+    assert_eq!(
+        popup(&mut app, "MENU", Some("wa5:options")),
+        Some(Menu::Options)
+    );
+    assert_eq!(popup(&mut app, "MENU", None), Some(Menu::Popup));
+    assert_eq!(popup(&mut app, "VIS_MENU", None), Some(Menu::Visualization));
+    assert_eq!(popup(&mut app, "PE_ADD", None), Some(Menu::PlaylistAdd));
+    assert_eq!(popup(&mut app, "PE_REM", None), Some(Menu::PlaylistRemove));
+    assert_eq!(popup(&mut app, "PE_SEL", None), Some(Menu::PlaylistSelect));
+    assert_eq!(popup(&mut app, "PE_MISC", None), Some(Menu::PlaylistMisc));
+    assert_eq!(popup(&mut app, "PE_LIST", None), Some(Menu::PlaylistList));
+    app.asked(&asks("VIS_FS", None));
+    assert_eq!(app.take_requests(), [Request::Vis(true)]);
+    // every menu spells itself out, each submenu closed, each command with a number
+    for menu in Menu::ALL {
+        let text = app.menu(menu);
+        assert!(!text.is_empty(), "{menu:?}");
+        let (open, close) = (
+            text.lines().filter(|l| l.starts_with('>')).count(),
+            text.lines().filter(|l| *l == "<").count(),
+        );
+        assert_eq!(open, close, "{menu:?}");
+        for line in text.lines().filter(|l| l.starts_with('C')) {
+            let parts: Vec<&str> = line.split('\t').collect();
+            assert_eq!(parts.len(), 6, "{menu:?}: {line:?}");
+            assert!(
+                parts[1].parse::<i32>().is_ok_and(|id| id > 0),
+                "{menu:?}: {line:?}"
+            );
+        }
+    }
+    // with nothing selected, what needs a selection is grayed
+    let remove = app.menu(Menu::PlaylistRemove);
+    assert!(
+        remove
+            .lines()
+            .any(|l| l == "C\t40\t0\t1\tRemove Selected\t"),
+        "{remove}"
+    );
+    app.select(&[0]);
+    let remove = app.menu(Menu::PlaylistRemove);
+    assert!(
+        remove
+            .lines()
+            .any(|l| l == "C\t40\t0\t0\tRemove Selected\t"),
+        "{remove}"
+    );
+    // shuffle and repeat show in the options, and turn with their commands
+    app.command(command::SHUFFLE);
+    assert!(app.player.borrow().shuffle());
+    let options = app.menu(Menu::Options);
+    assert!(
+        options.lines().any(|l| l == "C\t30\t1\t0\tShuffle\t"),
+        "{options}"
+    );
+    assert!(
+        options.lines().any(|l| l == "C\t31\t0\t0\tRepeat\t"),
+        "{options}"
+    );
+}
+
+#[test]
+fn the_preferences_spell_themselves_out_and_take_changes() {
+    use walkit::classic::vis::VisMode;
+    let dir = scratch("prefs");
+    let mut app = start("", &dir);
+    app.take_requests();
+    let prefs = app.preferences();
+    assert!(
+        prefs.starts_with("{\"pages\":[{\"title\":\"Look\","),
+        "{prefs}"
+    );
+    for part in [
+        "{\"id\":\"double\",\"kind\":\"toggle\",\"label\":\"Double size\",\"value\":\"0\"}",
+        "{\"id\":\"opacity\",\"kind\":\"slider\",\"label\":\"Opacity\",\"value\":\"100\",\"min\":40,\"max\":100,\"step\":10,\"unit\":\"%\"}",
+        "{\"name\":\"AndAmp Light\",\"value\":\"AndAmp Light.wsz\"}",
+        "\"id\":\"skin\",\"kind\":\"choice\",\"label\":\"Skin\",\"value\":\"AndAmp Dark.wsz\"",
+        "\"id\":\"vis.mode\",\"kind\":\"choice\",\"label\":\"Shows\",\"value\":\"analyzer\"",
+        "{\"id\":\"milk.stay\",\"kind\":\"slider\",\"label\":\"A preset stays\",\"value\":\"30\",\"min\":5,\"max\":120,\"step\":5,\"unit\":\"s\"}",
+        "{\"title\":\"About\",",
+    ] {
+        assert!(prefs.contains(part), "the preferences have {part}:\n{prefs}");
+    }
+    // braces and brackets pair up
+    assert_eq!(prefs.matches('{').count(), prefs.matches('}').count());
+    assert_eq!(prefs.matches('[').count(), prefs.matches(']').count());
+
+    app.set_preference("double", "1");
+    app.set_preference("ontop", "1");
+    app.set_preference("opacity", "70");
+    app.set_preference("shuffle", "1");
+    app.set_preference("repeat", "1");
+    app.set_preference("time", "remaining");
+    app.set_preference("vis.mode", "scope");
+    app.set_preference("vis.peaks", "0");
+    app.set_preference("milk.stay", "45");
+    app.set_preference("milk.fps", "60");
+    app.set_preference("skin", "AndAmp Spot.wsz");
+    app.set_preference("skin", "../../somewhere/else.wsz");
+    app.set_preference("no such preference", "1");
+    assert_eq!((app.zoom(), app.on_top(), app.opacity()), (2, true, 70));
+    assert!(app.player.borrow().shuffle() && app.player.borrow().repeat());
+    assert_eq!((app.vis_stay(), app.vis_fps()), (45, 60));
+    assert_eq!(
+        app.skin_name(),
+        "AndAmp Spot.wsz",
+        "only a skin that comes with the app is worn by name"
+    );
+    // the skin just worn is set as the one before it was
+    assert_eq!(
+        app.skin().unwrap().runtime.classic_vis_mode(),
+        VisMode::Scope
+    );
+    assert!(app.skin().unwrap().runtime.classic_time_remaining());
+    let prefs = app.preferences();
+    assert!(prefs.contains(
+        "\"id\":\"vis.peaks\",\"kind\":\"toggle\",\"label\":\"Analyzer peaks\",\"value\":\"0\""
+    ));
+    assert!(prefs.contains("\"label\":\"Show (classic skins)\",\"value\":\"remaining\""));
+
+    // an action asks the shell
+    app.take_requests();
+    app.set_preference("settings.reveal", "");
+    assert_eq!(app.take_requests(), [Request::Reveal(dir.clone())]);
+    app.set_preference("plugins.reveal", "");
+    assert_eq!(app.take_requests(), [Request::Reveal(dir.join("Plugins"))]);
+    assert!(dir.join("Plugins").is_dir());
+    app.set_preference("skin.open", "");
+    assert_eq!(app.take_requests(), [Request::Ask(Ask::Skin)]);
+    app.command(command::PREFERENCES);
+    assert_eq!(app.take_requests(), [Request::Preferences]);
+
+    // what the listener sets on the skin itself is kept too: a click on the visualizer
+    // goes to its next mode
+    app.skin()
+        .unwrap()
+        .runtime
+        .set_classic_vis_mode(VisMode::Off);
+    app.save();
+    drop(app);
+    let mut again = start("", &dir);
+    assert_eq!(again.vis_mode(), VisMode::Off);
+    assert_eq!(
+        again.skin().unwrap().runtime.classic_vis_mode(),
+        VisMode::Off
+    );
+    assert!(again.time_remaining());
+    assert!(again.player.borrow().shuffle() && again.player.borrow().repeat());
+    assert_eq!((again.vis_stay(), again.vis_fps()), (45, 60));
+    assert!(again
+        .preferences()
+        .contains("\"id\":\"vis.mode\",\"kind\":\"choice\",\"label\":\"Shows\",\"value\":\"off\""));
 }

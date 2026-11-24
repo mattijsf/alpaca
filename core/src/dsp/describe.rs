@@ -6,7 +6,7 @@ use super::lua::Kind;
 use super::rack::Rack;
 
 /// `text` as a JSON string.
-fn json_text(text: &str) -> String {
+pub(crate) fn json_text(text: &str) -> String {
     let mut out = String::with_capacity(text.len() + 2);
     out.push('"');
     for c in text.chars() {

@@ -181,7 +181,8 @@ pub unsafe extern "C" fn andamp_app_next_due_ms(app: *mut AndampApp) -> i64 {
 ///
 /// - `quit`, `hide`, `about`
 /// - `ask` and what to let the listener pick: `open_songs`, `add_songs`, `add_folders`,
-///   `load_list`, `save_list`, `skin`, `presets`, or `url` for the address of a radio stream.
+///   `load_list`, `save_list`, `save_html`, `skin`, `presets`, or `url` for the address of a
+///   radio stream.
 ///   The answer goes to [`andamp_app_picked`].
 /// - `popup`, the number of one of the app's menus ([`andamp_app_menu`]) and, when there is
 ///   one, the place for it in points from the screen's top left corner; without a place it
@@ -190,6 +191,10 @@ pub unsafe extern "C" fn andamp_app_next_due_ms(app: *mut AndampApp) -> i64 {
 /// - `look`: the size, the opacity or staying on top changed.
 /// - `menu`: the menu bar changed.
 /// - `effects`: show the Effects window.
+/// - `preferences`: show the Preferences window ([`andamp_app_preferences`]).
+/// - `info` and a row of the playlist: show what is known of it ([`andamp_app_file_info`]).
+/// - `open` and a file: open it with whatever the system opens it with.
+/// - `reveal` and a file or folder: show it in its folder.
 /// - `vis` and 1 to open the Visualizer window, 0 to close it; [`andamp_app_vis_shown`] says
 ///   when it is done.
 /// - `preset`, 1 for blending into it, the window's title and the preset's file.
@@ -208,7 +213,8 @@ pub unsafe extern "C" fn andamp_app_take_requests(app: *mut AndampApp) -> *mut c
 }
 
 /// One of the app's menus as lines of text, to free with [`andamp_string_free`](super::andamp_string_free): 0 the menu
-/// bar, 1 the same commands as one popup list, 2 the equalizer's presets. A line is as a
+/// bar, 1 the same commands as one popup list, and from 2 on the popups a request `popup`
+/// names by their number. A line is as a
 /// skin's menu gives it ([`AndampMenuHandler`]), with the command's key after the text: a
 /// letter, with `shift+` before it when Shift is held, to go with the system's command key.
 ///
@@ -340,11 +346,73 @@ pub unsafe extern "C" fn andamp_app_vis_key(app: *mut AndampApp, key: *const c_c
     with_app(app, false, |a| a.vis_key(&key))
 }
 
-/// Seconds a preset stays: the shell calls [`andamp_app_vis_tick`] that often while the
-/// Visualizer window can be seen.
+/// Seconds a preset stays, as the listener set it: the shell calls [`andamp_app_vis_tick`] that
+/// often while the Visualizer window can be seen.
+///
+/// # Safety
+/// `app` is null or a live app.
 #[no_mangle]
-pub extern "C" fn andamp_app_vis_stay() -> i32 {
-    vis::STAY_SECONDS as i32
+pub unsafe extern "C" fn andamp_app_vis_stay(app: *mut AndampApp) -> i32 {
+    with_app(app, vis::STAY_SECONDS as i32, |a| a.vis_stay())
+}
+
+/// Frames a second the Visualizer window draws, as the listener set it: 30 or 60.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_vis_fps(app: *mut AndampApp) -> i32 {
+    with_app(app, 30, |a| a.vis_fps())
+}
+
+/// The preferences as JSON, to free with [`andamp_string_free`](super::andamp_string_free),
+/// for the shell to draw as a window: `{"pages": [...]}`, each page a `title` and its `rows`.
+/// A row has an `id`, a `kind` (`toggle`, `choice`, `slider`, `action`, `text` or `heading`),
+/// a `label` and a `value` as text: `1` or `0` for a toggle, an option's value for a choice,
+/// a number for a slider. A choice also has its `options`, each a `name` and a `value`; a
+/// slider its `min`, `max`, `step` and `unit`.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_preferences(app: *mut AndampApp) -> *mut c_char {
+    c_text(&with_app(app, "{\"pages\":[]}".to_string(), |a| {
+        a.preferences()
+    }))
+}
+
+/// Sets the preference `id` to `value`, as [`andamp_app_preferences`] spells values out, or
+/// does the action `id` (its value is not looked at). The shell then asks for the
+/// preferences again: one change may move another row.
+///
+/// # Safety
+/// `app` is null or a live app; `id` and `value` are C strings.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_set_preference(
+    app: *mut AndampApp,
+    id: *const c_char,
+    value: *const c_char,
+) {
+    let (id, value) = (string(id), string(value));
+    with_app(app, (), |a| a.set_preference(&id, &value));
+}
+
+/// What is known of the playlist's entry at `row`, to free with
+/// [`andamp_string_free`](super::andamp_string_free), for a request `info`: its title on the
+/// first line, then a line for each thing known, a name and its value with a colon between.
+/// Null when the playlist has no such row.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_file_info(app: *mut AndampApp, row: i32) -> *mut c_char {
+    let info = with_app(app, None, |a| {
+        usize::try_from(row).ok().and_then(|row| a.file_info(row))
+    });
+    match info {
+        Some(text) => c_text(&text),
+        None => std::ptr::null_mut(),
+    }
 }
 
 /// A preset's stay is over: the next one blends in, unless the listener holds the one shown.
@@ -430,8 +498,8 @@ pub unsafe extern "C" fn andamp_app_save(app: *mut AndampApp) {
 
 /// What the command line gave for one of the options the shell answers itself, to free with
 /// [`andamp_string_free`](super::andamp_string_free), or null when it was not given: `dump`, `bench`, `quit-after`,
-/// `then-skin`, `presets` with their value, `hidden`, `show-vis`, `show-effects` with `1`,
-/// and `click` with a line for each.
+/// `then-skin`, `presets` with their value, `hidden`, `show-vis`, `show-effects`, `show-prefs` with `1`,
+/// and `click` and `press-pref` with a line for each.
 ///
 /// # Safety
 /// `app` is null or a live app; `name` is a C string.

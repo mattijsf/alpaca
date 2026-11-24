@@ -128,23 +128,7 @@ final class Effects: NSObject, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) { save() }
 
     /// The window as a picture, for `--dump`.
-    func picture() -> NSBitmapImageRep? {
-        guard let view = window?.contentView else { return nil }
-        view.layoutSubtreeIfNeeded()
-        guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds),
-            let context = NSGraphicsContext(bitmapImageRep: rep)
-        else { return nil }
-        // the window's own background first: the view draws none
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = context
-        view.effectiveAppearance.performAsCurrentDrawingAppearance {
-            NSColor.windowBackgroundColor.setFill()
-            NSRect(origin: .zero, size: view.bounds.size).fill()
-        }
-        NSGraphicsContext.restoreGraphicsState()
-        view.cacheDisplay(in: view.bounds, to: rep)
-        return rep
-    }
+    func picture() -> NSBitmapImageRep? { window?.contentView?.snapshot() }
 
     /// Builds the window's rows again from the rack.
     private func rebuild() {
@@ -312,13 +296,32 @@ final class Effects: NSObject, NSWindowDelegate {
 }
 
 /// Calls a closure when a control fires.
-private final class Handler: NSObject {
+final class Handler: NSObject {
     private let run: (NSControl) -> Void
     init(_ run: @escaping (NSControl) -> Void) { self.run = run }
     @objc func fire(_ sender: NSControl) { run(sender) }
 }
 
 /// A view that counts down from its top, so a list starts at the top of its scroll view.
-private final class FlippedView: NSView {
+final class FlippedView: NSView {
     override var isFlipped: Bool { true }
+}
+
+extension NSView {
+    /// The view as a picture over the window's own background, which the view does not draw.
+    func snapshot() -> NSBitmapImageRep? {
+        layoutSubtreeIfNeeded()
+        guard let rep = bitmapImageRepForCachingDisplay(in: bounds),
+            let context = NSGraphicsContext(bitmapImageRep: rep)
+        else { return nil }
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = context
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            NSColor.windowBackgroundColor.setFill()
+            NSRect(origin: .zero, size: bounds.size).fill()
+        }
+        NSGraphicsContext.restoreGraphicsState()
+        cacheDisplay(in: bounds, to: rep)
+        return rep
+    }
 }

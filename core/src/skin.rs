@@ -344,46 +344,67 @@ impl Skin {
         }
     }
 
-    /// What the skin's buttons asked of the app since the last call. What the playlist
-    /// window asks that the player can answer by itself (which rows are selected, remove,
-    /// crop, sort, a new list) is answered here and not handed on.
+    /// What the skin's buttons asked of the app since the last call. Which rows the playlist
+    /// window has selected is noted here ([`Skin::selection`]) and not handed on. After a
+    /// pick from the playlist's buttons the engine clears what it shows as selected; the app
+    /// still needs the selection for that pick, and sets it afterwards itself, so a selection
+    /// that comes after such a pick is let go.
     pub fn take_actions(&mut self) -> Vec<HostAction> {
         let actions = std::mem::take(&mut *self.desk.actions.borrow_mut());
+        let mut picked = false;
         actions
             .into_iter()
-            .filter(|action| !self.answer(action))
+            .filter(|action| {
+                if action.name == "PLAYLIST" {
+                    picked = true;
+                    return true;
+                }
+                let selection = matches!(
+                    action.name.as_str(),
+                    "PLAYLIST_SELECT" | "PLAYLIST_SELECTION"
+                );
+                if selection && !picked {
+                    self.note_selection(action);
+                }
+                !selection
+            })
             .collect()
     }
 
-    /// Answers `action` when the player can; false leaves it to the app.
-    fn answer(&mut self, action: &HostAction) -> bool {
-        let Some(player) = self.player.clone() else {
-            return false;
-        };
-        let rows = |param: &Option<String>| -> Vec<usize> {
-            param
-                .as_deref()
-                .unwrap_or("")
-                .split(',')
-                .filter_map(|row| row.trim().parse().ok())
-                .collect()
-        };
-        match (action.name.as_str(), action.param.as_deref()) {
-            ("PLAYLIST_SELECT" | "PLAYLIST_SELECTION", _) => self.selected = rows(&action.param),
-            ("PLAYLIST", Some("remove_selected")) => player.borrow_mut().remove(&self.selected),
-            ("PLAYLIST", Some("crop")) => player.borrow_mut().crop(&self.selected),
-            ("PLAYLIST", Some("remove_all" | "list_new")) => player.borrow_mut().clear(),
-            ("PLAYLIST", Some("sort")) => player.borrow_mut().sort_by_title(),
-            _ => return false,
-        }
-        if action.name == "PLAYLIST" {
-            // the list changed under the selection
-            self.selected.clear();
-            self.runtime.set_playlist_selection(None);
-            self.runtime.invalidate();
-            self.redraw.set(true);
-        }
-        true
+    /// Notes the rows `action` says are selected.
+    fn note_selection(&mut self, action: &HostAction) {
+        self.selected = action
+            .param
+            .as_deref()
+            .unwrap_or("")
+            .split(',')
+            .filter_map(|row| row.trim().parse().ok())
+            .collect();
+    }
+
+    /// The rows selected in the playlist window, as the skin last said or the app last set.
+    pub fn selection(&self) -> &[usize] {
+        &self.selected
+    }
+
+    /// Shows `rows` as the playlist window's selection: after the app selected all or turned
+    /// the selection round, or with none after the list changed under it. A modern skin's
+    /// playlist shows one row, the first.
+    pub fn set_selection(&mut self, rows: &[usize]) {
+        self.selected = rows.to_vec();
+        let shown: Vec<i32> = rows.iter().map(|row| *row as i32).collect();
+        // a modern skin's list first: it also sets a classic playlist to that one row, and
+        // the classic call after it then shows them all
+        self.runtime.set_playlist_selection(shown.first().copied());
+        self.runtime.set_classic_playlist_selection(&shown);
+        self.refresh();
+    }
+
+    /// Has the skin read the player and its switches again and draw: after the app changed
+    /// something the skin shows without the skin's doing.
+    pub fn refresh(&mut self) {
+        self.runtime.invalidate();
+        self.redraw.set(true);
     }
 
     /// Tells the skin whether one of the app's switches is on ("doublesize", "ontop"), so the

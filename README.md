@@ -13,8 +13,11 @@ It is early. [PLAN.md](PLAN.md) says what is done, what is not, and what comes n
   double. AndAmp Dark, Light and Spot come with the app; a skin of your own opens from the
   File menu, from Finder, or by dropping it on a window.
 - MP3, AAC, ALAC, FLAC, Ogg Vorbis, WAV and AIFF files, folders of them and `.m3u`, `.m3u8`
-  and `.pls` playlists, and internet radio streams by their address. The playlist window
-  adds, removes, crops and sorts.
+  and `.pls` playlists, and internet radio streams by their address. The playlist window's
+  menus select, remove, crop and sort, drop dead files and duplicates, show a file's info
+  and write the list as a web page.
+- Preferences (Command and comma): the skin, the size, shuffle and repeat, the time shown,
+  what the skin's visualizer shows and how, and the Milkdrop window's presets and pace.
 - The ten-band equalizer, balance and volume, and the skin's spectrum and oscilloscope.
 - Effects: Andamp's `.lua` plug-ins. Six come with the app (View > Effects…), and you can
   add your own.

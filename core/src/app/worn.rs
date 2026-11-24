@@ -120,12 +120,14 @@ impl App {
         // the skin worn goes: its places are kept first
         if self.skin.is_some() {
             self.keep_places();
+            self.keep_switches();
             self.main_corner = self.main_place();
         }
         self.skin = Some(Box::new(skin));
         self.worn = Some(file.to_path_buf());
         self.give_menu_handler();
         self.tell_switches();
+        self.apply_switches();
 
         let prefix = format!("at.{name}.");
         let kept: Vec<(u32, (i32, i32))> = self
@@ -221,7 +223,7 @@ impl App {
             .map(|skin| skin.take_actions())
             .unwrap_or_default();
         for action in actions {
-            self.act(&action);
+            self.asked(&action);
         }
         flags
     }
@@ -236,31 +238,73 @@ impl App {
         self.skin.as_mut().map_or(-1, |skin| skin.next_due_ms())
     }
 
-    /// Answers something a button of the skin asked of the app.
-    fn act(&mut self, action: &HostAction) {
+    /// Answers something a button of the skin asked of the app: `action` is what the engine
+    /// handed its host, by Winamp's names.
+    pub fn asked(&mut self, action: &HostAction) {
         let at = action.at.map(|(x, y)| (x * self.zoom, y * self.zoom));
+        let popup = |menu: Menu| Request::Popup { menu, at };
         match (action.name.as_str(), action.param.as_deref()) {
             ("CLOSE", _) => self.request(Request::Quit),
             ("MINIMIZE", _) => self.request(Request::Hide),
             ("DOUBLESIZE", _) => self.command(command::DOUBLE_SIZE),
             ("ALWAYS_ON_TOP", _) => self.command(command::ON_TOP),
-            ("MENU" | "SYSMENU" | "CONTROLMENU", _) => self.request(Request::Popup {
-                menu: Menu::Popup,
-                at,
-            }),
+            // the clutter bar's O, I and V
+            ("MENU", Some("wa5:options")) => self.request(popup(Menu::Options)),
+            ("TRACKINFO", _) => {
+                let player = self.player.borrow();
+                let row = player.index();
+                let any = !player.entries().is_empty();
+                drop(player);
+                if any {
+                    self.request(Request::Info(row));
+                }
+            }
+            ("VIS_MENU", _) => self.request(popup(Menu::Visualization)),
+            // a double click on the visualizer asks for the full one
+            ("VIS_FS", _) => {
+                if !self.vis_open {
+                    self.request(Request::Vis(true));
+                }
+            }
+            ("MENU" | "SYSMENU" | "CONTROLMENU", _) => self.request(popup(Menu::Popup)),
             ("ABOUT", _) => self.request(Request::About),
             ("TOGGLE" | "SHOW", Some("vis")) => self.command(command::VISUALIZER),
-            ("EQ_PRESETS", _) => self.request(Request::Popup {
-                menu: Menu::Equalizer,
-                at,
-            }),
-            ("PE_ADD", _) | ("PLAYLIST", Some("add_file")) => {
-                self.request(Request::Ask(Ask::AddSongs));
+            ("EQ_PRESETS", _) => self.request(popup(Menu::Equalizer)),
+            // a modern skin's playlist buttons: the app shows the menu for each
+            ("PE_ADD", _) => self.request(popup(Menu::PlaylistAdd)),
+            ("PE_REM", _) => self.request(popup(Menu::PlaylistRemove)),
+            ("PE_SEL", _) => self.request(popup(Menu::PlaylistSelect)),
+            ("PE_MISC", _) => self.request(popup(Menu::PlaylistMisc)),
+            ("PE_LIST", _) => self.request(popup(Menu::PlaylistList)),
+            // a right click on a row: the menu is about that row, unless it is one of several
+            // selected
+            ("PLAYLIST_MENU", row) => {
+                if let Some(row) = row.and_then(|row| row.trim().parse::<usize>().ok()) {
+                    if !self.selection().contains(&row) {
+                        self.select(&[row]);
+                    }
+                }
+                self.request(popup(Menu::PlaylistRow));
             }
-            ("PLAYLIST", Some("add_url")) => self.request(Request::Ask(Ask::Url)),
-            ("PLAYLIST", Some("add_dir")) => self.request(Request::Ask(Ask::AddFolders)),
-            ("PLAYLIST", Some("list_load")) => self.request(Request::Ask(Ask::LoadList)),
-            ("PLAYLIST", Some("list_save")) => self.request(Request::Ask(Ask::SaveList)),
+            // a classic playlist's bottom buttons: the skin drew the menu, and this is the pick
+            ("PLAYLIST", Some(pick)) => match pick {
+                "add_file" => self.command(command::ADD_FILES),
+                "add_dir" => self.command(command::ADD_FOLDER),
+                "add_url" => self.command(command::ADD_URL),
+                "remove_selected" => self.command(command::REMOVE_SELECTED),
+                "crop" => self.command(command::CROP),
+                "remove_all" | "list_new" => self.command(command::CLEAR),
+                "remove_misc" => self.request(popup(Menu::RemoveMisc)),
+                "select_all" => self.command(command::SELECT_ALL),
+                "select_none" => self.command(command::SELECT_NONE),
+                "select_invert" => self.command(command::SELECT_INVERT),
+                "sort" => self.request(popup(Menu::Sort)),
+                "file_info" => self.command(command::FILE_INFO),
+                "misc_options" => self.request(popup(Menu::MiscOptions)),
+                "list_load" => self.command(command::LOAD_LIST),
+                "list_save" => self.command(command::SAVE_LIST),
+                _ => {}
+            },
             _ => {}
         }
     }

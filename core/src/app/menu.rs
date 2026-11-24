@@ -1,267 +1,295 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The app's menus, what each command does, and what the listener's picks lead to.
+//! The app's menus as text a shell builds its own from.
 
 use std::path::Path;
 
-use super::{command, is_url, App, Ask, Menu, Request};
-use crate::player::{location_kind, LocationKind, EQ_PRESETS};
+use walkit::classic::vis::VisMode;
+
+use super::{command, App, Menu};
+use crate::player::EQ_PRESETS;
+
+/// A menu being spelled out, a line for each item.
+struct Lines(String);
+
+impl Lines {
+    /// A command: its number, its text, its key and whether it is checked.
+    fn item(&mut self, id: i32, text: &str, key: &str, checked: bool) {
+        self.0.push_str(&format!(
+            "C\t{id}\t{}\t0\t{text}\t{key}\n",
+            u8::from(checked)
+        ));
+    }
+
+    /// A command with no key and no check, grayed unless `enabled`.
+    fn plain(&mut self, id: i32, text: &str, enabled: bool) {
+        self.0
+            .push_str(&format!("C\t{id}\t0\t{}\t{text}\t\n", u8::from(!enabled)));
+    }
+
+    fn separator(&mut self) {
+        self.0.push_str("S\n");
+    }
+
+    /// A submenu starts; [`Lines::end`] ends it.
+    fn sub(&mut self, text: &str) {
+        self.0.push_str(&format!(">\t{text}\n"));
+    }
+
+    fn end(&mut self) {
+        self.0.push_str("<\n");
+    }
+}
 
 impl App {
     /// One of the app's menus as lines of text, for the shell to build its own from: `C`, the
     /// command's number, 1 when checked, 1 when disabled, the text and the key, with tabs
     /// between, for a command; `S` for a separator; `>` and the text where a submenu starts
-    /// and `<` where it ends. A key is a letter, with `shift+` before it when Shift is held,
-    /// and goes with the system's own command key; most items have none.
+    /// and `<` where it ends. A key is a letter or a sign, with `shift+` before it when Shift
+    /// is held, and goes with the system's own command key; most items have none.
     pub fn menu(&self, menu: Menu) -> String {
-        let mut out = String::new();
-        let item = |out: &mut String, id: i32, text: &str, key: &str, checked: bool| {
-            out.push_str(&format!(
-                "C\t{id}\t{}\t0\t{text}\t{key}\n",
-                u8::from(checked)
-            ));
-        };
-        let worn = self.skin_name();
-        let skins = |out: &mut String| {
-            for (n, file) in self.builtin_skins().iter().enumerate() {
-                let name = Path::new(file)
-                    .file_stem()
-                    .map(|s| s.to_string_lossy().into_owned());
-                let id = command::SKIN + n as i32;
-                out.push_str(&format!(
-                    "C\t{id}\t{}\t0\t{}\t\n",
-                    u8::from(*file == worn),
-                    name.unwrap_or_default()
-                ));
-            }
-        };
-        let opacity = |out: &mut String| {
-            out.push_str(">\tOpacity\n");
-            for step in 0..=6 {
-                let percent = 100 - step * 10;
-                out.push_str(&format!(
-                    "C\t{}\t{}\t0\t{percent} %\t\n",
-                    command::OPACITY + step,
-                    u8::from(self.opacity == percent)
-                ));
-            }
-            out.push_str("<\n");
-        };
+        let mut m = Lines(String::new());
+        // what the playlist's commands would act on
+        let rows = self.player.borrow().entries().len();
+        let some = rows > 0;
+        let picked = !self.selection().is_empty();
         match menu {
             Menu::Bar => {
-                out.push_str(">\tAndamp\n");
-                item(&mut out, command::ABOUT, "About Andamp", "", false);
-                out.push_str("S\n");
-                item(&mut out, command::QUIT, "Quit Andamp", "q", false);
-                out.push_str("<\n>\tFile\n");
-                item(&mut out, command::OPEN_FILES, "Open Files…", "o", false);
-                item(&mut out, command::ADD_FILES, "Add Files…", "l", false);
-                item(&mut out, command::ADD_URL, "Add Radio Stream…", "u", false);
-                out.push_str("S\n");
-                item(&mut out, command::OPEN_SKIN, "Open Skin…", "shift+o", false);
+                m.sub("Andamp");
+                m.item(command::ABOUT, "About Andamp", "", false);
+                m.separator();
+                m.item(command::PREFERENCES, "Preferences…", ",", false);
+                m.separator();
+                m.item(command::QUIT, "Quit Andamp", "q", false);
+                m.end();
+                m.sub("File");
+                m.item(command::OPEN_FILES, "Open Files…", "o", false);
+                m.item(command::ADD_FILES, "Add Files…", "l", false);
+                m.item(command::ADD_FOLDER, "Add Folder…", "shift+l", false);
+                m.item(command::ADD_URL, "Add Radio Stream…", "u", false);
+                m.separator();
+                m.item(command::LOAD_LIST, "Load Playlist…", "", false);
+                m.item(command::SAVE_LIST, "Save Playlist…", "s", false);
+                m.separator();
+                m.item(command::OPEN_SKIN, "Open Skin…", "shift+o", false);
+                m.end();
                 // Winamp's keys, with the command key: Z X C V B
-                out.push_str("<\n>\tPlay\n");
-                item(&mut out, command::PREVIOUS, "Previous", "z", false);
-                item(&mut out, command::PLAY, "Play", "x", false);
-                item(&mut out, command::PAUSE, "Pause", "c", false);
-                item(&mut out, command::STOP, "Stop", "v", false);
-                item(&mut out, command::NEXT, "Next", "b", false);
-                out.push_str("<\n>\tSkins\n");
-                skins(&mut out);
-                out.push_str("<\n>\tView\n");
-                item(
-                    &mut out,
-                    command::DOUBLE_SIZE,
-                    "Double Size",
-                    "d",
-                    self.zoom > 1,
-                );
-                item(&mut out, command::ON_TOP, "Always on Top", "a", self.on_top);
-                opacity(&mut out);
-                out.push_str("S\n");
-                item(&mut out, command::EFFECTS, "Effects…", "e", false);
-                item(
-                    &mut out,
-                    command::VISUALIZER,
-                    "Visualizer",
-                    "shift+k",
-                    self.vis_open,
-                );
-                item(
-                    &mut out,
-                    command::CHOOSE_PRESETS,
-                    "Choose Milkdrop Presets…",
-                    "",
-                    false,
-                );
-                out.push_str("<\n");
+                m.sub("Play");
+                m.item(command::PREVIOUS, "Previous", "z", false);
+                m.item(command::PLAY, "Play", "x", false);
+                m.item(command::PAUSE, "Pause", "c", false);
+                m.item(command::STOP, "Stop", "v", false);
+                m.item(command::NEXT, "Next", "b", false);
+                m.separator();
+                self.modes(&mut m, "r", "shift+s");
+                m.end();
+                m.sub("Playlist");
+                m.item(command::SELECT_ALL, "Select All", "a", false);
+                m.item(command::SELECT_NONE, "Select None", "shift+a", false);
+                m.item(command::SELECT_INVERT, "Invert Selection", "i", false);
+                m.separator();
+                self.removals(&mut m, picked, some);
+                m.separator();
+                m.sub("Sort");
+                Self::sorts(&mut m, rows > 1);
+                m.end();
+                m.plain(command::FILE_INFO, "File Info…", some);
+                m.end();
+                m.sub("Skins");
+                self.skins(&mut m);
+                m.end();
+                m.sub("View");
+                m.item(command::DOUBLE_SIZE, "Double Size", "d", self.zoom > 1);
+                m.item(command::ON_TOP, "Always on Top", "t", self.on_top);
+                self.opacities(&mut m);
+                m.separator();
+                m.item(command::EFFECTS, "Effects…", "e", false);
+                m.item(command::VISUALIZER, "Visualizer", "shift+k", self.vis_open);
+                m.sub("Visualization");
+                self.visualization(&mut m);
+                m.end();
+                m.end();
             }
             Menu::Popup => {
-                item(&mut out, command::OPEN_FILES, "Open Files…", "", false);
-                item(&mut out, command::ADD_FILES, "Add Files…", "", false);
-                item(&mut out, command::ADD_URL, "Add Radio Stream…", "", false);
-                out.push_str("S\n");
-                item(&mut out, command::OPEN_SKIN, "Open Skin…", "", false);
-                out.push_str(">\tSkins\n");
-                skins(&mut out);
-                out.push_str("<\nS\n");
-                item(
-                    &mut out,
-                    command::DOUBLE_SIZE,
-                    "Double Size",
-                    "",
-                    self.zoom > 1,
-                );
-                item(&mut out, command::ON_TOP, "Always on Top", "", self.on_top);
-                opacity(&mut out);
-                item(&mut out, command::EFFECTS, "Effects…", "", false);
-                item(
-                    &mut out,
-                    command::VISUALIZER,
-                    "Visualizer",
-                    "",
-                    self.vis_open,
-                );
-                out.push_str("S\n");
-                item(&mut out, command::QUIT, "Quit Andamp", "", false);
+                m.item(command::OPEN_FILES, "Open Files…", "", false);
+                m.item(command::ADD_FILES, "Add Files…", "", false);
+                m.item(command::ADD_URL, "Add Radio Stream…", "", false);
+                m.separator();
+                m.item(command::OPEN_SKIN, "Open Skin…", "", false);
+                m.sub("Skins");
+                self.skins(&mut m);
+                m.end();
+                m.separator();
+                m.item(command::DOUBLE_SIZE, "Double Size", "", self.zoom > 1);
+                m.item(command::ON_TOP, "Always on Top", "", self.on_top);
+                self.opacities(&mut m);
+                m.item(command::EFFECTS, "Effects…", "", false);
+                m.item(command::VISUALIZER, "Visualizer", "", self.vis_open);
+                m.separator();
+                m.item(command::PREFERENCES, "Preferences…", "", false);
+                m.separator();
+                m.item(command::QUIT, "Quit Andamp", "", false);
             }
             Menu::Equalizer => {
-                item(&mut out, command::EQ_PRESET, "Flat", "", false);
-                out.push_str("S\n");
+                m.item(command::EQ_PRESET, "Flat", "", false);
+                m.separator();
                 for (n, (name, _, _)) in EQ_PRESETS.iter().enumerate() {
-                    item(&mut out, command::EQ_PRESET + 1 + n as i32, name, "", false);
+                    m.item(command::EQ_PRESET + 1 + n as i32, name, "", false);
                 }
             }
+            Menu::Options => {
+                m.item(command::PREFERENCES, "Preferences…", "", false);
+                m.separator();
+                m.sub("Skins");
+                self.skins(&mut m);
+                m.end();
+                m.separator();
+                let left = self.time_remaining();
+                m.item(command::TIME_ELAPSED, "Time Elapsed", "", !left);
+                m.item(command::TIME_REMAINING, "Time Remaining", "", left);
+                m.separator();
+                m.item(command::DOUBLE_SIZE, "Double Size", "", self.zoom > 1);
+                m.item(command::ON_TOP, "Always on Top", "", self.on_top);
+                self.opacities(&mut m);
+                m.separator();
+                self.modes(&mut m, "", "");
+            }
+            Menu::Visualization => self.visualization(&mut m),
+            Menu::PlaylistAdd => {
+                m.item(command::ADD_FILES, "Add Files…", "", false);
+                m.item(command::ADD_FOLDER, "Add Folder…", "", false);
+                m.item(command::ADD_URL, "Add Radio Stream…", "", false);
+            }
+            Menu::PlaylistRemove => self.removals(&mut m, picked, some),
+            Menu::PlaylistSelect => {
+                m.plain(command::SELECT_ALL, "Select All", some);
+                m.plain(command::SELECT_NONE, "Select None", picked);
+                m.plain(command::SELECT_INVERT, "Invert Selection", some);
+            }
+            Menu::PlaylistMisc => {
+                m.sub("Sort List");
+                Self::sorts(&mut m, rows > 1);
+                m.end();
+                m.plain(command::FILE_INFO, "File Info…", some);
+                m.sub("Misc Options");
+                Self::misc_options(&mut m, some);
+                m.end();
+            }
+            Menu::PlaylistList => {
+                m.item(command::LOAD_LIST, "Load Playlist…", "", false);
+                m.plain(command::SAVE_LIST, "Save Playlist…", some);
+                m.plain(command::CLEAR, "New Playlist", some);
+            }
+            Menu::PlaylistRow => {
+                m.plain(command::PLAY_SELECTED, "Play", picked);
+                m.plain(command::FILE_INFO, "File Info…", picked);
+                m.plain(
+                    command::REVEAL,
+                    "Show in Folder",
+                    self.selected_file().is_some(),
+                );
+                m.separator();
+                m.plain(command::REMOVE_SELECTED, "Remove", picked);
+                m.plain(command::CROP, "Crop", picked);
+            }
+            Menu::Sort => Self::sorts(&mut m, rows > 1),
+            Menu::RemoveMisc => {
+                m.plain(command::REMOVE_DEAD, "Remove Dead Files", some);
+                m.plain(command::REMOVE_DUPLICATES, "Remove Duplicates", rows > 1);
+            }
+            Menu::MiscOptions => Self::misc_options(&mut m, some),
         }
-        out
+        m.0
     }
 
-    /// Does the command with number `id`: what a pick from the menu, or a key that stands
-    /// for one, asks for.
-    pub fn command(&mut self, id: i32) {
-        use super::command::{
-            ABOUT, ADD_FILES, ADD_FOLDER, ADD_URL, CHOOSE_PRESETS, DOUBLE_SIZE, EFFECTS, EQ_PRESET,
-            HIDE, LOAD_LIST, NEXT, ON_TOP, OPACITY, OPEN_FILES, OPEN_SKIN, PAUSE, PLAY, PREVIOUS,
-            QUIT, SAVE_LIST, SKIN, STOP, VISUALIZER,
-        };
-        let skins = SKIN..SKIN + 100;
-        let presets = EQ_PRESET..=EQ_PRESET + EQ_PRESETS.len() as i32;
-        match id {
-            OPEN_FILES => self.request(Request::Ask(Ask::OpenSongs)),
-            ADD_FILES => self.request(Request::Ask(Ask::AddSongs)),
-            ADD_URL => self.request(Request::Ask(Ask::Url)),
-            OPEN_SKIN => self.request(Request::Ask(Ask::Skin)),
-            ADD_FOLDER => self.request(Request::Ask(Ask::AddFolders)),
-            LOAD_LIST => self.request(Request::Ask(Ask::LoadList)),
-            SAVE_LIST => self.request(Request::Ask(Ask::SaveList)),
-            PREVIOUS => self.player.borrow_mut().previous(),
-            PLAY => self.player.borrow_mut().play(),
-            PAUSE => self.player.borrow_mut().pause(),
-            STOP => self.player.borrow_mut().stop(),
-            NEXT => self.player.borrow_mut().next(),
-            DOUBLE_SIZE => self.set_zoom(if self.zoom == 1 { 2 } else { 1 }),
-            ON_TOP => self.set_on_top(!self.on_top),
-            EFFECTS => self.request(Request::Effects),
-            VISUALIZER => self.request(Request::Vis(!self.vis_open)),
-            CHOOSE_PRESETS => self.request(Request::Ask(Ask::Presets)),
-            ABOUT => self.request(Request::About),
-            QUIT => self.request(Request::Quit),
-            HIDE => self.request(Request::Hide),
-            id if (OPACITY..=OPACITY + 6).contains(&id) => {
-                self.set_opacity(100 - (id - OPACITY) * 10);
-            }
-            id if skins.contains(&id) => {
-                if let Some(name) = self.builtin_skins().get((id - SKIN) as usize) {
-                    let file = self.builtin(name);
-                    self.wear(&file);
-                }
-            }
-            id if presets.contains(&id) => {
-                // the first is flat, the rest the factory presets in order
-                let preset = usize::try_from(id - EQ_PRESET - 1).ok();
-                self.player.borrow_mut().apply_eq_preset(preset);
-            }
-            _ => {}
-        }
-    }
-
-    /// What the listener picked when asked: files and folders by their paths, the address of
-    /// a radio stream as text. Nothing picked is no call, or an empty `answer`.
-    pub fn picked(&mut self, ask: Ask, answer: &[String]) {
-        let Some(first) = answer.first() else {
-            return;
-        };
-        match ask {
-            Ask::OpenSongs | Ask::LoadList => self.play(answer),
-            Ask::AddSongs | Ask::AddFolders => {
-                self.add(answer);
-            }
-            Ask::SaveList => {
-                let saved = self.player.borrow().save_list(Path::new(first));
-                if let Err(message) = saved {
-                    self.request(Request::Error(message));
-                }
-            }
-            Ask::Skin => {
-                self.wear(Path::new(first));
-            }
-            Ask::Url => {
-                let address = first.trim();
-                if !is_url(address) {
-                    return;
-                }
-                let was_empty = self.player.borrow().entries().is_empty();
-                if self.add(&[address.to_string()]) > 0 && was_empty {
-                    self.player.borrow_mut().play_index(0);
-                }
-            }
-            Ask::Presets => {
-                self.settings.set("presets", Some(first));
-                self.presets.read(Path::new(first));
-                if self.vis_open {
-                    self.show_preset(false);
-                } else {
-                    self.request(Request::Vis(true));
-                }
-            }
+    /// The skins that come with the app, the one worn checked.
+    fn skins(&self, m: &mut Lines) {
+        let worn = self.skin_name();
+        for (n, file) in self.builtin_skins().iter().enumerate() {
+            let name = Path::new(file)
+                .file_stem()
+                .map(|s| s.to_string_lossy().into_owned());
+            m.item(
+                command::SKIN + n as i32,
+                &name.unwrap_or_default(),
+                "",
+                *file == worn,
+            );
         }
     }
 
-    /// What the system asks the app to open, or what was dropped on a window: a skin is
-    /// worn; songs, folders of songs, playlist files and radio streams take the playlist's
-    /// place and play. Before [`App::start`] it waits for the start.
-    pub fn open(&mut self, locations: &[String]) {
-        if !self.started || self.playlist_due > 0 {
-            self.waiting.extend_from_slice(locations);
-            return;
+    /// The Opacity submenu: 100 % down to 40 %.
+    fn opacities(&self, m: &mut Lines) {
+        m.sub("Opacity");
+        for step in 0..=6 {
+            let percent = 100 - step * 10;
+            m.item(
+                command::OPACITY + step,
+                &format!("{percent} %"),
+                "",
+                self.opacity == percent,
+            );
         }
-        let is_skin = |location: &String| {
-            !is_url(location) && location_kind(Path::new(location)) == LocationKind::Skin
-        };
-        if let Some(skin) = locations.iter().find(|l| is_skin(l)) {
-            self.wear(Path::new(skin));
-        }
-        let rest: Vec<String> = locations.iter().filter(|l| !is_skin(l)).cloned().collect();
-        if !rest.is_empty() {
-            self.play(&rest);
-        }
+        m.end();
     }
 
-    /// Adds songs, folders of songs, playlist files and radio streams to the playlist; how
-    /// many entries joined.
-    pub fn add(&mut self, locations: &[String]) -> usize {
-        let mut player = self.player.borrow_mut();
-        locations
-            .iter()
-            .map(|l| player.add_location(Path::new(l)))
-            .sum()
+    /// Repeat and shuffle, with the keys given.
+    fn modes(&self, m: &mut Lines, repeat: &str, shuffle: &str) {
+        let player = self.player.borrow();
+        m.item(command::REPEAT, "Repeat", repeat, player.repeat());
+        m.item(command::SHUFFLE, "Shuffle", shuffle, player.shuffle());
     }
 
-    /// Empties the playlist, adds `locations` and plays the first.
-    pub fn play(&mut self, locations: &[String]) {
-        self.player.borrow_mut().clear();
-        if self.add(locations) > 0 {
-            self.player.borrow_mut().play_index(0);
-        }
+    /// What takes entries out of the playlist.
+    fn removals(&self, m: &mut Lines, picked: bool, some: bool) {
+        let rows = self.player.borrow().entries().len();
+        m.plain(command::REMOVE_SELECTED, "Remove Selected", picked);
+        m.plain(command::CROP, "Crop Selected", picked);
+        m.plain(command::CLEAR, "Clear Playlist", some);
+        m.separator();
+        m.plain(command::REMOVE_DEAD, "Remove Dead Files", some);
+        m.plain(command::REMOVE_DUPLICATES, "Remove Duplicates", rows > 1);
+    }
+
+    /// The ways to sort the playlist.
+    fn sorts(m: &mut Lines, enabled: bool) {
+        m.plain(command::SORT_TITLE, "Sort by Title", enabled);
+        m.plain(command::SORT_FILENAME, "Sort by File Name", enabled);
+        m.plain(command::SORT_PATH, "Sort by Path and File Name", enabled);
+        m.separator();
+        m.plain(command::REVERSE, "Reverse List", enabled);
+        m.plain(command::RANDOMIZE, "Randomize List", enabled);
+    }
+
+    /// The playlist's other options.
+    fn misc_options(m: &mut Lines, some: bool) {
+        m.plain(command::HTML_LIST, "Generate HTML Playlist…", some);
+        m.plain(command::REREAD, "Read File Info Again", some);
+    }
+
+    /// What a classic skin's visualizer shows, and the Milkdrop window.
+    fn visualization(&self, m: &mut Lines) {
+        let mode = self.vis_mode();
+        m.item(
+            command::VIS_ANALYZER,
+            "Spectrum Analyzer",
+            "",
+            mode == VisMode::Analyzer,
+        );
+        m.item(
+            command::VIS_SCOPE,
+            "Oscilloscope",
+            "",
+            mode == VisMode::Scope,
+        );
+        m.item(command::VIS_OFF, "Off", "", mode == VisMode::Off);
+        m.separator();
+        m.item(command::VISUALIZER, "Milkdrop Window", "", self.vis_open);
+        m.item(
+            command::CHOOSE_PRESETS,
+            "Choose Milkdrop Presets…",
+            "",
+            false,
+        );
     }
 }

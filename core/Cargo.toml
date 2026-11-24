@@ -55,6 +55,7 @@ format_push_string = "allow"
 format_collect = "allow"
 match_same_arms = "allow"
 float_cmp = "allow"
+assert_is_empty = "allow"
 # the inner loops of the renderer, the equalizer and the effects are measured with it
 inline_always = "allow"
 

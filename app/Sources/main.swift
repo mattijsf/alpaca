@@ -13,6 +13,8 @@ import UniformTypeIdentifiers
 /// ```
 ///        [--click x,y]         clicks there on the screen, in layout pixels from its top left
 ///                              corner, a second after the start; may be given more than once
+///        [--press-pref <id>]   presses that switch or button of the Preferences window, a
+///                              second after the start; may be given more than once
 ///        [--quit-after <seconds>]  prints what it would keep for the next run, and quits as
 ///                              the menu's Quit does
 ///        [--dump <folder>]     writes every window as a PNG after two seconds, and quits;
@@ -25,6 +27,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let controller = SkinController()
     private var nowPlaying: NowPlaying?
     lazy var effects = Effects(app: controller.app)
+    lazy var preferences: Preferences = {
+        let made = Preferences(app: controller.app)
+        made.onChange = { [weak self] in
+            self?.controller.pump(force: true)
+            self?.visualizer.settingsChanged()
+        }
+        return made
+    }()
     lazy var visualizer: Visualizer = {
         let made = Visualizer(app: controller.app)
         made.onChange = { [weak self] in self?.controller.pump(force: true) }
@@ -48,6 +58,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard at.count == 2 else { continue }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1 + Double(n) * 0.2) {
                 self.controller.click(x: at[0], y: at[1])
+            }
+        }
+        for (n, row) in (controller.option("press-pref") ?? "").split(separator: "\n").enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1 + Double(n) * 0.2) {
+                self.preferences.show()
+                self.preferences.press(row: String(row))
             }
         }
         if let folder = controller.option("dump") {
@@ -100,7 +116,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             case "popup":
                 let place = parts.count >= 4 ? Int(parts[2]).flatMap { x in Int(parts[3]).map { (x, $0) } } : nil
                 popUp(menu: Int32(second) ?? ANDAMP_MENU_POPUP, at: place.map { controller.screenPoint($0.0, $0.1) })
-            case "menu": NSApp.mainMenu = makeMenu()
+            case "menu":
+                NSApp.mainMenu = makeMenu()
+                preferences.refresh()
+            case "preferences": preferences.show()
+            case "info": showInfo(row: Int32(second) ?? -1)
+            case "open": NSWorkspace.shared.open(URL(fileURLWithPath: rest(line)))
+            case "reveal": NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: rest(line))])
             case "effects": effects.show()
             case "vis": if second == "1" { visualizer.show() } else { visualizer.close() }
             case "preset" where parts.count >= 4:
@@ -117,6 +139,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         controller.pump(force: true)
+    }
+
+    /// What follows a request's first word: a path, which may have tabs of its own.
+    private func rest(_ line: String) -> String {
+        line.split(separator: "\t", maxSplits: 1, omittingEmptySubsequences: false).dropFirst().first.map(String.init)
+            ?? ""
+    }
+
+    /// Shows what the library knows of the playlist's entry at `row`: its title, then a line
+    /// for each thing known.
+    private func showInfo(row: Int32) {
+        guard let text = andamp_app_file_info(controller.app, row) else { return }
+        defer { andamp_string_free(text) }
+        let lines = String(cString: text).split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        let alert = NSAlert()
+        alert.messageText = lines.first ?? ""
+        alert.informativeText = lines.dropFirst().joined(separator: "\n")
+        alert.runModal()
     }
 
     /// Lets the listener pick what the library asked for, and hands back the answer.
@@ -138,10 +178,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             open.canChooseDirectories = true
             open.canChooseFiles = false
             open.message = "A folder of Milkdrop presets (.milk files)"
-        case "save_list":
+        case "save_list", "save_html":
+            let ending = what == "save_list" ? "m3u8" : "html"
             let save = NSSavePanel()
-            save.allowedContentTypes = types(["m3u8"])
-            save.nameFieldStringValue = "Playlist.m3u8"
+            save.allowedContentTypes = types([ending])
+            save.nameFieldStringValue = "Playlist." + ending
             if save.runModal() == .OK, let file = save.url { controller.picked(what, [file.path]) }
             return
         case "url":

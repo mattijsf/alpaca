@@ -162,6 +162,15 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   module is split by concern; rustfmt, clippy's pedantic set, doc comments on every public
   item and Apple's swift-format are held by one gate (`tools/gate.sh`) that a pre-push hook
   runs. ENGINEERING.md has the rules.
+- [x] The player's basics the first use found missing (2026-11-24). Every item of the
+  playlist's menus does what it says: select all, none and invert; remove selected, crop,
+  clear, dead files and duplicates; sorting by title, file name or path, reversing and
+  randomizing; file info; the list as a web page; reading files again; a right click on a row;
+  and a modern skin's five playlist buttons, which open these as menus. The clutter bar's O,
+  I and V open the options, file info and the visualization menu. A Preferences window
+  (Command and comma) holds the skin, the size, shuffle and repeat, the time shown, the classic
+  visualizer's mode and style, and the Milkdrop window's presets, stay and frame rate; all of
+  it is kept between runs. The core describes the window; the Mac draws it.
 - [ ] The Mac's shell does not yet tell the app when the screen changes
   (`andamp_app_set_screen`): the windows keep the screen of the start.
 - [ ] A shell for Windows: not started. PORTING.md has what is known.
@@ -217,6 +226,9 @@ stand-in fonts.
 - 2026-11-24, morning: prepared for Windows and Linux: the audio device behind one small
   interface with a portable version, the core cross-checked for both systems, and what every
   shell would write again moved out of Swift.
+- 2026-11-24, night: the playlist's menus and a Preferences window, after the owner found
+  both missing. The playing cost was not measured again: the screen was out of sight, and the
+  step and the renderer were not touched.
 - 2026-11-24, evening: the owner used the app for the first time and found nothing wrong.
 - 2026-11-24, later still: a refactor pass and the gate; ENGINEERING.md written. No change to
   what the app does; cost and start-up measured again.

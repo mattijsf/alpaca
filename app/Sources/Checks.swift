@@ -32,6 +32,12 @@ extension AppDelegate {
         {
             try? png.write(to: folder.appendingPathComponent("effects.png"))
         }
+        if controller.option("show-prefs") != nil {
+            for (n, page) in preferences.pictures().enumerated() {
+                try? page.representation(using: .png, properties: [:])?
+                    .write(to: folder.appendingPathComponent("preferences-\(n).png"))
+            }
+        }
         try? lines.joined(separator: "\n").appending("\n")
             .write(to: folder.appendingPathComponent("windows.txt"), atomically: true, encoding: .utf8)
         exit(0)

@@ -8,7 +8,7 @@ use super::App;
 
 impl App {
     /// Where the listener's own plug-ins are kept: in the app's folder, beside its settings.
-    fn plugins_folder(&self) -> Option<PathBuf> {
+    pub(super) fn plugins_folder(&self) -> Option<PathBuf> {
         self.config.as_ref().map(|config| config.join("Plugins"))
     }
 

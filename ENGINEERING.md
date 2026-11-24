@@ -98,7 +98,7 @@ shell ──▶ ffi ──▶ app ──┬──▶ skin ──▶ host, render
 
 | Path | What it is |
 | --- | --- |
-| `core/src/app/` | The app: `mod.rs` the start, the look and saving; `options.rs` the command line; `request.rs` the commands' numbers and what the app asks of a shell; `menu.rs` the menus, the commands and what a pick leads to; `worn.rs` the skin worn, its windows' places, the step and the skin's buttons; `visualizer.rs` and `effects.rs` those two windows as the app sees them. |
+| `core/src/app/` | The app: `mod.rs` the start, the look and saving; `options.rs` the command line; `request.rs` the commands' numbers, the menus' numbers and what the app asks of a shell; `menu.rs` every menu as text; `commands.rs` what each command and each pick does; `playlist.rs` the selection, file info and the list as a web page; `prefs.rs` the preferences as pages of rows and what setting one does; `worn.rs` the skin worn, its windows' places, the step and what the skin's buttons ask; `visualizer.rs` and `effects.rs` those two windows as the app sees them. |
 | `core/src/skin.rs` | The engine running one skin, its windows set out apart, each drawn into its own pixels. |
 | `core/src/host.rs` | What the engine asks of an app: pictures decoded, text measured, actions and switches. |
 | `core/src/render.rs` | A window's draw list into pixels: only what changed, with shapes as runs of rows. |
@@ -108,7 +108,7 @@ shell ──▶ ffi ──▶ app ──┬──▶ skin ──▶ host, render
 | `core/src/vis.rs` | The Visualizer's presets: which shows, how long, what its keys do. |
 | `core/src/ffi/` | The C interface, by what it takes: `app.rs`, `player.rs`, `skin.rs`. `core/include/andamp_core.h` is written by hand, in step with it. |
 | `core/tests/` | The tests, a file to an area: `app`, `windows`, `player`, `effects`, `settings`. |
-| `app/Sources/` | The Mac's shell: `main.swift` answers the app's requests and draws its menus; `SkinController.swift` steps the app and places the windows; `SkinWindow.swift` shows pixels; `Effects.swift`, `Visualizer.swift` and `NowPlaying.swift` are the Mac's own windows and media keys; `Checks.swift` is `--dump` and `--bench`. |
+| `app/Sources/` | The Mac's shell: `main.swift` answers the app's requests and draws its menus; `SkinController.swift` steps the app and places the windows; `SkinWindow.swift` shows pixels; `Preferences.swift`, `Effects.swift`, `Visualizer.swift` and `NowPlaying.swift` are the Mac's own windows and media keys; `Checks.swift` is `--dump` and `--bench`. |
 | `vis/` | Builds libprojectM as a library beside the app. |
 | `tools/` | The gate and the cross-check. |
 | `spikes/` | Experiments kept for their findings; outside the gate. |
@@ -139,6 +139,10 @@ Rust.
 - **Places on the screen are in points from the top left corner** of the part of the screen
   the windows move on, the same on every system; a layout pixel is `zoom` points. A shell
   turns them into its system's own.
+- **A window of controls is described, not built, by the app.** The preferences are pages of
+  rows of a few kinds (a switch, a choice, a slider, a button, text), and the effect rack is
+  JSON of the same sort; a shell draws the kinds and knows nothing of what a row means. A
+  new preference is a row and a line in `set_preference`, with a test, and no shell changes.
 - **The shell learns of a change by a request**, not by asking: `skin` when another is worn,
   `look` when the size, the opacity or staying on top changed, `menu` when the bar did.
 
@@ -169,7 +173,8 @@ A change is done when the gate passes and, where it shows, the app was looked at
 - **A test makes its own files** in a scratch folder: songs as WAV bytes, settings, presets.
   The skins are the ones that come with the app.
 - **What only a shell can show is checked through the app**: `--dump` for pictures,
-  `--bench` for cost, `--click` and `--quit-after` for what a click or a restart does.
+  `--bench` for cost, `--click`, `--press-pref` and `--quit-after` for what a click, a
+  switch of the Preferences window or a restart does.
   What nobody has checked is said so in PLAN.md.
 
 ## Code style

@@ -344,16 +344,130 @@ impl Player {
         self.shuffled.clear();
     }
 
-    /// Sorts the playlist by title; the song playing goes on.
-    pub fn sort_by_title(&mut self) {
-        let current = self.entry().map(|e| e.path.clone());
-        self.playlist
-            .sort_by_cached_key(|e| (e.title.to_lowercase(), e.path.clone()));
-        if let Some(at) = current.and_then(|path| self.playlist.iter().position(|e| e.path == path))
-        {
+    /// Puts the playlist in the order `arrange` gives it; the current entry stays current, and
+    /// the song playing goes on. `arrange` gets each entry with the place it had.
+    fn rearrange(&mut self, arrange: impl FnOnce(&mut Vec<(usize, Entry)>)) {
+        let mut list: Vec<(usize, Entry)> = std::mem::take(&mut self.playlist)
+            .into_iter()
+            .enumerate()
+            .collect();
+        arrange(&mut list);
+        if let Some(at) = list.iter().position(|(row, _)| *row == self.index) {
             self.index = at;
         }
+        self.playlist = list.into_iter().map(|(_, entry)| entry).collect();
         self.shuffled.clear();
+    }
+
+    /// Sorts the playlist by title; the song playing goes on.
+    pub fn sort_by_title(&mut self) {
+        self.rearrange(|list| {
+            list.sort_by_cached_key(|(_, e)| (e.title.to_lowercase(), e.path.clone()));
+        });
+    }
+
+    /// Sorts the playlist by the files' names, without their folders.
+    pub fn sort_by_filename(&mut self) {
+        self.rearrange(|list| {
+            list.sort_by_cached_key(|(_, e)| {
+                let name = e
+                    .path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_lowercase());
+                (name.unwrap_or_default(), e.path.clone())
+            });
+        });
+    }
+
+    /// Sorts the playlist by the files' whole paths.
+    pub fn sort_by_path(&mut self) {
+        self.rearrange(|list| {
+            list.sort_by_cached_key(|(_, e)| e.path.to_string_lossy().to_lowercase());
+        });
+    }
+
+    /// Turns the playlist round: the last entry first.
+    pub fn reverse(&mut self) {
+        self.rearrange(|list| list.reverse());
+    }
+
+    /// Puts the playlist in an order `seed` picks: the same seed, the same order.
+    pub fn randomize(&mut self, seed: u64) {
+        // an xorshift generator
+        let mut state = seed | 1;
+        let mut next = move || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+        self.rearrange(|list| {
+            // each place from the end takes one of those up to it
+            for at in (1..list.len()).rev() {
+                list.swap(at, (next() % (at as u64 + 1)) as usize);
+            }
+        });
+    }
+
+    /// Takes out the entries whose file is no longer there; a radio stream stays. Gives how
+    /// many went.
+    pub fn remove_dead(&mut self) -> usize {
+        let dead: Vec<usize> = self
+            .playlist
+            .iter()
+            .enumerate()
+            .filter(|(_, e)| !decode::is_url(&e.path) && !e.path.exists())
+            .map(|(row, _)| row)
+            .collect();
+        self.remove(&dead);
+        dead.len()
+    }
+
+    /// Takes out every entry that names a file an earlier entry names. Gives how many went.
+    pub fn remove_duplicates(&mut self) -> usize {
+        let mut seen = std::collections::HashSet::new();
+        let again: Vec<usize> = self
+            .playlist
+            .iter()
+            .enumerate()
+            .filter(|(_, e)| !seen.insert(e.path.clone()))
+            .map(|(row, _)| row)
+            .collect();
+        self.remove(&again);
+        again.len()
+    }
+
+    /// Reads the files at `rows` again: their tags, length and title as they are now.
+    pub fn reread(&mut self, rows: &[usize]) {
+        for &row in rows {
+            let Some(path) = self.playlist.get(row).map(|e| e.path.clone()) else {
+                continue;
+            };
+            if let Ok(entry) = Entry::read(&path) {
+                self.playlist[row] = entry;
+            }
+        }
+    }
+
+    /// Whether the next song is picked at random.
+    pub fn shuffle(&self) -> bool {
+        self.shuffle
+    }
+
+    /// Picks the next song at random, or in the list's order.
+    pub fn set_shuffle(&mut self, on: bool) {
+        self.shuffle = on;
+        self.shuffled.clear();
+    }
+
+    /// Whether the list starts over after its last song.
+    pub fn repeat(&self) -> bool {
+        self.repeat
+    }
+
+    /// Starts the list over after its last song, or stops there.
+    pub fn set_repeat(&mut self, on: bool) {
+        self.repeat = on;
     }
 
     /// Adds the songs a playlist file names (`.m3u`, `.m3u8` or `.pls`); how many joined.

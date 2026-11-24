@@ -47,12 +47,14 @@ what the app asks of it.
 | The mouse, in places on the screen | `SkinController`'s mouse calls | `pointer_down`, `pointer_move`, `pointer_up`, `double_click`, `right_click` |
 | Waking up when there is next something to do | `SkinController.schedule` | `andamp_app_next_due_ms`; nothing to do while no window is in sight |
 | The keys | `SkinController.keyDown`, `Visualizer.key` | `andamp_player_key` and `andamp_app_vis_key` with the key's name |
-| Drawing menus: the bar, the popups, a skin's own | `NSMenu.from(lines:)` | every menu as lines of text (`andamp_app_menu`), with the checks and the keys; the pick goes back as a number (`andamp_app_command`) |
+| Drawing menus: the bar, the popups, a skin's own | `NSMenu.from(lines:)` | every menu as lines of text (`andamp_app_menu`), by number: the bar, the main popup, and the popups a skin's buttons ask for (options, visualization, the playlist's five buttons, a row's menu, sorting), with the checks, the grayed items and the keys; the pick goes back as a number (`andamp_app_command`) |
 | Doing what the app asks | `AppDelegate.answer` | `andamp_app_take_requests`: quit, hide, about, show a menu at a place, show the Effects or Visualizer window, load a preset, say what went wrong |
 | Letting the listener pick files, folders, a stream's address | `AppDelegate.ask` | the request `ask` with what to pick; the answer goes to `andamp_app_picked` |
 | What the system opens, and what is dropped on a window | `application(_:open:)`, `SurfaceView` | `andamp_app_open` |
 | The look: size, on top, opacity | `SkinController.answer` | the request `look`, then `andamp_app_zoom`, `_on_top`, `_opacity` |
 | The system's media keys and "now playing" | `NowPlaying.swift` | the player's status, position and the current entry |
+| The Preferences window | `Preferences.swift` | the pages and their rows as JSON (`andamp_app_preferences`), by kind: a switch, a choice, a slider, a button, text; a change goes back as an id and a value (`andamp_app_set_preference`) |
+| File info, opening a file, showing one in its folder | `AppDelegate.answer` | the requests `info` (with `andamp_app_file_info` for the text), `open` and `reveal` |
 | The Effects window | `Effects.swift` | the rack as JSON; setters for switches, controls and presets; the listener's own plug-ins kept by `andamp_app_add_plugin` |
 | The Visualizer window | `Visualizer.swift` | the samples heard since the last frame, and which preset to show (`preset` requests); libprojectM draws |
 | Saving when the app goes to the background or ends | `AppDelegate` | `andamp_app_save` |

@@ -12,9 +12,12 @@
 //! Places on the screen are in points from the top left corner of the part of the screen the
 //! windows move on: a layout pixel of the skin is [`App::zoom`] points.
 
+mod commands;
 mod effects;
 mod menu;
 mod options;
+mod playlist;
+mod prefs;
 mod request;
 mod visualizer;
 mod worn;
@@ -200,6 +203,9 @@ impl App {
         if self.options.show_effects {
             self.request(Request::Effects);
         }
+        if self.options.show_prefs {
+            self.request(Request::Preferences);
+        }
         self.request(Request::Menu);
     }
 
@@ -351,6 +357,7 @@ impl App {
             self.settings.set("player", Some(&player.state()));
         }
         self.keep_places();
+        self.keep_switches();
         self.keep_effects();
         if let Err(message) = self.settings.save() {
             eprintln!("andamp: {message}");
