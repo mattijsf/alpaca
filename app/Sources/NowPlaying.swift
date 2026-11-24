@@ -27,7 +27,8 @@ final class NowPlaying {
             if andamp_player_status(controller.player) == 1 { controller.command(ANDAMP_COMMAND_PAUSE) }
         }
         on(center.togglePlayPauseCommand) {
-            controller.command(andamp_player_status(controller.player) == 0 ? ANDAMP_COMMAND_PLAY : ANDAMP_COMMAND_PAUSE)
+            controller.command(
+                andamp_player_status(controller.player) == 0 ? ANDAMP_COMMAND_PLAY : ANDAMP_COMMAND_PAUSE)
         }
         on(center.stopCommand) { controller.command(ANDAMP_COMMAND_STOP) }
         on(center.nextTrackCommand) { controller.command(ANDAMP_COMMAND_NEXT) }
@@ -57,7 +58,7 @@ final class NowPlaying {
         var artist: UnsafeMutablePointer<CChar>?
         var album: UnsafeMutablePointer<CChar>?
         let length = andamp_player_entry(player, now.0, &title, &artist, &album, nil)
-        defer { [title, artist, album].forEach { andamp_string_free($0) } }
+        defer { for text in [title, artist, album] { andamp_string_free(text) } }
         guard length >= 0, now.1 != 0 else {
             center.nowPlayingInfo = nil
             center.playbackState = .stopped

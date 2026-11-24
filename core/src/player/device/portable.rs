@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! The default output device through the `cpal` crate: WASAPI on Windows, ALSA on Linux
-//! (and CoreAudio on a Mac, with the `portable-output` feature).
+//! (and Core Audio on a Mac, with the `portable-output` feature).
 //!
 //! The device runs at its own sample rate and channel count. A song at another rate is
 //! converted ([`Resampler`]); its left and right go to the device's first two channels, or
@@ -13,6 +13,7 @@ use cpal::{FromSample, SampleFormat, SizedSample};
 use super::resample::Resampler;
 use super::Fill;
 
+/// The system's default output device through `cpal`, open for one sample rate.
 pub struct Device {
     stream: cpal::Stream,
 }
@@ -39,9 +40,12 @@ impl Feed {
             Some(resampler) => resampler.run(stereo, &mut *self.fill),
             None => (self.fill)(stereo),
         }
-        for (frame, pair) in out.chunks_exact_mut(self.channels).zip(stereo.chunks_exact(2)) {
+        for (frame, pair) in out
+            .chunks_exact_mut(self.channels)
+            .zip(stereo.chunks_exact(2))
+        {
             if frame.len() == 1 {
-                frame[0] = T::from_sample((pair[0] + pair[1]) * 0.5);
+                frame[0] = T::from_sample(f32::midpoint(pair[0], pair[1]));
                 continue;
             }
             frame[0] = T::from_sample(pair[0]);
@@ -89,7 +93,11 @@ impl Device {
                 failed,
                 None,
             ),
-            other => return Err(format!("the audio output takes {other} samples, which is not handled")),
+            other => {
+                return Err(format!(
+                    "the audio output takes {other} samples, which is not handled"
+                ))
+            }
         }
         .map_err(|e| e.to_string())?;
         // a stream may start by itself: it waits until it is asked

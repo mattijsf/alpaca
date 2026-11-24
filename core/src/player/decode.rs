@@ -15,7 +15,7 @@ use symphonia::core::audio::SampleBuffer;
 use symphonia::core::codecs::{DecoderOptions, CODEC_TYPE_NULL};
 use symphonia::core::errors::Error;
 use symphonia::core::formats::{FormatOptions, FormatReader, SeekMode, SeekTo};
-use symphonia::core::io::{MediaSourceStream, ReadOnlySource};
+use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions, ReadOnlySource};
 use symphonia::core::meta::{MetadataOptions, MetadataRevision, StandardTagKey};
 use symphonia::core::probe::{Hint, ProbeResult};
 use symphonia::core::units::Time;
@@ -84,6 +84,7 @@ pub struct IcyReader<R: Read> {
 }
 
 impl<R: Read> IcyReader<R> {
+    /// Reads `inner`, which carries a block of titles after every `every` bytes of audio, and tells `news` each new title.
     pub fn new(inner: R, every: usize, news: Option<Arc<Stream>>) -> Self {
         IcyReader {
             inner,
@@ -107,7 +108,12 @@ impl<R: Read> IcyReader<R> {
         let text = String::from_utf8_lossy(&block);
         if let Some(start) = text.find("StreamTitle='") {
             let rest = &text[start + 13..];
-            let title = rest.split("';").next().unwrap_or("").trim_end_matches(['\0', '\'']).trim();
+            let title = rest
+                .split("';")
+                .next()
+                .unwrap_or("")
+                .trim_end_matches(['\0', '\''])
+                .trim();
             if !title.is_empty() && title != self.last {
                 self.last = title.to_string();
                 if let Some(stream) = &self.news {
@@ -165,7 +171,7 @@ struct Opened {
 
 fn open(path: &Path) -> Result<Opened, String> {
     let file = File::open(path).map_err(|e| e.to_string())?;
-    let source = MediaSourceStream::new(Box::new(file), Default::default());
+    let source = MediaSourceStream::new(Box::new(file), MediaSourceStreamOptions::default());
     let mut hint = Hint::new();
     if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
         hint.with_extension(ext);
@@ -193,7 +199,9 @@ fn open_url(url: &str, stream: &Arc<Stream>) -> Result<Opened, String> {
             .and_then(|v| v.to_str().ok())
             .map(str::to_string)
     };
-    let every = header("icy-metaint").and_then(|v| v.parse().ok()).unwrap_or(0);
+    let every = header("icy-metaint")
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0);
     let kbps = header("icy-br").and_then(|v| v.split(',').next()?.trim().parse::<i32>().ok());
     if let Ok(mut news) = stream.news.lock() {
         news.station = header("icy-name").filter(|n| !n.trim().is_empty());
@@ -209,7 +217,10 @@ fn open_url(url: &str, stream: &Arc<Stream>) -> Result<Opened, String> {
     };
     let body = Shared(Mutex::new(answer.into_body().into_reader()));
     let reader = IcyReader::new(body, every, Some(stream.clone()));
-    let source = MediaSourceStream::new(Box::new(ReadOnlySource::new(reader)), Default::default());
+    let source = MediaSourceStream::new(
+        Box::new(ReadOnlySource::new(reader)),
+        MediaSourceStreamOptions::default(),
+    );
     let mut opened = probed(source, &hint)?;
     if let Some(kbps) = kbps {
         opened.tags.insert("icy-br".into(), kbps.to_string());
@@ -309,7 +320,11 @@ pub fn probe(path: &Path) -> Result<FileInfo, String> {
 /// own. Gives the stream and the end of the ring the output reads: stereo, 32-bit float, left
 /// and right in turn. `sample_rate` is the file's, or 0 for a radio stream, whose rate the
 /// stream says once it is known.
-pub fn spawn(location: PathBuf, start_ms: i32, sample_rate: u32) -> (Arc<Stream>, rtrb::Consumer<f32>) {
+pub fn spawn(
+    location: PathBuf,
+    start_ms: i32,
+    sample_rate: u32,
+) -> (Arc<Stream>, rtrb::Consumer<f32>) {
     let (producer, consumer) = rtrb::RingBuffer::new(RING_SAMPLES);
     let stream = Arc::new(Stream {
         frames_played: AtomicU64::new(0),

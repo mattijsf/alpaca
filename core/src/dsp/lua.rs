@@ -43,10 +43,15 @@ const CHECKED_RATES: [u32; 3] = [44_100, 48_000, 22_050];
 /// What a plug-in says of itself.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Info {
+    /// Its id, which no other plug-in has: a name with dots, like an app's.
     pub id: String,
+    /// The name the rack shows.
     pub name: String,
+    /// Its version, as its author writes it.
     pub version: String,
+    /// Who wrote it.
     pub author: String,
+    /// What it does, in a sentence or two.
     pub about: String,
 }
 
@@ -64,15 +69,23 @@ pub enum Kind {
 /// A control of a plug-in.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Param {
+    /// Its id within the plug-in, which the kept settings name it by.
     pub id: String,
+    /// The name shown beside the control.
     pub name: String,
+    /// A slider, a choice or a switch.
     pub kind: Kind,
+    /// The smallest value.
     pub min: f32,
+    /// The largest value.
     pub max: f32,
+    /// Where it stands until the listener moves it.
     pub default: f32,
+    /// Milliseconds over which a change is smoothed; 0 jumps.
     pub smooth_ms: f32,
     /// The unit its value is read in; empty for a bare number.
     pub unit: String,
+    /// What the control does, for a tooltip.
     pub help: String,
     /// What the value is multiplied by to be shown.
     pub scale: f32,
@@ -126,7 +139,9 @@ impl Param {
 /// Named settings a plug-in comes with: for each, the parameters it sets, by their place.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Preset {
+    /// The preset's name.
     pub name: String,
+    /// The controls it sets, each by its place and the value it gets.
     pub values: Vec<(usize, f32)>,
 }
 
@@ -134,8 +149,11 @@ pub struct Preset {
 /// for each audio format.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Plugin {
+    /// What the plug-in says it is.
     pub info: Info,
+    /// Its controls, in order.
     pub params: Vec<Param>,
+    /// The named settings it comes with.
     pub presets: Vec<Preset>,
     source: String,
 }
@@ -268,7 +286,10 @@ fn info(described: &Table) -> Result<Info, String> {
         Ok(Value::Number(n)) if n == API as f64 => {}
         _ => return Err(format!("the plug-in asks for another api than {API}")),
     }
-    if !matches!(described.get::<Value>("ui"), Ok(Value::Nil | Value::Table(_))) {
+    if !matches!(
+        described.get::<Value>("ui"),
+        Ok(Value::Nil | Value::Table(_))
+    ) {
         return Err("ui takes a table of widgets".into());
     }
     Ok(Info {
@@ -291,7 +312,10 @@ fn params(described: &Table) -> Result<Vec<Param>, String> {
         }
         let unit = text(&t, "unit").unwrap_or_default();
         if !unit.is_empty() && !UNITS.contains(&unit.as_str()) {
-            return Err(format!("parameter \"{id}\": \"{unit}\" is not a unit; it is one of {}", UNITS.join(", ")));
+            return Err(format!(
+                "parameter \"{id}\": \"{unit}\" is not a unit; it is one of {}",
+                UNITS.join(", ")
+            ));
         }
         let display = match t.get::<Value>("display") {
             Ok(Value::Table(d)) => Some(d),
@@ -307,17 +331,29 @@ fn params(described: &Table) -> Result<Vec<Param>, String> {
             smooth_ms: number(&t, "smooth").unwrap_or(DEFAULT_SMOOTH_MS).max(0.0),
             unit,
             help: text(&t, "help").unwrap_or_default(),
-            scale: display.as_ref().and_then(|d| number(d, "scale")).unwrap_or(1.0),
-            decimals: display.as_ref().and_then(|d| number(d, "decimals")).map(|d| d.max(0.0) as u32),
-            zero: display.as_ref().and_then(|d| text(d, "zero")).unwrap_or_default(),
+            scale: display
+                .as_ref()
+                .and_then(|d| number(d, "scale"))
+                .unwrap_or(1.0),
+            decimals: display
+                .as_ref()
+                .and_then(|d| number(d, "decimals"))
+                .map(|d| d.max(0.0) as u32),
+            zero: display
+                .as_ref()
+                .and_then(|d| text(d, "zero"))
+                .unwrap_or_default(),
             id,
         };
         let id = &param.id;
         match kind.as_str() {
             "number" => {
-                param.default = number(&t, "default").ok_or(format!("parameter \"{id}\" has no default"))?;
+                param.default =
+                    number(&t, "default").ok_or(format!("parameter \"{id}\" has no default"))?;
                 if param.default < param.min || param.default > param.max {
-                    return Err(format!("parameter \"{id}\": its default is outside its min and max"));
+                    return Err(format!(
+                        "parameter \"{id}\": its default is outside its min and max"
+                    ));
                 }
             }
             "toggle" => {
@@ -334,19 +370,25 @@ fn params(described: &Table) -> Result<Vec<Param>, String> {
                 };
                 let mut found: Vec<(String, f32)> = Vec::new();
                 for pair in options.pairs::<String, f32>() {
-                    found.push(pair.map_err(|_| format!("parameter \"{id}\": an option is a name and a number"))?);
+                    found.push(pair.map_err(|_| {
+                        format!("parameter \"{id}\": an option is a name and a number")
+                    })?);
                 }
                 if found.is_empty() {
                     return Err(format!("parameter \"{id}\" has no options"));
                 }
                 // a Lua table with names for keys has no order: the options go by their value
                 found.sort_by(|a, b| a.1.total_cmp(&b.1).then_with(|| a.0.cmp(&b.0)));
-                let default = text(&t, "default").ok_or(format!("parameter \"{id}\" has no default: one of its options' names"))?;
+                let default = text(&t, "default").ok_or(format!(
+                    "parameter \"{id}\" has no default: one of its options' names"
+                ))?;
                 param.default = found
                     .iter()
                     .find(|(name, _)| *name == default)
                     .map(|(_, value)| *value)
-                    .ok_or(format!("parameter \"{id}\": its default \"{default}\" is not one of its options"))?;
+                    .ok_or(format!(
+                        "parameter \"{id}\": its default \"{default}\" is not one of its options"
+                    ))?;
                 param.min = found.first().map_or(0.0, |o| o.1);
                 param.max = found.last().map_or(0.0, |o| o.1);
                 // the values between two settings are other settings: a choice jumps
@@ -370,11 +412,11 @@ fn presets(described: &Table, params: &[Param]) -> Result<Vec<Preset>, String> {
         };
         let mut values = Vec::new();
         for pair in given.pairs::<String, Value>() {
-            let (id, value) = pair.map_err(|_| format!("preset \"{name}\": a value goes by a parameter's id"))?;
-            let index = params
-                .iter()
-                .position(|p| p.id == id)
-                .ok_or(format!("preset \"{name}\" names \"{id}\", which the plug-in does not have"))?;
+            let (id, value) =
+                pair.map_err(|_| format!("preset \"{name}\": a value goes by a parameter's id"))?;
+            let index = params.iter().position(|p| p.id == id).ok_or(format!(
+                "preset \"{name}\" names \"{id}\", which the plug-in does not have"
+            ))?;
             let value = match value {
                 Value::Integer(i) => i as f32,
                 Value::Number(n) => n as f32,
@@ -427,7 +469,11 @@ fn nodes(described: &Table) -> Result<Vec<Node>, String> {
         // the keys of a Lua table come in no order: sorted, the same file gives the same program
         edges.sort_by(|a, b| a.0.cmp(&b.0));
         consts.sort_by(|a, b| a.0.cmp(&b.0));
-        nodes.push(Node { prim, edges, consts });
+        nodes.push(Node {
+            prim,
+            edges,
+            consts,
+        });
     }
     Ok(nodes)
 }

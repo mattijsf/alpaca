@@ -14,6 +14,7 @@ const DEVICE_BUFFER_FRAME_SIZE: u32 = 0x6673_697a;
 /// How many frames the output asks for at a time.
 const BLOCK_FRAMES: u32 = 2048;
 
+/// The Mac's default output unit, open for one sample rate.
 pub struct Device {
     unit: AudioUnit,
 }
@@ -40,8 +41,7 @@ impl Device {
             Element::Output,
             Some(&BLOCK_FRAMES),
         );
-        type Args = render_callback::Args<data::Interleaved<f32>>;
-        unit.set_render_callback(move |args: Args| {
+        unit.set_render_callback(move |args: render_callback::Args<data::Interleaved<f32>>| {
             fill(args.data.buffer);
             Ok(())
         })

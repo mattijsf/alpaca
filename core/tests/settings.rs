@@ -28,11 +28,17 @@ fn settings_come_back_as_they_were_left() {
 
     let mut again = Settings::open(&dir);
     assert_eq!(again.get("zoom"), Some("2"));
-    assert_eq!(again.get("skin"), Some("/Skins/A tab\there and a\nline.wsz"));
+    assert_eq!(
+        again.get("skin"),
+        Some("/Skins/A tab\there and a\nline.wsz")
+    );
     assert_eq!(again.get("gone"), None);
-    assert_eq!(again.keys("places.Dark."), ["places.Dark.1", "places.Dark.3"]);
+    assert_eq!(
+        again.keys("places.Dark."),
+        ["places.Dark.1", "places.Dark.3"]
+    );
     again.clear("places.");
-    assert!(again.keys("places.").is_empty());
+    assert_eq!(again.keys("places."), [] as [&str; 0]);
     again.save().unwrap();
     assert_eq!(Settings::open(&dir).keys(""), ["skin", "zoom"]);
 
@@ -49,7 +55,10 @@ fn a_location_is_known_by_its_name_and_a_folder_gives_its_songs() {
     assert_eq!(location_kind(Path::new("b.wal")), LocationKind::Skin);
     assert_eq!(location_kind(Path::new("list.m3u8")), LocationKind::List);
     assert_eq!(location_kind(Path::new("song.flac")), LocationKind::Audio);
-    assert_eq!(location_kind(Path::new("https://example.org/stream.pls")), LocationKind::Audio);
+    assert_eq!(
+        location_kind(Path::new("https://example.org/stream.pls")),
+        LocationKind::Audio
+    );
 
     // a folder with songs, a folder under it, a picture and a hidden file
     let dir = scratch("folder");
@@ -77,7 +86,11 @@ fn a_location_is_known_by_its_name_and_a_folder_gives_its_songs() {
     let mut player = Player::silent();
     assert_eq!(player.add_location(&dir), 3);
     let titles: Vec<&str> = player.entries().iter().map(|e| e.title.as_str()).collect();
-    assert_eq!(titles, ["A", "b", "c"], "by name, the folder under it after its own songs");
+    assert_eq!(
+        titles,
+        ["A", "b", "c"],
+        "by name, the folder under it after its own songs"
+    );
     // Winamp's keys
     assert!(player.key("x") && player.key("up") && !player.key("q"));
     assert_eq!(player.status(), walkit::player::Status::Playing);

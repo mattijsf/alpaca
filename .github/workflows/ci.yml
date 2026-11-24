@@ -1,36 +1,46 @@
-# The core on the three systems it is written for, and the Mac's app.
+# The gate on a Mac, the core's tests on Windows and Linux, and the Mac's app.
 name: CI
 
+# Manual-only to keep Actions minutes near zero: the lefthook pre-push gate runs the same
+# checks locally on every push. Start it from the Actions tab ("Run workflow") or with:
+# gh workflow run ci.yml
 on:
-  push:
-  pull_request:
+  workflow_dispatch:
 
 jobs:
+  gate:
+    name: the gate
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          components: rustfmt, clippy
+      - run: tools/gate.sh
+
   core:
     name: core on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        os: [windows-latest, ubuntu-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
       # cpal talks to ALSA on Linux
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libasound2-dev
       # no test opens the audio device or a window, so the same tests run everywhere
       - run: cargo test --release
         working-directory: core
-      # the portable audio device also builds on a Mac, where it can be run and measured
-      - if: runner.os == 'macOS'
-        run: cargo build --release --features portable-output
-        working-directory: core
 
   app:
     name: the Mac's app
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
       - run: brew install xcodegen
       - run: xcodegen generate
         working-directory: app

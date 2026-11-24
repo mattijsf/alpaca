@@ -22,6 +22,7 @@ pub struct Resampler {
 }
 
 impl Resampler {
+    /// A converter from `from` frames a second to `to`.
     pub fn new(from: u32, to: u32) -> Resampler {
         Resampler {
             step: f64::from(from.max(1)) / f64::from(to.max(1)),

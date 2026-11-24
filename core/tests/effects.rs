@@ -50,9 +50,9 @@ fn the_plug_ins_that_come_with_the_app_load_and_build() {
                 assert!(!plugin.info.id.is_empty() && !plugin.info.name.is_empty());
                 // mono too, and a rate the load did not try
                 for (rate, channels) in [(96_000, 2), (44_100, 1)] {
-                    let program = plugin
-                        .build(rate, channels)
-                        .unwrap_or_else(|e| panic!("{} at {rate} Hz, {channels} channels: {e}", path.display()));
+                    let program = plugin.build(rate, channels).unwrap_or_else(|e| {
+                        panic!("{} at {rate} Hz, {channels} channels: {e}", path.display())
+                    });
                     assert_eq!(program.channels(), channels);
                     assert_eq!(program.params(), plugin.params.len());
                 }
@@ -60,7 +60,10 @@ fn the_plug_ins_that_come_with_the_app_load_and_build() {
             }
         }
     }
-    assert!(found >= 11, "six that come with the app and five examples: {found}");
+    assert!(
+        found >= 11,
+        "six that come with the app and five examples: {found}"
+    );
 }
 
 #[test]
@@ -70,27 +73,46 @@ fn what_is_made_to_be_refused_is_refused_with_a_reason() {
     let began = std::time::Instant::now();
     let runaway = load(&folder("tests/plugins/refused/runaway.lua")).unwrap_err();
     assert!(runaway.contains("too long"), "{runaway}");
-    assert!(began.elapsed().as_secs() < 10, "the loader gives up on a script that never ends");
+    assert!(
+        began.elapsed().as_secs() < 10,
+        "the loader gives up on a script that never ends"
+    );
 
     let head = r#"plugin { id = "t.t", name = "T", version = "1" }"#;
     let refuse = |body: &str| Plugin::load(&format!("{head}\n{body}")).unwrap_err();
     let two = "function build(g, ctx) local o = {} for ch = 0, ctx.channels - 1 do o[ch] = BODY end return o end";
     let with = |node: &str| refuse(&two.replace("BODY", node));
     assert!(with("g.reverb { input = g.input(ch) }").contains("not a primitive"));
-    assert!(with("g.biquad { input = g.input(ch), kind = \"lowpass\", freq = 100 }").contains("\"q\" is missing"));
-    assert!(with("g.biquad { input = g.input(ch), kind = \"brickwall\", freq = 100, q = 1 }").contains("brickwall"));
-    assert!(with("g.gain { input = g.input(ch), db = 0, colour = 3 }").contains("unknown option \"colour\""));
+    assert!(
+        with("g.biquad { input = g.input(ch), kind = \"lowpass\", freq = 100 }")
+            .contains("\"q\" is missing")
+    );
+    assert!(
+        with("g.biquad { input = g.input(ch), kind = \"brickwall\", freq = 100, q = 1 }")
+            .contains("brickwall")
+    );
+    assert!(with("g.gain { input = g.input(ch), db = 0, colour = 3 }")
+        .contains("unknown option \"colour\""));
     assert!(with("g.input(7)").contains("channel 7"));
     assert!(refuse("function build(g, ctx) return { [0] = g.input(0) } end").contains("channel 1"));
     assert!(refuse("io.open('/etc/passwd')\nfunction build(g, ctx) end").contains("io"));
-    assert!(refuse("local p = param.number { id = \"p\", min = 0, max = 1 }\nfunction build() end").contains("no default"));
-    assert!(refuse("local p = param.number { id = \"p\", default = 0, unit = \"Hz\" }\nfunction build() end").contains("not a unit"));
+    assert!(refuse(
+        "local p = param.number { id = \"p\", min = 0, max = 1 }\nfunction build() end"
+    )
+    .contains("no default"));
+    assert!(refuse(
+        "local p = param.number { id = \"p\", default = 0, unit = \"Hz\" }\nfunction build() end"
+    )
+    .contains("not a unit"));
     // a loop with nothing in it to wait a frame
     let cycle = refuse(
         "function build(g, ctx) local o = {} for ch = 0, 1 do \
          g.tapIn('a' .. ch, g.input(ch)) local x = g.tapOut('b' .. ch) o[ch] = x end return o end",
     );
-    assert!(cycle.contains("tapIn") && cycle.contains("tapOut"), "{cycle}");
+    assert!(
+        cycle.contains("tapIn") && cycle.contains("tapOut"),
+        "{cycle}"
+    );
 }
 
 #[test]
@@ -98,21 +120,34 @@ fn a_control_reaches_the_graph_smoothed_and_in_its_own_units() {
     let plugin = load(&folder("tests/plugins/gain.lua")).unwrap();
     assert_eq!(plugin.params.len(), 1);
     let level = &plugin.params[0];
-    assert_eq!((level.id.as_str(), level.min, level.max, level.default), ("level", 0.0, 2.0, 1.0));
+    assert_eq!(
+        (level.id.as_str(), level.min, level.max, level.default),
+        ("level", 0.0, 2.0, 1.0)
+    );
     assert_eq!(level.kind, Kind::Number);
     let mut engine = Engine::new(plugin.build(44_100, 2).unwrap());
-    assert!(gain_db(&mut engine, 440.0, 0.2).abs() < 0.01, "at its default the gain leaves the signal alone");
+    assert!(
+        gain_db(&mut engine, 440.0, 0.2).abs() < 0.01,
+        "at its default the gain leaves the signal alone"
+    );
     engine.set_parameter(0, 2.0);
     // 20 ms of smoothing: the first frames are not at the new level yet
     let mut frame = [0.5, 0.5];
     engine.process(&mut frame);
     assert!(frame[0] < 0.9, "the change is smoothed: {}", frame[0]);
-    assert!((gain_db(&mut engine, 440.0, 0.5) - 6.02).abs() < 0.05, "twice as loud is 6 dB");
+    assert!(
+        (gain_db(&mut engine, 440.0, 0.5) - 6.02).abs() < 0.05,
+        "twice as loud is 6 dB"
+    );
     engine.set_parameter(0, 0.0);
     engine.settle();
     let mut frame = [0.5, 0.5];
     engine.process(&mut frame);
-    assert_eq!(frame, [0.0, 0.0], "settled, a parameter is where it is going at once");
+    assert_eq!(
+        frame,
+        [0.0, 0.0],
+        "settled, a parameter is where it is going at once"
+    );
 }
 
 #[test]
@@ -121,19 +156,34 @@ fn filters_delays_and_feedback_do_what_the_primitives_say() {
         function build(g, ctx) local o = {} for ch = 0, ctx.channels - 1 do o[ch] = NODE end return o end"#;
     let make = |node: &str| engine(&head.replace("NODE", node));
 
-    let mut lowpass = make("g.biquad { input = g.input(ch), kind = 'lowpass', freq = 1000, q = 0.707 }");
+    let mut lowpass =
+        make("g.biquad { input = g.input(ch), kind = 'lowpass', freq = 1000, q = 0.707 }");
     assert!(gain_db(&mut lowpass, 100.0, 0.3).abs() < 0.2);
     let high = gain_db(&mut lowpass, 8000.0, 0.3);
-    assert!((-40.0..-34.0).contains(&high), "three octaves above a 12 dB an octave filter: {high}");
+    assert!(
+        (-40.0..-34.0).contains(&high),
+        "three octaves above a 12 dB an octave filter: {high}"
+    );
 
-    let mut shelf = make("g.biquad { input = g.input(ch), kind = 'lowshelf', freq = 200, q = 0.707, gainDb = 6 }");
+    let mut shelf = make(
+        "g.biquad { input = g.input(ch), kind = 'lowshelf', freq = 200, q = 0.707, gainDb = 6 }",
+    );
     assert!((gain_db(&mut shelf, 40.0, 0.5) - 6.0).abs() < 0.3);
     assert!(gain_db(&mut shelf, 5000.0, 0.3).abs() < 0.2);
 
-    assert!((gain_db(&mut make("g.gain { input = g.input(ch), db = -12 }"), 440.0, 0.2) + 12.0).abs() < 0.01);
+    assert!(
+        (gain_db(
+            &mut make("g.gain { input = g.input(ch), db = -12 }"),
+            440.0,
+            0.2
+        ) + 12.0)
+            .abs()
+            < 0.01
+    );
 
     // a delay of ten frames: an impulse comes out ten frames later, and nothing before
-    let mut delay = make("g.delay { input = g.input(ch), time = 10, maxTime = 64, interp = 'none' }");
+    let mut delay =
+        make("g.delay { input = g.input(ch), time = 10, maxTime = 64, interp = 'none' }");
     let mut out = Vec::new();
     for i in 0..16 {
         let mut frame = [if i == 0 { 1.0 } else { 0.0 }; 2];
@@ -152,12 +202,21 @@ fn filters_delays_and_feedback_do_what_the_primitives_say() {
         assert!(frame[0].is_finite());
         loudest = loudest.max(frame[0].abs());
     }
-    assert!(loudest > 10.0 && loudest <= 0.5 + 16.0 * 1.5, "held at the ceiling: {loudest}");
+    assert!(
+        loudest > 10.0 && loudest <= 0.5 + 16.0 * 1.5,
+        "held at the ceiling: {loudest}"
+    );
 
     // the same noise for the same seed, every run
     let noise = |seed: u32| {
         let mut e = make(&format!("g.noise {{ seed = {seed} }}"));
-        (0..8).map(|_| { let mut f = [0.0, 0.0]; e.process(&mut f); f[0] }).collect::<Vec<_>>()
+        (0..8)
+            .map(|_| {
+                let mut f = [0.0, 0.0];
+                e.process(&mut f);
+                f[0]
+            })
+            .collect::<Vec<_>>()
     };
     assert_eq!(noise(3), noise(3));
     assert_ne!(noise(3), noise(4));
@@ -173,7 +232,11 @@ fn the_rack_runs_what_is_on_and_fades_what_is_switched() {
     assert!(rack.add("not lua at all {").is_err());
     assert_eq!(rack.effects().len(), 1);
     rack.set_value(0, 0, 5.0);
-    assert_eq!(rack.effects()[0].values, [2.0], "a value is held to its control's range");
+    assert_eq!(
+        rack.effects()[0].values,
+        [2.0],
+        "a value is held to its control's range"
+    );
     let mut voice = rack.connect(44_100);
     // off: the audio passes untouched
     let mut samples = vec![0.25f32; 2 * 4410];
@@ -182,8 +245,16 @@ fn the_rack_runs_what_is_on_and_fades_what_is_switched() {
     // on: it fades in over 20 ms, to twice as loud
     rack.set_on(0, true);
     voice.run(&mut samples);
-    assert!(samples[0] < 0.26, "the first frame is nearly dry: {}", samples[0]);
-    assert!((samples[2 * 4409] - 0.5).abs() < 1e-3, "then the effect is all there: {}", samples[2 * 4409]);
+    assert!(
+        samples[0] < 0.26,
+        "the first frame is nearly dry: {}",
+        samples[0]
+    );
+    assert!(
+        (samples[2 * 4409] - 0.5).abs() < 1e-3,
+        "then the effect is all there: {}",
+        samples[2 * 4409]
+    );
     // a move of the control reaches the engine; off again fades back to dry
     rack.set_value(0, 0, 1.0);
     rack.set_on(0, false);
@@ -202,8 +273,15 @@ fn the_rack_is_left_and_put_back_and_a_control_reads_as_the_reference_says() {
     let mut rack = Rack::default();
     let loaded = rack.add_folder(&folder("../app/Resources/plugins"));
     assert_eq!(loaded.len(), 6);
-    assert!(loaded.iter().all(|(_, result)| result.is_ok()), "{loaded:?}");
-    let tone = rack.effects().iter().position(|e| e.plugin.info.id == "nl.mattix.andamp.tone").unwrap();
+    assert!(
+        loaded.iter().all(|(_, result)| result.is_ok()),
+        "{loaded:?}"
+    );
+    let tone = rack
+        .effects()
+        .iter()
+        .position(|e| e.plugin.info.id == "nl.mattix.andamp.tone")
+        .unwrap();
     rack.set_on(tone, true);
     rack.set_value(tone, 0, 4.0);
     let left = rack.state();
@@ -219,7 +297,11 @@ fn the_rack_is_left_and_put_back_and_a_control_reads_as_the_reference_says() {
 
     // readouts: decibels with a decimal, a share of one as hundredths, the text for the minimum
     assert_eq!(effect.plugin.params[0].readout(4.0), "4.0 dB");
-    let leveler = next.effects().iter().find(|e| e.plugin.info.id == "nl.mattix.andamp.leveler").unwrap();
+    let leveler = next
+        .effects()
+        .iter()
+        .find(|e| e.plugin.info.id == "nl.mattix.andamp.leveler")
+        .unwrap();
     assert_eq!(leveler.plugin.params[0].readout(0.5), "50 %");
     assert_eq!(leveler.plugin.params[0].readout(0.0), "OFF");
 }

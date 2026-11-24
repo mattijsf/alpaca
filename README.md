@@ -53,7 +53,9 @@ $APP --bench 10 song.flac          # what ten seconds of playing cost
 buffer of pixels, the player (decoding, the output, the equalizer), the effect engine and
 the app itself (its menu, its commands, what it keeps between runs), behind a C interface.
 `app/` is Swift and AppKit: it shows the windows, draws the menu the core describes, opens
-the file pickers the core asks for, and has the Mac's media keys. PLAN.md has more.
+the file pickers the core asks for, and has the Mac's media keys.
+[ENGINEERING.md](ENGINEERING.md) has the architecture, its rules and the commands;
+[PLAN.md](PLAN.md) the order of work and where it stands.
 
 The core is written to be the same on Windows and Linux, and compiles for both;
 [PORTING.md](PORTING.md) says what a shell for another system has to do.

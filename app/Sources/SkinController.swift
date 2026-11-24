@@ -56,7 +56,7 @@ final class SkinController {
     init() {
         area = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let arguments = CommandLine.arguments.dropFirst().map { UnsafePointer(strdup($0)) }
-        defer { arguments.forEach { free(UnsafeMutablePointer(mutating: $0)) } }
+        defer { for argument in arguments { free(UnsafeMutablePointer(mutating: argument)) } }
         guard
             let made = andamp_app_new(
                 arguments, Int32(arguments.count), Bundle.main.resourcePath ?? "", Int32(area.width),
@@ -164,17 +164,19 @@ final class SkinController {
         let z = CGFloat(zoom)
         for index in 0..<count where andamp_skin_window(skin, index, &info) {
             seen.append(info.id)
-            let window = windows[info.id] ?? {
-                let made = SkinWindow(skinId: info.id, controller: self)
-                made.level = onTop ? .floating : .normal
-                made.alphaValue = opacity
-                windows[info.id] = made
-                watchers.append(
-                    NotificationCenter.default.addObserver(
-                        forName: NSWindow.didChangeOcclusionStateNotification, object: made, queue: .main
-                    ) { [weak self] _ in self?.sightChanged() })
-                return made
-            }()
+            let window =
+                windows[info.id]
+                ?? {
+                    let made = SkinWindow(skinId: info.id, controller: self)
+                    made.level = onTop ? .floating : .normal
+                    made.alphaValue = opacity
+                    windows[info.id] = made
+                    watchers.append(
+                        NotificationCenter.default.addObserver(
+                            forName: NSWindow.didChangeOcclusionStateNotification, object: made, queue: .main
+                        ) { [weak self] _ in self?.sightChanged() })
+                    return made
+                }()
             // the engine counts from the top left of the area, the screen from its bottom left
             let frame = NSRect(
                 x: area.minX + CGFloat(info.x) * z,
@@ -219,7 +221,7 @@ final class SkinController {
     private func schedule() {
         timer?.invalidate()
         timer = nil
-        guard let skin else { return }
+        guard skin != nil else { return }
         guard inSight || windows.isEmpty else {
             // nobody sees the skin: it is not run or drawn. While a song plays the player is
             // asked twice a second whether the song is over, so the playlist goes on.

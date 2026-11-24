@@ -1,0 +1,457 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+//! The app: its start, its menu and commands, what it asks of the shell, what it keeps.
+
+use std::ffi::{c_char, c_void, CString};
+use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::path::Path;
+use std::rc::Rc;
+
+use super::{c_text, lines, panic_text, string, AndampPlayer, AndampSkin};
+use crate::app::{App, Ask, Menu, MenuHandler};
+use crate::vis;
+
+/// Shows a skin's popup menu: `menu` is its items as lines of text (`C`, the id, 1 when
+/// checked, 1 when disabled and the text, with tabs between, for a command; `S` for a
+/// separator; `>` and the text where a submenu starts, `<` where it ends). It gives the id of
+/// the command picked, or 0. It is called from inside a mouse call, and must not call the skin.
+pub type AndampMenuHandler = unsafe extern "C" fn(context: *mut c_void, menu: *const c_char) -> i32;
+
+/// The app behind the C interface: its player, its settings, the skin worn, its menu and
+/// what it asks of the shell ([`App`]).
+pub struct AndampApp {
+    app: App,
+    /// The app's player as the `andamp_player_` calls take it.
+    player: AndampPlayer,
+}
+
+/// Runs `f` on the app at `app`; a panic gives `fallback`.
+unsafe fn with_app<T>(app: *mut AndampApp, fallback: T, f: impl FnOnce(&mut App) -> T) -> T {
+    let Some(handle) = app.as_mut() else {
+        return fallback;
+    };
+    match catch_unwind(AssertUnwindSafe(|| f(&mut handle.app))) {
+        Ok(v) => v,
+        Err(payload) => {
+            eprintln!("andamp: {}", panic_text(payload.as_ref()));
+            fallback
+        }
+    }
+}
+
+/// Makes the app from the `count` arguments of the command line at `args` (without the
+/// program's name), with what comes with it in the folder `resources` (`skins`, `wasabi`,
+/// `fonts`, `plugins`), on a screen of `screen_w` x `screen_h` points: the part the windows
+/// move on. It reads the settings of the last run. Nothing shows until [`andamp_app_start`].
+/// Free it with [`andamp_app_free`].
+///
+/// # Safety
+/// `args` points at `count` C strings; `resources` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_new(
+    args: *const *const c_char,
+    count: i32,
+    resources: *const c_char,
+    screen_w: i32,
+    screen_h: i32,
+) -> *mut AndampApp {
+    let args: Vec<String> = if args.is_null() {
+        Vec::new()
+    } else {
+        (0..usize::try_from(count).unwrap_or(0))
+            .map(|i| string(*args.add(i)))
+            .collect()
+    };
+    let resources = string(resources);
+    let made = catch_unwind(AssertUnwindSafe(|| {
+        App::new(&args, Path::new(&resources), (screen_w, screen_h))
+    }));
+    match made {
+        Ok(app) => {
+            let player = AndampPlayer {
+                player: app.player.clone(),
+            };
+            Box::into_raw(Box::new(AndampApp { app, player }))
+        }
+        Err(payload) => {
+            eprintln!("andamp: {}", panic_text(payload.as_ref()));
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Frees an app [`andamp_app_new`] gave, with its skin and its player.
+///
+/// # Safety
+/// `app` is null or an app not freed before.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_free(app: *mut AndampApp) {
+    if !app.is_null() {
+        let app = Box::from_raw(app);
+        let _ = catch_unwind(AssertUnwindSafe(move || drop(app)));
+    }
+}
+
+/// Wears the first skin and puts the playlist back, or plays what the command line names.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_start(app: *mut AndampApp) {
+    with_app(app, (), App::start);
+}
+
+/// The app's player, for the `andamp_player_` calls. It lives as long as the app and is not
+/// to be freed.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_player(app: *mut AndampApp) -> *mut AndampPlayer {
+    match app.as_mut() {
+        Some(handle) => &raw mut handle.player,
+        None => std::ptr::null_mut(),
+    }
+}
+
+/// The skin worn, for the `andamp_skin_` calls, or null when none is. It is the app's: not to
+/// be freed, and gone when another skin is worn, which the request `skin` says.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_skin(app: *mut AndampApp) -> *mut AndampSkin {
+    match app.as_mut().and_then(|handle| handle.app.skin()) {
+        Some(skin) => skin,
+        None => std::ptr::null_mut(),
+    }
+}
+
+/// The file name of the skin worn, to free with [`andamp_string_free`](super::andamp_string_free).
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_skin_name(app: *mut AndampApp) -> *mut c_char {
+    c_text(&with_app(app, String::new(), |a| a.skin_name()))
+}
+
+/// Runs the skin and answers what its buttons asked for. Bit 1 of the answer is set when a
+/// window moved, opened, closed or changed its place in the order, bit 2 when a window's
+/// pixels changed.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_step(app: *mut AndampApp) -> u32 {
+    let broken = app
+        .as_mut()
+        .and_then(|handle| handle.app.skin())
+        .is_some_and(|skin| skin.broken);
+    if broken {
+        return 0;
+    }
+    let Some(handle) = app.as_mut() else {
+        return 0;
+    };
+    match catch_unwind(AssertUnwindSafe(|| handle.app.step())) {
+        Ok(flags) => flags,
+        Err(payload) => {
+            eprintln!("andamp: {}", panic_text(payload.as_ref()));
+            if let Some(skin) = handle.app.skin() {
+                skin.broken = true;
+            }
+            0
+        }
+    }
+}
+
+/// Milliseconds until the app next has something to do by itself, and so until the next
+/// [`andamp_app_step`]: 0 for now, -1 for never.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_next_due_ms(app: *mut AndampApp) -> i64 {
+    with_app(app, -1, App::next_due_ms)
+}
+
+/// What the app asked of the shell since the last call, or null for nothing: a line for each
+/// request, its parts with tabs between. Free it with [`andamp_string_free`](super::andamp_string_free).
+///
+/// - `quit`, `hide`, `about`
+/// - `ask` and what to let the listener pick: `open_songs`, `add_songs`, `add_folders`,
+///   `load_list`, `save_list`, `skin`, `presets`, or `url` for the address of a radio stream.
+///   The answer goes to [`andamp_app_picked`].
+/// - `popup`, the number of one of the app's menus ([`andamp_app_menu`]) and, when there is
+///   one, the place for it in points from the screen's top left corner; without a place it
+///   opens at the mouse. The pick goes to [`andamp_app_command`].
+/// - `skin`: another skin is worn, and the windows of the one before are gone.
+/// - `look`: the size, the opacity or staying on top changed.
+/// - `menu`: the menu bar changed.
+/// - `effects`: show the Effects window.
+/// - `vis` and 1 to open the Visualizer window, 0 to close it; [`andamp_app_vis_shown`] says
+///   when it is done.
+/// - `preset`, 1 for blending into it, the window's title and the preset's file.
+/// - `error` and a message for the listener.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_take_requests(app: *mut AndampApp) -> *mut c_char {
+    let requests = with_app(app, Vec::new(), App::take_requests);
+    if requests.is_empty() {
+        return std::ptr::null_mut();
+    }
+    let text: String = requests.iter().map(|r| r.line() + "\n").collect();
+    c_text(&text)
+}
+
+/// One of the app's menus as lines of text, to free with [`andamp_string_free`](super::andamp_string_free): 0 the menu
+/// bar, 1 the same commands as one popup list, 2 the equalizer's presets. A line is as a
+/// skin's menu gives it ([`AndampMenuHandler`]), with the command's key after the text: a
+/// letter, with `shift+` before it when Shift is held, to go with the system's command key.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_menu(app: *mut AndampApp, menu: i32) -> *mut c_char {
+    let Some(menu) = Menu::from_number(menu) else {
+        return std::ptr::null_mut();
+    };
+    c_text(&with_app(app, String::new(), |a| a.menu(menu)))
+}
+
+/// Does the command with the number `id`, which an item of [`andamp_app_menu`] carries.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_command(app: *mut AndampApp, id: i32) {
+    with_app(app, (), |a| a.command(id));
+}
+
+/// What the listener picked when a request `ask` asked for `what`: a line for each file or
+/// folder, or the text they typed. Nothing picked needs no call.
+///
+/// # Safety
+/// `app` is null or a live app; `what` and `answer` are C strings.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_picked(
+    app: *mut AndampApp,
+    what: *const c_char,
+    answer: *const c_char,
+) {
+    let (what, answer) = (string(what), lines(answer));
+    if let Some(ask) = Ask::from_name(&what) {
+        with_app(app, (), |a| a.picked(ask, &answer));
+    }
+}
+
+/// What the system asks the app to open, or what was dropped on a window, a line for each:
+/// a skin is worn; songs, folders, playlist files and radio streams play. Before
+/// [`andamp_app_start`] it waits for the start.
+///
+/// # Safety
+/// `app` is null or a live app; `locations` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_open(app: *mut AndampApp, locations: *const c_char) {
+    let locations = lines(locations);
+    with_app(app, (), |a| a.open(&locations));
+}
+
+/// Sets how the skin's own popup menus are shown, for the skin worn and every one after it;
+/// `context` is handed back to `handler`.
+///
+/// # Safety
+/// `app` is null or a live app; `handler` stays callable, with `context`, for as long as the
+/// app lives.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_set_menu_handler(
+    app: *mut AndampApp,
+    handler: Option<AndampMenuHandler>,
+    context: *mut c_void,
+) {
+    with_app(app, (), |a| {
+        a.set_menu_handler(handler.map(|show| -> MenuHandler {
+            Rc::new(move |menu: &str| {
+                let text = CString::new(menu.replace('\0', " ")).unwrap_or_default();
+                // SAFETY: the caller promised the handler and its context for the app's life
+                unsafe { show(context, text.as_ptr()) }
+            })
+        }));
+    });
+}
+
+/// Points to a layout pixel of the skin: 2 is Winamp's double size.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_zoom(app: *mut AndampApp) -> i32 {
+    with_app(app, 1, |a| a.zoom())
+}
+
+/// Whether the windows stay above other apps' windows.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_on_top(app: *mut AndampApp) -> bool {
+    with_app(app, false, |a| a.on_top())
+}
+
+/// How much of the windows shows over what is behind them, in percent: 20 to 100.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_opacity(app: *mut AndampApp) -> i32 {
+    with_app(app, 100, |a| a.opacity())
+}
+
+/// The part of the screen the windows move on changed, to `w` x `h` points.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_set_screen(app: *mut AndampApp, w: i32, h: i32) {
+    with_app(app, (), |a| a.set_screen((w, h)));
+}
+
+/// The shell opened the Visualizer window (`open`) or it closed. When it opens, the app asks
+/// for the first preset with a request `preset`.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_vis_shown(app: *mut AndampApp, open: bool) {
+    with_app(app, (), |a| a.vis_shown(open));
+}
+
+/// A key in the Visualizer window, by its name: `right` the next preset, `left` the one
+/// before, `r` one at random, `space` holds the one shown or lets it go. False for any other.
+///
+/// # Safety
+/// `app` is null or a live app; `key` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_vis_key(app: *mut AndampApp, key: *const c_char) -> bool {
+    let key = string(key);
+    with_app(app, false, |a| a.vis_key(&key))
+}
+
+/// Seconds a preset stays: the shell calls [`andamp_app_vis_tick`] that often while the
+/// Visualizer window can be seen.
+#[no_mangle]
+pub extern "C" fn andamp_app_vis_stay() -> i32 {
+    vis::STAY_SECONDS as i32
+}
+
+/// A preset's stay is over: the next one blends in, unless the listener holds the one shown.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_vis_tick(app: *mut AndampApp) {
+    with_app(app, (), App::vis_tick);
+}
+
+/// Loads every effect plug-in once, those that come with the app and the listener's own, and
+/// puts each back as it was left: before the rack is shown.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_load_effects(app: *mut AndampApp) {
+    with_app(app, (), App::load_effects);
+}
+
+/// Takes the plug-in file at `file` into the rack and keeps a copy in the app's folder. Gives
+/// its place in the rack, or -1 and, when `error` is not null, why in `*error`, to free with
+/// [`andamp_string_free`](super::andamp_string_free).
+///
+/// # Safety
+/// `app` is null or a live app; `file` is a C string; `error` is null or a place for a pointer.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_add_plugin(
+    app: *mut AndampApp,
+    file: *const c_char,
+    error: *mut *mut c_char,
+) -> i32 {
+    let file = string(file);
+    match with_app(app, Err("the app stopped".to_string()), |a| {
+        a.add_plugin(Path::new(&file))
+    }) {
+        Ok(index) => index as i32,
+        Err(message) => {
+            if !error.is_null() {
+                *error = c_text(&message);
+            }
+            -1
+        }
+    }
+}
+
+/// Whether effect `index` of the rack is a plug-in the listener added, which
+/// [`andamp_app_remove_plugin`] can take out again.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_effect_own(app: *mut AndampApp, index: i32) -> bool {
+    with_app(app, false, |a| {
+        usize::try_from(index).is_ok_and(|i| a.is_own(i))
+    })
+}
+
+/// Takes a plug-in the listener added out of the rack and out of the app's folder.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_remove_plugin(app: *mut AndampApp, index: i32) {
+    with_app(app, (), |a| {
+        if let Ok(index) = usize::try_from(index) {
+            a.remove_plugin(index);
+        }
+    });
+}
+
+/// Keeps what the next run starts from: the skin and where its windows are, the size, the
+/// playlist, the volume, the equalizer, the effects. The shell calls it when the app goes to
+/// the background and when it ends.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_save(app: *mut AndampApp) {
+    with_app(app, (), App::save);
+}
+
+/// What the command line gave for one of the options the shell answers itself, to free with
+/// [`andamp_string_free`](super::andamp_string_free), or null when it was not given: `dump`, `bench`, `quit-after`,
+/// `then-skin`, `presets` with their value, `hidden`, `show-vis`, `show-effects` with `1`,
+/// and `click` with a line for each.
+///
+/// # Safety
+/// `app` is null or a live app; `name` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_option(
+    app: *mut AndampApp,
+    name: *const c_char,
+) -> *mut c_char {
+    let name = string(name);
+    match with_app(app, None, |a| a.options.get(&name)) {
+        Some(value) => c_text(&value),
+        None => std::ptr::null_mut(),
+    }
+}
+
+/// What the app would keep for the next run, in a line, to free with [`andamp_string_free`](super::andamp_string_free).
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_summary(app: *mut AndampApp) -> *mut c_char {
+    c_text(&with_app(app, String::new(), |a| a.summary()))
+}

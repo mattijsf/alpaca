@@ -4,7 +4,7 @@
 //! they were left, and the chain of engines the audio passes through.
 //!
 //! The [`Rack`] lives on the main thread with the player. The engines run on the audio
-//! thread, in a [`RackVoice`]; what the listener changes crosses over as [`Command`]s in a
+//! thread, in a [`RackVoice`]; what the listener changes crosses over as commands in a
 //! ring, and a chain the audio thread is done with comes back the same way, so nothing is
 //! allocated or freed there. Switching an effect fades it in or out over the dry signal, so a
 //! switch never clicks.
@@ -20,7 +20,9 @@ const COMMANDS: usize = 1024;
 /// One effect in the rack.
 #[derive(Debug, Clone)]
 pub struct Effect {
+    /// The plug-in it was loaded from.
     pub plugin: Plugin,
+    /// Whether the audio passes through it.
     pub on: bool,
     /// Where each control stands, in the plug-in's own units.
     pub values: Vec<f32>,
@@ -33,7 +35,11 @@ enum Command {
     /// A new chain, in place of the one running.
     Chain(Box<Chain>),
     /// A control moved.
-    Value { effect: usize, index: usize, value: f32 },
+    Value {
+        effect: usize,
+        index: usize,
+        value: f32,
+    },
     /// The controls of an effect jump to where they are going: a preset was applied.
     Settle { effect: usize },
     /// An effect was switched.
@@ -86,7 +92,11 @@ impl RackVoice {
                         let _ = self.done.push(old);
                     }
                 }
-                Command::Value { effect, index, value } => {
+                Command::Value {
+                    effect,
+                    index,
+                    value,
+                } => {
                     if let Some(stage) = self.stage(effect) {
                         stage.engine.set_parameter(index, value);
                     }
@@ -135,7 +145,11 @@ impl RackVoice {
     }
 
     fn stage(&mut self, effect: usize) -> Option<&mut Stage> {
-        self.chain.as_mut()?.stages.iter_mut().find(|s| s.effect == effect)
+        self.chain
+            .as_mut()?
+            .stages
+            .iter_mut()
+            .find(|s| s.effect == effect)
     }
 }
 
@@ -157,6 +171,7 @@ pub struct Rack {
 }
 
 impl Rack {
+    /// The effects, in the order the audio passes through them.
     pub fn effects(&self) -> &[Effect] {
         &self.effects
     }
@@ -172,22 +187,23 @@ impl Rack {
             on: false,
             error: String::new(),
         };
-        let at = match self.effects.iter().position(|e| e.plugin.info.id == effect.plugin.info.id) {
-            Some(at) => {
-                let old = &self.effects[at];
-                effect.on = old.on;
-                for (param, value) in effect.plugin.params.iter().zip(&mut effect.values) {
-                    if let Some(i) = old.plugin.params.iter().position(|p| p.id == param.id) {
-                        *value = old.values[i];
-                    }
+        let at = if let Some(at) = self
+            .effects
+            .iter()
+            .position(|e| e.plugin.info.id == effect.plugin.info.id)
+        {
+            let old = &self.effects[at];
+            effect.on = old.on;
+            for (param, value) in effect.plugin.params.iter().zip(&mut effect.values) {
+                if let Some(i) = old.plugin.params.iter().position(|p| p.id == param.id) {
+                    *value = old.values[i];
                 }
-                self.effects[at] = effect;
-                at
             }
-            None => {
-                self.effects.push(effect);
-                self.effects.len() - 1
-            }
+            self.effects[at] = effect;
+            at
+        } else {
+            self.effects.push(effect);
+            self.effects.len() - 1
         };
         self.rebuild();
         Ok(at)
@@ -199,12 +215,18 @@ impl Rack {
         let mut files: Vec<_> = std::fs::read_dir(dir)
             .map(|entries| entries.flatten().map(|e| e.path()).collect())
             .unwrap_or_default();
-        files.retain(|path: &std::path::PathBuf| path.extension().is_some_and(|e| e.eq_ignore_ascii_case("lua")));
+        files.retain(|path: &std::path::PathBuf| {
+            path.extension()
+                .is_some_and(|e| e.eq_ignore_ascii_case("lua"))
+        });
         files.sort();
         files
             .iter()
             .map(|file| {
-                let name = file.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                let name = file
+                    .file_name()
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .unwrap_or_default();
                 let added = std::fs::read_to_string(file)
                     .map_err(|e| e.to_string())
                     .and_then(|source| self.add(&source));
@@ -226,7 +248,12 @@ impl Rack {
                     .zip(&effect.values)
                     .map(|(param, value)| format!("{}={value}", param.id))
                     .collect();
-                format!("{}\t{}\t{}\n", effect.plugin.info.id, u8::from(effect.on), values.join("\t"))
+                format!(
+                    "{}\t{}\t{}\n",
+                    effect.plugin.info.id,
+                    u8::from(effect.on),
+                    values.join("\t")
+                )
             })
             .collect()
     }
@@ -246,7 +273,11 @@ impl Rack {
                 let Some((param, value)) = part.split_once('=') else {
                     continue;
                 };
-                let place = self.effects[index].plugin.params.iter().position(|p| p.id == param);
+                let place = self.effects[index]
+                    .plugin
+                    .params
+                    .iter()
+                    .position(|p| p.id == param);
                 if let (Some(place), Ok(value)) = (place, value.parse::<f32>()) {
                     self.set_value(index, place, value);
                 }
@@ -294,7 +325,11 @@ impl Rack {
             return;
         }
         effect.values[param] = value;
-        self.send(Command::Value { effect: index, index: param, value });
+        self.send(Command::Value {
+            effect: index,
+            index: param,
+            value,
+        });
     }
 
     /// Applies preset `preset` of effect `index`: its values in one step, so nothing sweeps.
@@ -315,11 +350,13 @@ impl Rack {
 
     /// Puts every control of effect `index` back at its default, in one step.
     pub fn reset(&mut self, index: usize) {
-        let Some(defaults) = self
-            .effects
-            .get(index)
-            .map(|e| e.plugin.params.iter().map(|p| p.default).collect::<Vec<_>>())
-        else {
+        let Some(defaults) = self.effects.get(index).map(|e| {
+            e.plugin
+                .params
+                .iter()
+                .map(|p| p.default)
+                .collect::<Vec<_>>()
+        }) else {
             return;
         };
         for (param, value) in defaults.into_iter().enumerate() {

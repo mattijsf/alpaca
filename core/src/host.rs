@@ -23,7 +23,10 @@ const DEFAULT_FONT: &str = "fonts/LiberationSans.ttf";
 #[cfg(target_os = "macos")]
 const SYSTEM_FONTS: &[&str] = &["/System/Library/Fonts/Helvetica.ttc"];
 #[cfg(target_os = "windows")]
-const SYSTEM_FONTS: &[&str] = &["C:\\Windows\\Fonts\\arial.ttf", "C:\\Windows\\Fonts\\segoeui.ttf"];
+const SYSTEM_FONTS: &[&str] = &[
+    "C:\\Windows\\Fonts\\arial.ttf",
+    "C:\\Windows\\Fonts\\segoeui.ttf",
+];
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
 const SYSTEM_FONTS: &[&str] = &[
     "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
@@ -37,8 +40,11 @@ const DEFAULT_BOLD_FONT: &str = "fonts/LiberationSans-Bold.ttf";
 
 /// A decoded picture: its size and its pixels as ARGB, rows top first.
 pub struct Picture {
+    /// Its width in pixels.
     pub w: i32,
+    /// Its height in pixels.
     pub h: i32,
+    /// Its pixels, `0xAARRGGBB`, rows top first.
     pub argb: Vec<u32>,
     /// Whether every pixel is opaque: such a picture is copied, not blended.
     pub opaque: bool,
@@ -56,7 +62,9 @@ impl Picture {
 
 /// The font a run of text draws in, and whether the renderer thickens it for bold.
 pub struct TextFace {
+    /// The font.
     pub font: Rc<Font>,
+    /// Whether the renderer thickens the letters, for bold text in a font with no bold cut.
     pub fake_bold: bool,
 }
 
@@ -70,6 +78,7 @@ pub struct Assets {
 }
 
 impl Assets {
+    /// The pictures and fonts of the skin whose files are `files`; nothing is decoded until asked for.
     pub fn new(files: Box<dyn SkinFiles>) -> Self {
         Assets {
             files,
@@ -118,7 +127,11 @@ impl Assets {
             Rc::new(Picture {
                 w: p.w,
                 h: p.h,
-                argb: p.argb.iter().map(|argb| crate::render::tinted(*argb, tint)).collect(),
+                argb: p
+                    .argb
+                    .iter()
+                    .map(|argb| crate::render::tinted(*argb, tint))
+                    .collect(),
                 opaque: p.opaque,
             })
         });
@@ -287,8 +300,11 @@ pub fn menu_text(menu: &SkinMenu) -> String {
 /// What the engine asks of the app. It shares [`Assets`] with the renderer, and raises
 /// `redraw` when the engine asks for a frame.
 pub struct Host {
+    /// The skin's pictures and fonts.
     pub assets: Rc<RefCell<Assets>>,
+    /// Raised when the engine asks for a frame.
     pub redraw: Rc<Cell<bool>>,
+    /// What the skin asked of the app, and the app's switches it shows.
     pub desk: Rc<Desk>,
 }
 

@@ -45,7 +45,11 @@ pub const EQ_PRESETS: [(&str, i32, [i32; 10]); 17] = [
     ("Classical", 32, [32, 32, 32, 32, 32, 32, 19, 19, 19, 15]),
     ("Club", 32, [32, 32, 37, 41, 41, 41, 37, 32, 32, 32]),
     ("Dance", 32, [47, 43, 35, 31, 31, 21, 19, 19, 31, 31]),
-    ("Laptop speakers/headphones", 32, [39, 49, 40, 25, 27, 34, 39, 47, 52, 55]),
+    (
+        "Laptop speakers/headphones",
+        32,
+        [39, 49, 40, 25, 27, 34, 39, 47, 52, 55],
+    ),
     ("Large hall", 32, [48, 48, 41, 41, 32, 23, 23, 23, 32, 32]),
     ("Party", 32, [43, 43, 32, 32, 32, 32, 32, 32, 43, 43]),
     ("Pop", 32, [28, 39, 43, 44, 40, 29, 27, 27, 28, 28]),
@@ -56,7 +60,11 @@ pub const EQ_PRESETS: [(&str, i32, [i32; 10]); 17] = [
     ("Full Bass", 32, [47, 47, 47, 41, 34, 24, 17, 14, 13, 13]),
     ("Soft Rock", 32, [38, 38, 35, 30, 24, 22, 25, 30, 36, 46]),
     ("Full Treble", 32, [15, 15, 15, 24, 36, 49, 57, 57, 57, 59]),
-    ("Full Bass & Treble", 32, [43, 41, 32, 19, 23, 34, 45, 49, 51, 51]),
+    (
+        "Full Bass & Treble",
+        32,
+        [43, 41, 32, 19, 23, 34, 45, 49, 51, 51],
+    ),
     ("Live", 32, [23, 32, 38, 40, 41, 41, 38, 36, 36, 35]),
     ("Techno", 32, [44, 41, 32, 22, 23, 32, 44, 47, 47, 46]),
 ];
@@ -106,9 +114,11 @@ pub const REQUEST_OPEN_FILES: u32 = 1;
 /// One entry of the playlist.
 #[derive(Debug, Clone)]
 pub struct Entry {
+    /// The file, or the address of a radio stream.
     pub path: PathBuf,
     /// The title shown: "artist - title" from the tags, else the file's name.
     pub title: String,
+    /// What the file is: its length, its format, its tags.
     pub info: FileInfo,
 }
 
@@ -191,6 +201,7 @@ impl Default for Player {
 }
 
 impl Player {
+    /// A player with an empty playlist, stopped.
     pub fn new() -> Player {
         let shared = Shared::new();
         // not all the way up at the first start
@@ -251,9 +262,13 @@ impl Player {
             return inside
                 .iter()
                 .filter(|path| {
-                    let hidden = path.file_name().is_some_and(|n| n.to_string_lossy().starts_with('.'));
+                    let hidden = path
+                        .file_name()
+                        .is_some_and(|n| n.to_string_lossy().starts_with('.'));
                     let ending = path.extension().map(|e| e.to_string_lossy().to_lowercase());
-                    !hidden && (path.is_dir() || ending.is_some_and(|e| AUDIO_TYPES.contains(&e.as_str())))
+                    !hidden
+                        && (path.is_dir()
+                            || ending.is_some_and(|e| AUDIO_TYPES.contains(&e.as_str())))
                 })
                 .map(|path| self.add_location(path))
                 .sum();
@@ -290,6 +305,7 @@ impl Player {
         self.index = 0;
     }
 
+    /// The playlist, in order.
     pub fn entries(&self) -> &[Entry] {
         &self.playlist
     }
@@ -312,7 +328,9 @@ impl Player {
             self.stop();
         }
         // the current entry's new place: as many kept entries as lie before it
-        let before = (0..self.index.min(self.playlist.len())).filter(|row| keep(*row)).count();
+        let before = (0..self.index.min(self.playlist.len()))
+            .filter(|row| keep(*row))
+            .count();
         let mut row = 0;
         self.playlist.retain(|_| {
             row += 1;
@@ -331,7 +349,8 @@ impl Player {
         let current = self.entry().map(|e| e.path.clone());
         self.playlist
             .sort_by_cached_key(|e| (e.title.to_lowercase(), e.path.clone()));
-        if let Some(at) = current.and_then(|path| self.playlist.iter().position(|e| e.path == path)) {
+        if let Some(at) = current.and_then(|path| self.playlist.iter().position(|e| e.path == path))
+        {
             self.index = at;
         }
         self.shuffled.clear();
@@ -381,6 +400,7 @@ impl Player {
         std::fs::write(list, text).map_err(|e| e.to_string())
     }
 
+    /// Which entry of the playlist is current.
     pub fn index(&self) -> usize {
         self.index
     }
@@ -391,6 +411,7 @@ impl Player {
 
     // the transport
 
+    /// Whether it plays, is paused or is stopped.
     pub fn status(&self) -> Status {
         self.status
     }
@@ -411,6 +432,7 @@ impl Player {
         }
     }
 
+    /// The current song's length in milliseconds; 0 when it is not known, as for a radio stream.
     pub fn length_ms(&self) -> i32 {
         self.entry().map_or(0, |e| e.info.length_ms)
     }
@@ -436,7 +458,11 @@ impl Player {
             waiting: Some(ring),
         });
         self.resume_ms = start_ms;
-        self.status = if play { Status::Playing } else { Status::Paused };
+        self.status = if play {
+            Status::Playing
+        } else {
+            Status::Paused
+        };
         self.attach();
     }
 
@@ -486,7 +512,11 @@ impl Player {
                 output.stop();
             }
         }
-        self.status = if play { Status::Playing } else { Status::Paused };
+        self.status = if play {
+            Status::Playing
+        } else {
+            Status::Paused
+        };
     }
 
     /// Lets go of the song loaded: its decoder stops.
@@ -497,6 +527,7 @@ impl Player {
         self.shared.tap.clear();
     }
 
+    /// Plays the current entry: from its start, or on from where it was paused.
     pub fn play(&mut self) {
         match self.status {
             Status::Paused if self.playing.is_some() => self.run(true),
@@ -517,6 +548,7 @@ impl Player {
         }
     }
 
+    /// Stops; the current entry stays current.
     pub fn stop(&mut self) {
         self.unload();
         self.shared.playing.store(false, Ordering::Relaxed);
@@ -566,9 +598,13 @@ impl Player {
         }
     }
 
+    /// Goes to the next entry, by the order shuffle and repeat give.
     pub fn next(&mut self) {
         let was = self.status;
-        if let Some(next) = self.following().or((!self.playlist.is_empty()).then_some(0)) {
+        if let Some(next) = self
+            .following()
+            .or((!self.playlist.is_empty()).then_some(0))
+        {
             if self.shuffle {
                 self.shuffled.push(self.index);
             }
@@ -581,6 +617,7 @@ impl Player {
         }
     }
 
+    /// Goes to the entry before.
     pub fn previous(&mut self) {
         let was = self.status;
         let n = self.playlist.len();
@@ -598,6 +635,7 @@ impl Player {
         }
     }
 
+    /// Moves the current song to `ms` milliseconds.
     pub fn seek_to(&mut self, ms: i32) {
         // a radio stream has no other place to go to
         if self.entry().is_some_and(|e| decode::is_url(&e.path)) {
@@ -619,9 +657,10 @@ impl Player {
         self.hear_news();
         self.attach();
         // a stream that ended before it said what it is could not be opened
-        let failed = self.playing.as_ref().is_some_and(|p| {
-            p.waiting.is_some() && p.stream.decoded_all.load(Ordering::Acquire)
-        });
+        let failed = self
+            .playing
+            .as_ref()
+            .is_some_and(|p| p.waiting.is_some() && p.stream.decoded_all.load(Ordering::Acquire));
         if failed {
             self.stop();
         }
@@ -654,18 +693,15 @@ impl Player {
         if !ended {
             return;
         }
-        match self.following() {
-            Some(next) => {
-                if self.shuffle {
-                    self.shuffled.push(self.index);
-                }
-                self.index = next;
-                self.load(0, true);
+        if let Some(next) = self.following() {
+            if self.shuffle {
+                self.shuffled.push(self.index);
             }
-            None => {
-                self.stop();
-                self.index = 0;
-            }
+            self.index = next;
+            self.load(0, true);
+        } else {
+            self.stop();
+            self.index = 0;
         }
     }
 
@@ -701,19 +737,23 @@ impl Player {
 
     // what is heard
 
+    /// The volume, 0..255.
     pub fn volume(&self) -> i32 {
         self.volume
     }
 
+    /// Sets the volume, 0..255.
     pub fn set_volume(&mut self, v: i32) {
         self.volume = v.clamp(0, 255);
         self.shared.volume.set(self.volume as f32 / 255.0);
     }
 
+    /// The balance, -127 for all left to 127 for all right.
     pub fn pan(&self) -> i32 {
         self.pan
     }
 
+    /// Sets the balance, -127..127.
     pub fn set_pan(&mut self, v: i32) {
         self.pan = v.clamp(-127, 127);
         let p = self.pan as f32 / 127.0;
@@ -721,11 +761,13 @@ impl Player {
         self.shared.right.set(1.0 + p.min(0.0));
     }
 
+    /// Switches the equalizer on or off.
     pub fn set_eq_enabled(&mut self, on: bool) {
         self.eq_on = on;
         self.shared.eq_on.store(on, Ordering::Relaxed);
     }
 
+    /// Sets one of the equalizer's ten bands, 0..255 with 128 in the middle.
     pub fn set_eq_band(&mut self, band: usize, value: i32) {
         if let Some(slot) = self.eq_bands.get_mut(band) {
             *slot = value.clamp(0, 255);
@@ -789,9 +831,12 @@ impl Player {
         }
     }
 
+    /// Sets the equalizer's preamp, 0..255 with 128 in the middle.
     pub fn set_eq_preamp(&mut self, value: i32) {
         self.eq_preamp = value.clamp(0, 255);
-        self.shared.eq_preamp.store(self.eq_preamp, Ordering::Relaxed);
+        self.shared
+            .eq_preamp
+            .store(self.eq_preamp, Ordering::Relaxed);
         self.shared.eq_version.fetch_add(1, Ordering::Relaxed);
     }
 
@@ -800,10 +845,9 @@ impl Player {
         if self.status != Status::Playing {
             return Vec::new();
         }
-        let rate = self
-            .playing
-            .as_ref()
-            .map_or(44100, |p| p.stream.sample_rate.load(Ordering::Relaxed).max(1));
+        let rate = self.playing.as_ref().map_or(44100, |p| {
+            p.stream.sample_rate.load(Ordering::Relaxed).max(1)
+        });
         spectrum(&self.shared.tap.last(FFT_SIZE), rate, &*self.fft)
     }
 
@@ -853,9 +897,9 @@ impl Drop for Player {
     }
 }
 
-/// The spectrum of `samples` at `sample_rate`: [`SPECTRUM_BANDS`] bands spaced evenly in
-/// pitch across [`SPECTRUM_RANGE`], each the loudest frequency in it, 0 at
-/// [`SPECTRUM_FLOOR_DB`] below full scale and 1 at full scale.
+/// The spectrum of `samples` at `sample_rate`: `SPECTRUM_BANDS` bands spaced evenly in
+/// pitch across `SPECTRUM_RANGE`, each the loudest frequency in it, 0 at
+/// `SPECTRUM_FLOOR_DB` below full scale and 1 at full scale.
 pub fn spectrum(samples: &[f32], sample_rate: u32, fft: &dyn Fft<f32>) -> Vec<f32> {
     let n = fft.len();
     if samples.len() < n {
@@ -904,22 +948,40 @@ impl walkit::player::Player for SkinPlayer {
         self.0.borrow().length_ms()
     }
     fn title(&self) -> String {
-        self.0.borrow().entry().map(|e| e.title.clone()).unwrap_or_default()
+        self.0
+            .borrow()
+            .entry()
+            .map(|e| e.title.clone())
+            .unwrap_or_default()
     }
     fn bitrate_kbps(&self) -> i32 {
         self.0.borrow().entry().map_or(0, |e| e.info.bitrate_kbps)
     }
     fn sample_rate_khz(&self) -> i32 {
-        self.0.borrow().entry().map_or(0, |e| (e.info.sample_rate / 1000) as i32)
+        self.0
+            .borrow()
+            .entry()
+            .map_or(0, |e| (e.info.sample_rate / 1000) as i32)
     }
     fn channels(&self) -> i32 {
-        self.0.borrow().entry().map_or(0, |e| e.info.channels as i32)
+        self.0
+            .borrow()
+            .entry()
+            .map_or(0, |e| e.info.channels as i32)
     }
     fn tags(&self) -> BTreeMap<String, String> {
-        self.0.borrow().entry().map(|e| e.info.tags.clone()).unwrap_or_default()
+        self.0
+            .borrow()
+            .entry()
+            .map(|e| e.info.tags.clone())
+            .unwrap_or_default()
     }
     fn decoder_name(&self) -> String {
-        self.0.borrow().entry().map(|e| e.info.codec.clone()).unwrap_or_default()
+        self.0
+            .borrow()
+            .entry()
+            .map(|e| e.info.codec.clone())
+            .unwrap_or_default()
     }
     fn volume(&self) -> i32 {
         self.0.borrow().volume()

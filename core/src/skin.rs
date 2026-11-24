@@ -65,6 +65,7 @@ pub struct Stats {
 
 /// A loaded skin.
 pub struct Skin {
+    /// The engine running the skin.
     pub runtime: SkinRuntime,
     assets: Rc<RefCell<Assets>>,
     redraw: Rc<Cell<bool>>,
@@ -91,7 +92,7 @@ impl Skin {
         file_name: &str,
         base: Option<MemoryFiles>,
         wasabi: Option<MemoryFiles>,
-        fonts: MemoryFiles,
+        fonts: &MemoryFiles,
         beside: Option<&Path>,
         viewport: (i32, i32),
         player: impl FnOnce(Clock) -> Box<dyn Player>,
@@ -230,7 +231,10 @@ impl Skin {
             {
                 let mut old = std::mem::take(&mut self.windows);
                 for (id, rect) in placed {
-                    let at = old.iter().position(|w| w.id == id.0).expect("checked above");
+                    let at = old
+                        .iter()
+                        .position(|w| w.id == id.0)
+                        .expect("checked above");
                     let mut window = old.swap_remove(at);
                     window.rect = rect;
                     self.windows.push(window);
@@ -293,7 +297,8 @@ impl Skin {
                     window.changed = part.map_or(whole, |p| p.cut_to(&whole));
                     window.generation += 1;
                     self.stats.windows_drawn += 1;
-                    self.stats.pixels_drawn += (window.changed.width * window.changed.height).max(0) as u64;
+                    self.stats.pixels_drawn +=
+                        (window.changed.width * window.changed.height).max(0) as u64;
                     flags |= DRAWN;
                 }
                 window.cmds = d.cmds;
@@ -428,7 +433,9 @@ impl Siblings {
         let path = path.replace('\\', "/");
         let rest = path.strip_prefix("../").or_else(|| {
             let lower = path.to_lowercase();
-            lower.starts_with("@skinspath@/").then(|| &path["@skinspath@/".len()..])
+            lower
+                .starts_with("@skinspath@/")
+                .then(|| &path["@skinspath@/".len()..])
         })?;
         let (name, inner) = rest.split_once('/')?;
         let key = name.to_lowercase();
@@ -519,7 +526,9 @@ pub fn read_folder(dir: &Path) -> MemoryFiles {
     };
     for entry in entries.flatten() {
         let path = entry.path();
-        if let (true, Some(name), Ok(bytes)) = (path.is_file(), path.file_name(), std::fs::read(&path)) {
+        if let (true, Some(name), Ok(bytes)) =
+            (path.is_file(), path.file_name(), std::fs::read(&path))
+        {
             files.insert(&name.to_string_lossy(), bytes);
         }
     }

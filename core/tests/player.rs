@@ -47,7 +47,10 @@ fn tone_file(name: &str, hz: f32, seconds: f32, sample_rate: u32) -> PathBuf {
 fn wait(player: &mut Player, done: impl Fn(&Player) -> bool) {
     let began = Instant::now();
     while !done(player) {
-        assert!(began.elapsed() < Duration::from_secs(5), "the player did not get there");
+        assert!(
+            began.elapsed() < Duration::from_secs(5),
+            "the player did not get there"
+        );
         std::thread::sleep(Duration::from_millis(2));
         player.poll();
     }
@@ -64,7 +67,9 @@ fn a_file_is_read_for_what_it_is() {
     assert_eq!(entry.info.sample_rate, 44100);
     assert_eq!(entry.info.channels, 2);
     assert_eq!(entry.info.bitrate_kbps, 1411);
-    assert!(player.add(std::path::Path::new("/nonexistent/song.mp3")).is_err());
+    assert!(player
+        .add(std::path::Path::new("/nonexistent/song.mp3"))
+        .is_err());
 }
 
 #[test]
@@ -79,7 +84,11 @@ fn a_song_plays_to_its_end_and_the_next_one_starts() {
     assert_eq!(player.status(), Status::Playing);
     assert_eq!(player.index(), 0);
     wait(&mut player, |p| p.index() == 1);
-    assert_eq!(player.status(), Status::Playing, "the second song follows the first");
+    assert_eq!(
+        player.status(),
+        Status::Playing,
+        "the second song follows the first"
+    );
     // the list ends: the player stops at its top
     wait(&mut player, |p| p.status() == Status::Stopped);
     assert_eq!(player.index(), 0);
@@ -95,7 +104,11 @@ fn the_position_follows_what_was_played_and_a_seek_starts_from_there() {
     player.pause();
     assert_eq!(player.status(), Status::Paused);
     player.seek_to(1500);
-    assert_eq!(player.status(), Status::Paused, "a seek while paused stays paused");
+    assert_eq!(
+        player.status(),
+        Status::Paused,
+        "a seek while paused stays paused"
+    );
     assert_eq!(player.position_ms(), 1500);
     player.pause();
     wait(&mut player, |p| p.status() == Status::Stopped);
@@ -110,7 +123,9 @@ fn the_position_follows_what_was_played_and_a_seek_starts_from_there() {
 fn a_tone_shows_in_its_own_band_of_the_spectrum() {
     let fft = FftPlanner::new().plan_fft_forward(1024);
     let tone = |hz: f32| -> Vec<f32> {
-        (0..1024).map(|i| (2.0 * PI * hz * i as f32 / 44100.0).sin()).collect()
+        (0..1024)
+            .map(|i| (2.0 * PI * hz * i as f32 / 44100.0).sin())
+            .collect()
     };
     let low = spectrum(&tone(200.0), 44100, &*fft);
     let high = spectrum(&tone(5000.0), 44100, &*fft);
@@ -123,10 +138,21 @@ fn a_tone_shows_in_its_own_band_of_the_spectrum() {
             .map(|(i, _)| i)
             .unwrap()
     };
-    assert!(peak(&low) < peak(&high), "a higher tone peaks further right");
-    assert!(low[peak(&low)] > 0.9, "a full-scale tone fills its band: {}", low[peak(&low)]);
+    assert!(
+        peak(&low) < peak(&high),
+        "a higher tone peaks further right"
+    );
+    assert!(
+        low[peak(&low)] > 0.9,
+        "a full-scale tone fills its band: {}",
+        low[peak(&low)]
+    );
     assert!(high[peak(&high)] > 0.9);
-    assert!(low[70] < 0.2, "a low tone leaves the top bands empty: {}", low[70]);
+    assert!(
+        low[70] < 0.2,
+        "a low tone leaves the top bands empty: {}",
+        low[70]
+    );
     let silence = spectrum(&vec![0.0; 1024], 44100, &*fft);
     assert!(silence.iter().all(|b| *b == 0.0));
 }
@@ -156,7 +182,10 @@ fn the_equalizer_lifts_its_band_and_leaves_the_others() {
     let flat = gain_db(&mut Equalizer::with(44100, [128; 10], 128), 1000.0);
     assert!(flat.abs() < 0.01, "flat is flat: {flat}");
     let preamp = gain_db(&mut Equalizer::with(44100, [128; 10], 0), 1000.0);
-    assert!((preamp + 12.0).abs() < 0.2, "the preamp all the way down takes 12 dB: {preamp}");
+    assert!(
+        (preamp + 12.0).abs() < 0.2,
+        "the preamp all the way down takes 12 dB: {preamp}"
+    );
 }
 
 #[test]
@@ -165,7 +194,12 @@ fn rows_are_removed_cropped_and_sorted_around_the_song_playing() {
     for name in ["d.wav", "b.wav", "a.wav", "c.wav"] {
         player.add(&tone_file(name, 440.0, 5.0, 44100)).unwrap();
     }
-    let titles = |p: &Player| p.entries().iter().map(|e| e.title.clone()).collect::<Vec<_>>();
+    let titles = |p: &Player| {
+        p.entries()
+            .iter()
+            .map(|e| e.title.clone())
+            .collect::<Vec<_>>()
+    };
     player.play_index(2);
     assert_eq!(titles(&player)[player.index()], "a");
     // a row before the song goes: the song stays current and keeps playing
@@ -198,7 +232,11 @@ fn a_list_is_saved_and_read_back() {
     assert_eq!(other.entries()[1].title, "two");
     // a .pls, with names beside the list
     let pls = first.with_file_name("list.pls");
-    std::fs::write(&pls, "[playlist]\nFile1=one.wav\nTitle1=One\nFile2=missing.wav\nNumberOfEntries=2\n").unwrap();
+    std::fs::write(
+        &pls,
+        "[playlist]\nFile1=one.wav\nTitle1=One\nFile2=missing.wav\nNumberOfEntries=2\n",
+    )
+    .unwrap();
     let mut third = Player::silent();
     assert_eq!(third.add_list(&pls), Ok(1));
 }
@@ -210,12 +248,19 @@ fn a_factory_preset_sets_the_bands_and_switches_the_equalizer_on() {
     let skin = andamp_core::player::SkinPlayer(player.clone());
     assert!(!skin.eq_enabled());
     // Full Bass: the low bands up, the high ones down
-    let full_bass = andamp_core::player::EQ_PRESETS.iter().position(|p| p.0 == "Full Bass").unwrap();
+    let full_bass = andamp_core::player::EQ_PRESETS
+        .iter()
+        .position(|p| p.0 == "Full Bass")
+        .unwrap();
     player.borrow_mut().apply_eq_preset(Some(full_bass));
     let bands = skin.eq_bands();
     assert!(skin.eq_enabled());
     assert!(bands[0] > 170 && bands[9] < 70, "{bands:?}");
-    assert!((skin.eq_preamp() - 128).abs() <= 2, "the preamp in the middle: {}", skin.eq_preamp());
+    assert!(
+        (skin.eq_preamp() - 128).abs() <= 2,
+        "the preamp in the middle: {}",
+        skin.eq_preamp()
+    );
     player.borrow_mut().apply_eq_preset(None);
     assert_eq!(skin.eq_bands(), vec![128; 10]);
 }
@@ -235,9 +280,14 @@ fn what_a_run_leaves_is_put_back_in_the_next() {
     second.borrow_mut().restore(&left);
     let skin = andamp_core::player::SkinPlayer(second.clone());
     assert!(skin.eq_enabled() && skin.shuffle() && !skin.repeat());
-    assert_eq!((skin.eq_bands()[3], skin.eq_preamp(), skin.pan()), (200, 90, -40));
+    assert_eq!(
+        (skin.eq_bands()[3], skin.eq_preamp(), skin.pan()),
+        (200, 90, -40)
+    );
     // text from somewhere else changes nothing it does not name, and breaks nothing
-    second.borrow_mut().restore("nonsense;eq=x;bands=1,2,three;pan=900");
+    second
+        .borrow_mut()
+        .restore("nonsense;eq=x;bands=1,2,three;pan=900");
     assert_eq!(skin.pan(), 127);
 }
 
@@ -289,22 +339,40 @@ fn a_radio_stream_plays_and_says_what_it_is() {
     let mut player = Player::silent();
     let url = format!("http://{address}/stream");
     assert_eq!(player.add(std::path::Path::new(&url)), Ok(0));
-    assert_eq!(player.entries()[0].title, url, "before it plays a stream is known by its address");
+    assert_eq!(
+        player.entries()[0].title,
+        url,
+        "before it plays a stream is known by its address"
+    );
     player.play();
     assert_eq!(player.status(), Status::Playing);
-    wait(&mut player, |p| p.entries()[0].title.contains("Artist - Song"));
+    wait(&mut player, |p| {
+        p.entries()[0].title.contains("Artist - Song")
+    });
     let entry = &player.entries()[0];
     assert_eq!(entry.title, "Artist - Song (Test FM)");
-    assert_eq!((entry.info.sample_rate, entry.info.channels, entry.info.bitrate_kbps), (48000, 2, 128));
+    assert_eq!(
+        (
+            entry.info.sample_rate,
+            entry.info.channels,
+            entry.info.bitrate_kbps
+        ),
+        (48000, 2, 128)
+    );
     // a stream has no other place to seek to: asking changes nothing
     player.seek_to(500);
     assert_eq!(player.entries()[0].title, "Artist - Song (Test FM)");
     // the server hangs up: the stream is over, and the list with it
     wait(&mut player, |p| p.status() == Status::Stopped);
-    assert!(server.join().unwrap(), "the stream was asked for with its titles");
+    assert!(
+        server.join().unwrap(),
+        "the stream was asked for with its titles"
+    );
     // an address nothing answers at stops the player and does not hang it
     let mut player = Player::silent();
-    player.add(std::path::Path::new("http://127.0.0.1:1/none")).unwrap();
+    player
+        .add(std::path::Path::new("http://127.0.0.1:1/none"))
+        .unwrap();
     player.play();
     wait(&mut player, |p| p.status() == Status::Stopped);
 }
@@ -333,14 +401,23 @@ fn a_song_at_one_rate_keeps_its_pitch_and_its_time_on_a_device_at_another() {
     // a second of the device's time took a second of the song's, give or take a block
     let taken = source_frame as f64 / 44_100.0;
     let played = frames as f64 / 48_000.0;
-    assert!((taken - played).abs() < 0.02, "took {taken} s of song for {played} s of output");
+    assert!(
+        (taken - played).abs() < 0.02,
+        "took {taken} s of song for {played} s of output"
+    );
     // the tone is still at 1 kHz: it crosses zero going up a thousand times a second
     let left: Vec<f32> = out.chunks_exact(2).map(|f| f[0]).collect();
-    let crossings = left.windows(2).filter(|w| w[0] < 0.0 && w[1] >= 0.0).count();
+    let crossings = left
+        .windows(2)
+        .filter(|w| w[0] < 0.0 && w[1] >= 0.0)
+        .count();
     let hz = crossings as f64 / played;
     assert!((hz - 1000.0).abs() < 3.0, "{hz} Hz");
     // and the sides stay their own
-    assert!(out.chunks_exact(2).skip(8).all(|f| (f[0] + f[1]).abs() < 1e-5));
+    assert!(out
+        .chunks_exact(2)
+        .skip(8)
+        .all(|f| (f[0] + f[1]).abs() < 1e-5));
     let loudest = left.iter().fold(0f32, |m, v| m.max(v.abs()));
     assert!((0.95..=1.0).contains(&loudest), "{loudest}");
 }

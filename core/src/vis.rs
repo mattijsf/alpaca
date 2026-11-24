@@ -47,7 +47,10 @@ impl Presets {
             for path in entries.flatten().map(|e| e.path()) {
                 if path.is_dir() {
                     walk(&path, out);
-                } else if path.extension().is_some_and(|e| e.eq_ignore_ascii_case("milk")) {
+                } else if path
+                    .extension()
+                    .is_some_and(|e| e.eq_ignore_ascii_case("milk"))
+                {
                     out.push(path);
                 }
             }
@@ -59,10 +62,12 @@ impl Presets {
         self.index = 0;
     }
 
+    /// How many presets there are.
     pub fn len(&self) -> usize {
         self.files.len()
     }
 
+    /// Whether the folder had no presets.
     pub fn is_empty(&self) -> bool {
         self.files.is_empty()
     }
@@ -152,7 +157,11 @@ pub fn by_name(a: &str, b: &str) -> Ordering {
     while i < a.len() && j < b.len() {
         if a[i].is_ascii_digit() && b[j].is_ascii_digit() {
             let run = |text: &[char], from: usize| {
-                let end = from + text[from..].iter().take_while(|c| c.is_ascii_digit()).count();
+                let end = from
+                    + text[from..]
+                        .iter()
+                        .take_while(|c| c.is_ascii_digit())
+                        .count();
                 let digits: String = text[from..end].iter().skip_while(|c| **c == '0').collect();
                 (digits, end)
             };

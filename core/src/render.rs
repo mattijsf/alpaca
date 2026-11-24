@@ -15,12 +15,16 @@ use crate::host::Assets;
 
 /// A window's pixels: `w` x `h`, rows top first.
 pub struct Canvas {
+    /// The width in pixels.
     pub w: i32,
+    /// The height in pixels.
     pub h: i32,
+    /// The pixels, `0xAARRGGBB` with the color multiplied by the alpha.
     pub pixels: Vec<u32>,
 }
 
 impl Canvas {
+    /// A clear canvas of `w` x `h` pixels.
     pub fn new(w: i32, h: i32) -> Self {
         let (w, h) = (w.max(0), h.max(0));
         Canvas {
@@ -169,7 +173,9 @@ fn draw_command(
                 bitmap.w.unwrap_or(pic.w - bitmap.x),
                 bitmap.h.unwrap_or(pic.h - bitmap.y),
             );
-            stretch(canvas, pen, *dst, src, *alpha, pic.w, pic.h, &pic.argb, pic.opaque);
+            stretch(
+                canvas, pen, *dst, src, *alpha, pic.w, pic.h, &pic.argb, pic.opaque,
+            );
         }
         DrawCmd::Fill { rect, color, alpha } => fill(canvas, pen, *rect, color.0, *alpha),
         DrawCmd::Pixels {
@@ -181,7 +187,17 @@ fn draw_command(
             ..
         } => {
             if argb.len() >= (*w.max(&0) * *h.max(&0)) as usize {
-                stretch(canvas, pen, *rect, Rect::new(0, 0, *w, *h), *alpha, *w, *h, argb, false);
+                stretch(
+                    canvas,
+                    pen,
+                    *rect,
+                    Rect::new(0, 0, *w, *h),
+                    *alpha,
+                    *w,
+                    *h,
+                    argb,
+                    false,
+                );
             }
         }
         DrawCmd::Text(text) => draw_text(canvas, assets, pen, text),
@@ -197,7 +213,9 @@ fn draw_command(
         }
         DrawCmd::WindowStart(region) => {
             let mask = match &shapes.last {
-                Some((known, mask)) if known == region && mask.bits.len() == canvas.pixels.len() => {
+                Some((known, mask))
+                    if known == region && mask.bits.len() == canvas.pixels.len() =>
+                {
                     mask.clone()
                 }
                 _ => {
@@ -278,7 +296,9 @@ fn fill(canvas: &mut Canvas, pen: &Pen, rect: Rect, rgb: u32, alpha: i32) {
                     if a == 255 {
                         run.fill(0xff00_0000 | (rgb & 0x00ff_ffff));
                     } else {
-                        run.iter_mut().for_each(|p| over(p, rgb, a));
+                        for p in run.iter_mut() {
+                            over(p, rgb, a);
+                        }
                     }
                 }
                 Some(_) => {}
@@ -320,10 +340,16 @@ fn stretch(
     let w = canvas.w as usize;
     // most of a skin is opaque pictures at their own size: those rows are copied as they are
     let first = src.left + (visible.left - dst.left);
-    let runs = pen.mask.as_ref().is_none_or(|m| {
-        (visible.top..visible.bottom()).all(|y| m.rows[y as usize].2)
-    });
-    if opaque && alpha == 255 && runs && dst.width == src.width && first >= 0 && first + visible.width <= pic_w
+    let runs = pen
+        .mask
+        .as_ref()
+        .is_none_or(|m| (visible.top..visible.bottom()).all(|y| m.rows[y as usize].2));
+    if opaque
+        && alpha == 255
+        && runs
+        && dst.width == src.width
+        && first >= 0
+        && first + visible.width <= pic_w
     {
         for y in visible.top..visible.bottom() {
             let sy = src.top + (y - dst.top) * src.height / dst.height;
@@ -419,7 +445,8 @@ fn draw_text(canvas: &mut Canvas, assets: &mut Assets, pen: &mut Pen, text: &Tex
                 let cols = (clip.left - gx).max(0)..(clip.right() - gx).min(glyph.w as i32);
                 for row in rows {
                     for col in cols.clone() {
-                        let cover = u32::from(glyph.coverage[row as usize * glyph.w + col as usize]);
+                        let cover =
+                            u32::from(glyph.coverage[row as usize * glyph.w + col as usize]);
                         if cover == 0 {
                             continue;
                         }

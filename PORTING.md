@@ -19,7 +19,7 @@ and what a quit keeps. It has no line that knows its system outside two places:
 - `core/src/host.rs`: the list of system fonts to fall back to when the app brought none.
   And `core/src/settings.rs` names the app's folder on each system.
 
-`cargo test` runs the same tests everywhere; none opens the audio device or a window.
+`cargo test --release` runs the same tests everywhere; none opens the audio device or a window.
 `tools/cross-check.sh` type-checks the core for Windows and Linux from a Mac, and
 `.github/workflows/ci.yml` builds and tests it on all three. The portable audio device also
 builds on a Mac, with `--features portable-output`: there it was run and measured, with the

@@ -13,10 +13,14 @@ use std::path::{Path, PathBuf};
 const FILE: &str = "settings.txt";
 
 /// The folder the app keeps its settings and the listener's plug-ins in: Application Support
-/// on a Mac, the roaming AppData on Windows, the XDG config folder elsewhere. `None` when the
+/// on a Mac, the roaming `AppData` on Windows, the XDG config folder elsewhere. `None` when the
 /// system names no home.
 pub fn config_dir() -> Option<PathBuf> {
-    let var = |name: &str| std::env::var_os(name).filter(|v| !v.is_empty()).map(PathBuf::from);
+    let var = |name: &str| {
+        std::env::var_os(name)
+            .filter(|v| !v.is_empty())
+            .map(PathBuf::from)
+    };
     if cfg!(target_os = "macos") {
         // inside a sandbox HOME is the app's container, which is where this belongs
         var("HOME").map(|home| home.join("Library/Application Support/Andamp"))
@@ -62,6 +66,7 @@ impl Settings {
         Settings::default()
     }
 
+    /// The value kept under `key`.
     pub fn get(&self, key: &str) -> Option<&str> {
         self.values.get(key).map(String::as_str)
     }

@@ -6,9 +6,9 @@
 //! float, left and right in turn, at that rate. It calls it on the audio thread while it is
 //! started, and not at all while it is stopped.
 //!
-//! - On macOS it is the default output unit ([`coreaudio`]), which converts the song's
+//! - On macOS it is the default output unit (`coreaudio`), which converts the song's
 //!   sample rate for the device itself.
-//! - Everywhere else it is the `cpal` crate ([`portable`]): WASAPI on Windows, ALSA on Linux.
+//! - Everywhere else it is the `cpal` crate (`portable`): WASAPI on Windows, ALSA on Linux.
 //!   A song at another rate than the device's is converted here.
 //!
 //! The feature `portable-output` takes the portable one on macOS too, so that it can be built,

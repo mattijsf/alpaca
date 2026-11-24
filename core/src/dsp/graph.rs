@@ -33,43 +33,71 @@ const DENORMAL: f32 = 1e-20;
 /// One input to one node: a number, or the output of another node.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Edge {
+    /// A number.
     Const(f32),
+    /// The output of the node with this place in the graph.
     Node(usize),
 }
 
 /// A build-time argument: a number or a word.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Arg {
+    /// A number.
     Num(f32),
+    /// A word, such as a filter's kind.
     Text(String),
 }
 
 /// The built-in primitives.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Prim {
+    /// A channel of the audio coming in.
     Input,
+    /// The value of one of the effect's controls, smoothed.
     Param,
+    /// The sum of two inputs.
     Add,
+    /// The difference of two inputs.
     Sub,
+    /// The product of two inputs.
     Mul,
+    /// One input divided by another.
     Div,
+    /// The smaller of two inputs.
     Min,
+    /// The larger of two inputs.
     Max,
+    /// A mix of two inputs, by a third.
     Crossfade,
+    /// An input kept between two bounds.
     Clip,
+    /// An input with what is not a number, or too small to be one, made zero.
     Sanitise,
+    /// A function of one input, by name: `tanh`, `abs`, `exp2` and the like.
     Math,
+    /// An input made louder or softer by decibels.
     Gain,
+    /// A second-order filter: lowpass, highpass, shelf and the like.
     Biquad,
+    /// A first-order filter.
     Onepole,
+    /// A first-order all-pass filter.
     Allpass1,
+    /// A delay line: its input, a while later.
     Delay,
+    /// A delay line read at another time.
     Tap,
+    /// A slow oscillator.
     Lfo,
+    /// How loud an input is, followed with an attack and a release.
     Envelope,
+    /// Noise.
     Noise,
+    /// An input bent towards a ceiling.
     Softclip,
+    /// The writing end of a feedback pair.
     TapIn,
+    /// The reading end of a feedback pair: what its writing end got a frame ago.
     TapOut,
 }
 
@@ -235,8 +263,11 @@ impl Prim {
 /// One node of a graph.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Node {
+    /// What it does.
     pub prim: Prim,
+    /// Its inputs, by name.
     pub edges: Vec<(String, Edge)>,
+    /// Its build-time arguments, by name.
     pub consts: Vec<(String, Arg)>,
 }
 
@@ -263,6 +294,7 @@ impl Node {
 /// What the engine needs of a parameter: where it starts and how fast it follows a change.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ParamRate {
+    /// Where it starts.
     pub default: f32,
     /// Milliseconds of smoothing; 0 jumps.
     pub smooth_ms: f32,
@@ -271,10 +303,15 @@ pub struct ParamRate {
 /// An effect for one audio format: its nodes, its parameters and the node each channel leaves by.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Graph {
+    /// The nodes; an edge names one by its place here.
     pub nodes: Vec<Node>,
+    /// The controls, in the plug-in's order.
     pub params: Vec<ParamRate>,
+    /// What each channel leaves by.
     pub outputs: Vec<Edge>,
+    /// How many channels the audio has.
     pub channels: usize,
+    /// Frames a second.
     pub sample_rate: u32,
 }
 
@@ -358,6 +395,7 @@ impl Program {
         self.instrs.len()
     }
 
+    /// Whether it runs no instruction at all.
     pub fn is_empty(&self) -> bool {
         self.instrs.is_empty()
     }
@@ -432,9 +470,13 @@ pub fn compile(graph: &Graph) -> Result<Program, Vec<String>> {
     }
     for (channel, out) in graph.outputs.iter().enumerate() {
         match out {
-            Edge::Node(i) if *i >= n => errors.push(format!("channel {channel} leaves by a node that is not there")),
+            Edge::Node(i) if *i >= n => errors.push(format!(
+                "channel {channel} leaves by a node that is not there"
+            )),
             Edge::Node(i) if graph.nodes[*i].prim == Prim::TapIn => {
-                errors.push(format!("channel {channel} leaves by a tapIn, which gives nothing"));
+                errors.push(format!(
+                    "channel {channel} leaves by a tapIn, which gives nothing"
+                ));
             }
             _ => {}
         }
@@ -460,14 +502,20 @@ pub fn compile(graph: &Graph) -> Result<Program, Vec<String>> {
     let mut order = Vec::with_capacity(n);
     let mut placed = vec![false; n];
     // a tapIn only writes: it goes to the end of the frame with the delay lines' writes
-    let writers: Vec<usize> = (0..n).filter(|i| graph.nodes[*i].prim == Prim::TapIn).collect();
+    let writers: Vec<usize> = (0..n)
+        .filter(|i| graph.nodes[*i].prim == Prim::TapIn)
+        .collect();
     for &w in &writers {
         placed[w] = true;
     }
     loop {
         let before = order.len();
         for index in 0..n {
-            if !placed[index] && needs(index).iter().all(|d| placed[*d] && graph.nodes[*d].prim != Prim::TapIn) {
+            if !placed[index]
+                && needs(index)
+                    .iter()
+                    .all(|d| placed[*d] && graph.nodes[*d].prim != Prim::TapIn)
+            {
                 placed[index] = true;
                 order.push(index);
             }
@@ -477,12 +525,20 @@ pub fn compile(graph: &Graph) -> Result<Program, Vec<String>> {
         }
     }
     for index in 0..n {
-        if needs(index).iter().any(|d| graph.nodes[*d].prim == Prim::TapIn) {
-            errors.push(format!("node {index} reads a tapIn, which gives nothing; read its tapOut"));
+        if needs(index)
+            .iter()
+            .any(|d| graph.nodes[*d].prim == Prim::TapIn)
+        {
+            errors.push(format!(
+                "node {index} reads a tapIn, which gives nothing; read its tapOut"
+            ));
         }
     }
     if order.len() + writers.len() < n && errors.is_empty() {
-        let stuck: Vec<String> = (0..n).filter(|i| !placed[*i]).map(|i| i.to_string()).collect();
+        let stuck: Vec<String> = (0..n)
+            .filter(|i| !placed[*i])
+            .map(|i| i.to_string())
+            .collect();
         errors.push(format!(
             "nodes {} loop back on themselves with no delay line or feedback pair in the loop",
             stuck.join(", ")
@@ -513,25 +569,37 @@ fn check_node(graph: &Graph, index: usize, node: &Node, errors: &mut Vec<String>
     let prim = node.prim;
     let at = format!("node {index} ({})", prim.name());
     let known = |key: &str| prim.edge_keys().contains(&key) || prim.const_keys().contains(&key);
-    for key in node.edges.iter().map(|(k, _)| k).chain(node.consts.iter().map(|(k, _)| k)) {
+    for key in node
+        .edges
+        .iter()
+        .map(|(k, _)| k)
+        .chain(node.consts.iter().map(|(k, _)| k))
+    {
         if !known(key) {
             errors.push(format!("{at}: unknown option \"{key}\""));
         }
     }
     for key in prim.edge_keys().iter().chain(prim.const_keys()) {
-        let given = node.edges.iter().any(|(k, _)| k == key) || node.consts.iter().any(|(k, _)| k == key);
+        let given =
+            node.edges.iter().any(|(k, _)| k == key) || node.consts.iter().any(|(k, _)| k == key);
         if !given && !prim.optional().contains(key) {
             errors.push(format!("{at}: option \"{key}\" is missing"));
         }
     }
     for (key, edge) in &node.edges {
         if prim.const_keys().contains(&key.as_str()) {
-            errors.push(format!("{at}: \"{key}\" is fixed when the graph is built: a number or a word, not a node"));
+            errors.push(format!(
+                "{at}: \"{key}\" is fixed when the graph is built: a number or a word, not a node"
+            ));
         }
         match edge {
-            Edge::Node(i) if *i == index => errors.push(format!("{at}: \"{key}\" reads the node itself")),
+            Edge::Node(i) if *i == index => {
+                errors.push(format!("{at}: \"{key}\" reads the node itself"));
+            }
             Edge::Node(i) if *i >= graph.nodes.len() => {
-                errors.push(format!("{at}: \"{key}\" reads node {i}, which is not there"));
+                errors.push(format!(
+                    "{at}: \"{key}\" reads node {i}, which is not there"
+                ));
             }
             _ => {}
         }
@@ -543,7 +611,10 @@ fn check_node(graph: &Graph, index: usize, node: &Node, errors: &mut Vec<String>
         if prim.is_text(key) {
             match (arg, prim.words(key)) {
                 (Arg::Text(word), Some(words)) if !words.contains(&word.as_str()) => {
-                    errors.push(format!("{at}: \"{key}\" is \"{word}\"; it is one of {}", words.join(", ")));
+                    errors.push(format!(
+                        "{at}: \"{key}\" is \"{word}\"; it is one of {}",
+                        words.join(", ")
+                    ));
                 }
                 (Arg::Text(_), _) => {}
                 (Arg::Num(_), _) => errors.push(format!("{at}: \"{key}\" is a word, not a number")),
@@ -554,29 +625,52 @@ fn check_node(graph: &Graph, index: usize, node: &Node, errors: &mut Vec<String>
             errors.push(format!("{at}: \"{key}\" is a number, not a word"));
             continue;
         };
-        let whole_below = |count: usize| value.fract() == 0.0 && *value >= 0.0 && (*value as usize) < count;
+        let whole_below =
+            |count: usize| value.fract() == 0.0 && *value >= 0.0 && (*value as usize) < count;
         match (prim, key.as_str()) {
             (Prim::Input, "ch") if !whole_below(graph.channels) => {
-                errors.push(format!("{at}: channel {value} of a stream with {}", graph.channels));
+                errors.push(format!(
+                    "{at}: channel {value} of a stream with {}",
+                    graph.channels
+                ));
             }
             (Prim::Param, "index") if !whole_below(graph.params.len()) => {
                 errors.push(format!("{at}: parameter {value} of {}", graph.params.len()));
             }
             (Prim::Allpass1, "ceiling") if *value <= 0.0 || *value > LOOP_CEILING => {
-                errors.push(format!("{at}: a ceiling of {value}; it is above 0 and at most {LOOP_CEILING}"));
+                errors.push(format!(
+                    "{at}: a ceiling of {value}; it is above 0 and at most {LOOP_CEILING}"
+                ));
             }
             (Prim::Delay, "maxTime") if *value < 1.0 => {
-                errors.push(format!("{at}: a maxTime of {value} samples; it is at least 1"));
+                errors.push(format!(
+                    "{at}: a maxTime of {value} samples; it is at least 1"
+                ));
             }
             (Prim::Tap, "line") => {
-                let delay = whole_below(graph.nodes.len()) && graph.nodes[*value as usize].prim == Prim::Delay;
+                let delay = whole_below(graph.nodes.len())
+                    && graph.nodes[*value as usize].prim == Prim::Delay;
                 if !delay {
-                    errors.push(format!("{at}: \"line\" is the handle a g.delay returned, and nothing else"));
+                    errors.push(format!(
+                        "{at}: \"line\" is the handle a g.delay returned, and nothing else"
+                    ));
                 }
             }
             _ => {}
         }
     }
+}
+
+/// The slot of the constant `value`, added to the pool when it is not in it yet.
+fn constant(constants: &mut Vec<f32>, pool_start: usize, value: f32) -> Slot {
+    if let Some(at) = constants[pool_start..]
+        .iter()
+        .position(|c| c.to_bits() == value.to_bits())
+    {
+        return Slot::Fixed(pool_start + at);
+    }
+    constants.push(value);
+    Slot::Fixed(constants.len() - 1)
 }
 
 /// Arranges a checked graph into a program: the control instructions, then the ones that run
@@ -608,13 +702,6 @@ fn lower(graph: &Graph, order: &[usize], writers: &[usize], control: &[bool]) ->
     let mut memory = 0usize;
     let mut writes: Vec<(Op, Edge, usize)> = Vec::new();
 
-    fn constant(constants: &mut Vec<f32>, pool_start: usize, value: f32) -> Slot {
-        if let Some(at) = constants[pool_start..].iter().position(|c| c.to_bits() == value.to_bits()) {
-            return Slot::Fixed(pool_start + at);
-        }
-        constants.push(value);
-        Slot::Fixed(constants.len() - 1)
-    }
     // a time in milliseconds as the share of the distance an envelope keeps per frame
     let coefficient = |ms: f32| -> f32 {
         if ms <= 0.0 {
@@ -644,8 +731,23 @@ fn lower(graph: &Graph, order: &[usize], writers: &[usize], control: &[bool]) ->
             state_words += words;
             at
         };
-        let emit = |pending: &mut Vec<Pending>, op: Op, a: Slot, b: Slot, c: Slot, state: usize, aux: u32, control: bool| {
-            pending.push(Pending { op, a, b, c, state, aux, control });
+        let emit = |pending: &mut Vec<Pending>,
+                    op: Op,
+                    a: Slot,
+                    b: Slot,
+                    c: Slot,
+                    state: usize,
+                    aux: u32,
+                    control: bool| {
+            pending.push(Pending {
+                op,
+                a,
+                b,
+                c,
+                state,
+                aux,
+                control,
+            });
             Slot::Result(pending.len() - 1)
         };
         let is_control = control[index];
@@ -661,7 +763,10 @@ fn lower(graph: &Graph, order: &[usize], writers: &[usize], control: &[bool]) ->
                     Prim::Min => Op::Min,
                     _ => Op::Max,
                 };
-                let (a, b) = (slot("a", 0.0, &mut constants), slot("b", 0.0, &mut constants));
+                let (a, b) = (
+                    slot("a", 0.0, &mut constants),
+                    slot("b", 0.0, &mut constants),
+                );
                 emit(&mut pending, op, a, b, zero, 0, 0, is_control)
             }
             Prim::Crossfade => {
@@ -686,32 +791,67 @@ fn lower(graph: &Graph, order: &[usize], writers: &[usize], control: &[bool]) ->
             }
             Prim::Math => {
                 let a = slot("input", 0.0, &mut constants);
-                let which = MATH_FNS.iter().position(|f| Some(*f) == node.text("fn")).unwrap_or(0);
-                emit(&mut pending, Op::Math, a, zero, zero, 0, which as u32, is_control)
+                let which = MATH_FNS
+                    .iter()
+                    .position(|f| Some(*f) == node.text("fn"))
+                    .unwrap_or(0);
+                emit(
+                    &mut pending,
+                    Op::Math,
+                    a,
+                    zero,
+                    zero,
+                    0,
+                    which as u32,
+                    is_control,
+                )
             }
             Prim::Gain => {
-                let (a, b) = (slot("input", 0.0, &mut constants), slot("db", 0.0, &mut constants));
+                let (a, b) = (
+                    slot("input", 0.0, &mut constants),
+                    slot("db", 0.0, &mut constants),
+                );
                 emit(&mut pending, Op::Gain, a, b, zero, 0, 0, is_control)
             }
             Prim::Softclip => {
-                let (a, b) = (slot("input", 0.0, &mut constants), slot("drive", 1.0, &mut constants));
-                let knee = constant(&mut constants, pool_start, node.number("knee").unwrap_or(0.0));
+                let (a, b) = (
+                    slot("input", 0.0, &mut constants),
+                    slot("drive", 1.0, &mut constants),
+                );
+                let knee = constant(
+                    &mut constants,
+                    pool_start,
+                    node.number("knee").unwrap_or(0.0),
+                );
                 emit(&mut pending, Op::Softclip, a, b, knee, 0, 0, is_control)
             }
             Prim::Onepole => {
-                let (a, b) = (slot("input", 0.0, &mut constants), slot("coeff", 0.0, &mut constants));
+                let (a, b) = (
+                    slot("input", 0.0, &mut constants),
+                    slot("coeff", 0.0, &mut constants),
+                );
                 let at = state(1);
                 emit(&mut pending, Op::Onepole, a, b, zero, at, 0, false)
             }
             Prim::Allpass1 => {
-                let (a, b) = (slot("input", 0.0, &mut constants), slot("coeff", 0.0, &mut constants));
-                let ceiling = constant(&mut constants, pool_start, node.number("ceiling").unwrap_or(1.0));
+                let (a, b) = (
+                    slot("input", 0.0, &mut constants),
+                    slot("coeff", 0.0, &mut constants),
+                );
+                let ceiling = constant(
+                    &mut constants,
+                    pool_start,
+                    node.number("ceiling").unwrap_or(1.0),
+                );
                 let at = state(2);
                 emit(&mut pending, Op::Allpass1, a, b, ceiling, at, 0, false)
             }
             Prim::Biquad => {
                 let base = state(BIQUAD_WORDS);
-                let kind = BIQUAD_KINDS.iter().position(|k| Some(*k) == node.text("kind")).unwrap_or(0);
+                let kind = BIQUAD_KINDS
+                    .iter()
+                    .position(|k| Some(*k) == node.text("kind"))
+                    .unwrap_or(0);
                 // the coefficients follow a slider once per control tick, a signal every frame
                 let slow = steady("freq") && steady("q") && steady("gainDb");
                 let (f, q, g) = (
@@ -719,7 +859,16 @@ fn lower(graph: &Graph, order: &[usize], writers: &[usize], control: &[bool]) ->
                     slot("q", 0.707, &mut constants),
                     slot("gainDb", 0.0, &mut constants),
                 );
-                emit(&mut pending, Op::BiquadCoefficients, f, q, g, base, kind as u32, slow);
+                emit(
+                    &mut pending,
+                    Op::BiquadCoefficients,
+                    f,
+                    q,
+                    g,
+                    base,
+                    kind as u32,
+                    slow,
+                );
                 let a = slot("input", 0.0, &mut constants);
                 emit(&mut pending, Op::Biquad, a, zero, zero, base, 0, false)
             }
@@ -729,20 +878,41 @@ fn lower(graph: &Graph, order: &[usize], writers: &[usize], control: &[bool]) ->
                 } else {
                     Op::LfoSine
                 };
-                let (a, b) = (slot("rate", 0.0, &mut constants), slot("phase", 0.0, &mut constants));
+                let (a, b) = (
+                    slot("rate", 0.0, &mut constants),
+                    slot("phase", 0.0, &mut constants),
+                );
                 let at = state(1);
                 emit(&mut pending, op, a, b, zero, at, 0, false)
             }
             Prim::Envelope => {
                 let a = slot("input", 0.0, &mut constants);
-                let attack = constant(&mut constants, pool_start, coefficient(node.number("attack").unwrap_or(0.0)));
-                let release = constant(&mut constants, pool_start, coefficient(node.number("release").unwrap_or(0.0)));
+                let attack = constant(
+                    &mut constants,
+                    pool_start,
+                    coefficient(node.number("attack").unwrap_or(0.0)),
+                );
+                let release = constant(
+                    &mut constants,
+                    pool_start,
+                    coefficient(node.number("release").unwrap_or(0.0)),
+                );
                 let rms = u32::from(node.text("kind") == Some("rms"));
                 let at = state(1);
-                emit(&mut pending, Op::Envelope, a, attack, release, at, rms, false)
+                emit(
+                    &mut pending,
+                    Op::Envelope,
+                    a,
+                    attack,
+                    release,
+                    at,
+                    rms,
+                    false,
+                )
             }
             Prim::Noise => {
-                let seed = (node.number("seed").unwrap_or(0.0) as i64).rem_euclid(NOISE_SEEDS) as u32;
+                let seed =
+                    (node.number("seed").unwrap_or(0.0) as i64).rem_euclid(NOISE_SEEDS) as u32;
                 let at = state(1);
                 emit(&mut pending, Op::Noise, zero, zero, zero, at, seed, false)
             }
@@ -761,7 +931,11 @@ fn lower(graph: &Graph, order: &[usize], writers: &[usize], control: &[bool]) ->
                 let time = slot("time", 1.0, &mut constants);
                 // the write waits: every reader of the line runs before it, which makes a
                 // loop through the line `time` frames long and not one more
-                writes.push((Op::DelayWrite, node.edge("input").unwrap_or(Edge::Const(0.0)), line));
+                writes.push((
+                    Op::DelayWrite,
+                    node.edge("input").unwrap_or(Edge::Const(0.0)),
+                    line,
+                ));
                 emit(&mut pending, op, time, zero, zero, line, 0, false)
             }
             Prim::Tap => {
@@ -793,14 +967,26 @@ fn lower(graph: &Graph, order: &[usize], writers: &[usize], control: &[bool]) ->
             state_words += 1;
             at
         });
-        writes.push((Op::TapWrite, node.edge("source").unwrap_or(Edge::Const(0.0)), at));
+        writes.push((
+            Op::TapWrite,
+            node.edge("source").unwrap_or(Edge::Const(0.0)),
+            at,
+        ));
     }
     for (op, source, state) in writes {
         let a = match source {
             Edge::Node(i) => slot_of[&i],
             Edge::Const(v) => constant(&mut constants, pool_start, v),
         };
-        pending.push(Pending { op, a, b: zero, c: zero, state, aux: 0, control: false });
+        pending.push(Pending {
+            op,
+            a,
+            b: zero,
+            c: zero,
+            state,
+            aux: 0,
+            control: false,
+        });
     }
 
     // a channel that leaves by a number leaves by that constant's slot
@@ -930,7 +1116,14 @@ fn math(which: u32, x: f32) -> f32 {
 
 /// The biquad coefficients of the Audio EQ Cookbook (Robert Bristow-Johnson), worked out in
 /// double and written, divided by a0, into `out`: b0 b1 b2 a1 a2.
-fn coefficients(out: &mut [f32], kind: u32, frequency: f32, q: f32, gain_db: f32, sample_rate: u32) {
+fn coefficients(
+    out: &mut [f32],
+    kind: u32,
+    frequency: f32,
+    q: f32,
+    gain_db: f32,
+    sample_rate: u32,
+) {
     let rate = f64::from(sample_rate);
     let w = 2.0 * std::f64::consts::PI * f64::from(frequency).clamp(1.0, rate * 0.49) / rate;
     let alpha = w.sin() / (2.0 * f64::from(q).max(0.05));
@@ -940,7 +1133,14 @@ fn coefficients(out: &mut [f32], kind: u32, frequency: f32, q: f32, gain_db: f32
     let plain = [1.0 + alpha, -2.0 * cos, 1.0 - alpha];
     let (b, a) = match kind {
         0 => ([(1.0 - cos) / 2.0, 1.0 - cos, (1.0 - cos) / 2.0], plain),
-        1 => ([(1.0 + cos) / 2.0, -(1.0 + cos), (1.0 + cos) / 2.0], plain),
+        1 => (
+            [
+                f64::midpoint(1.0, cos),
+                -(1.0 + cos),
+                f64::midpoint(1.0, cos),
+            ],
+            plain,
+        ),
         2 => ([alpha, 0.0, -alpha], plain),
         3 => ([1.0, -2.0 * cos, 1.0], plain),
         4 => ([1.0 - alpha, -2.0 * cos, 1.0 + alpha], plain),
@@ -1016,6 +1216,7 @@ pub struct Engine {
 }
 
 impl Engine {
+    /// An engine that runs `program`, with its state cleared.
     pub fn new(program: Program) -> Engine {
         let mut engine = Engine {
             bus: vec![0.0; program.constants.len() + program.instrs.len()],
@@ -1032,6 +1233,7 @@ impl Engine {
         engine
     }
 
+    /// The program it runs.
     pub fn program(&self) -> &Program {
         &self.program
     }
@@ -1121,7 +1323,15 @@ impl Engine {
     fn step(&mut self, from: usize, to: usize) {
         let rate = self.program.sample_rate;
         for index in from..to {
-            let Instr { op, dst, a, b, c, state, aux } = self.program.instrs[index];
+            let Instr {
+                op,
+                dst,
+                a,
+                b,
+                c,
+                state,
+                aux,
+            } = self.program.instrs[index];
             let (x, y, z) = (self.bus[a], self.bus[b], self.bus[c]);
             let out = match op {
                 Op::Add => x + y,
@@ -1150,7 +1360,11 @@ impl Engine {
                     held
                 }
                 Op::Allpass1 => {
-                    let next = clip(sanitise(y * x + self.state[state] - y * self.state[state + 1]), -z, z);
+                    let next = clip(
+                        sanitise(y * x + self.state[state] - y * self.state[state + 1]),
+                        -z,
+                        z,
+                    );
                     self.state[state] = x;
                     self.state[state + 1] = next;
                     next
@@ -1162,7 +1376,9 @@ impl Engine {
                 Op::Biquad => {
                     let s = &mut self.state[state..state + BIQUAD_WORDS];
                     let input = sanitise(x);
-                    let output = sanitise(s[0] * input + s[1] * s[5] + s[2] * s[6] - s[3] * s[7] - s[4] * s[8]);
+                    let output = sanitise(
+                        s[0] * input + s[1] * s[5] + s[2] * s[6] - s[3] * s[7] - s[4] * s[8],
+                    );
                     s[6] = s[5];
                     s[5] = input;
                     s[8] = s[7];
@@ -1191,13 +1407,20 @@ impl Engine {
                     }
                 }
                 Op::Noise => {
-                    let next = ((self.state[state] as i64 * NOISE_MULTIPLIER + 2 * i64::from(aux) + 1) & NOISE_MASK) as f32;
+                    let next =
+                        ((self.state[state] as i64 * NOISE_MULTIPLIER + 2 * i64::from(aux) + 1)
+                            & NOISE_MASK) as f32;
                     self.state[state] = next;
                     next / NOISE_HALF - 1.0
                 }
                 Op::DelayReadLinear | Op::DelayReadNearest => {
                     let (offset, length) = self.program.lines[state];
-                    read_line(&self.memory[offset..offset + length], self.head[state], x, op == Op::DelayReadLinear)
+                    read_line(
+                        &self.memory[offset..offset + length],
+                        self.head[state],
+                        x,
+                        op == Op::DelayReadLinear,
+                    )
                 }
                 Op::DelayWrite => {
                     let (offset, length) = self.program.lines[state];

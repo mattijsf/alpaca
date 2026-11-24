@@ -30,25 +30,7 @@ Each step ends with something that runs and is committed. [Status](#status) says
 
 ## How it is built
 
-```
-core/   Rust, the same on every system: a crate, and a static library with a C interface
-        (include/andamp_core.h)
-          skin.rs      the engine with its windows set out apart; what each window shows
-          host.rs      the engine's host: pictures decoded, text measured
-          render.rs    the draw list into one buffer of pixels per window
-          player/      decode, playlist, equalizer, what the visualizer reads
-          player/device/  the audio device, the one part written for each system
-          dsp/         effects: the Lua plug-in loader, the graph engine, the rack
-          settings.rs  what is kept between runs, in one file
-          vis.rs       the Visualizer's presets: which shows, how long, what its keys do
-          app.rs       the app itself: the command line, the menu and its commands, what
-                       the skin's buttons ask for, what a start puts back and a quit keeps
-app/    the Mac's shell, in Swift and AppKit: it shows the windows, draws the menu the core
-        describes, opens the file pickers the core asks for, and has the media keys
-          project.yml  the Xcode project is made from it with XcodeGen
-vis/    builds libprojectM, the Milkdrop engine, as a library beside the app
-```
-
+[ENGINEERING.md](ENGINEERING.md) has the layers, the module layout, the rules and the commands;
 [PORTING.md](PORTING.md) says what a shell for Windows or Linux has to do and what the core
 already does for it.
 
@@ -101,21 +83,6 @@ and handed over (`render::damage` compares the draw list with the last one), whi
 keeps a large window like Bento's cheap. What is left is the engine's own work in a tick
 that changes nothing but the visualizer. Of the start, 30 to 60 ms is the skin opening
 (`--bench` prints it); the rest is the process and AppKit coming up.
-
-## Working on it
-
-```sh
-core/build.sh                       # the Rust library, release
-(cd core && cargo test --release)   # the app, windows, drags, the player, the effects
-(cd app && xcodegen generate)       # after project.yml changes
-xcodebuild -project app/Andamp.xcodeproj -scheme Andamp -configuration Release \
-  -derivedDataPath build build
-build/Build/Products/Release/Andamp.app/Contents/MacOS/Andamp [skin] [files...]
-```
-
-`--dump <folder>` writes every window as a PNG after two seconds and quits: the way to look
-at a change without a person at the screen. `--bench <seconds>` prints frames drawn and time
-spent drawing.
 
 ## Status
 
@@ -190,6 +157,13 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   shell draws the menu from lines of text and answers a short list of requests (quit, hide,
   let the listener pick a file, show a menu at a place). The Mac's shell lost about 600
   lines; what is left in Swift opens windows, panels and timers.
+- [x] A refactor pass: the C interface is its own module (`ffi`, the only one with unsafe
+  code) and lost the 41 functions no shell needs since the app moved into the core; the app
+  module is split by concern; rustfmt, clippy's pedantic set, doc comments on every public
+  item and Apple's swift-format are held by one gate (`tools/gate.sh`) that a pre-push hook
+  runs. ENGINEERING.md has the rules.
+- [ ] The Mac's shell does not yet tell the app when the screen changes
+  (`andamp_app_set_screen`): the windows keep the screen of the start.
 - [ ] A shell for Windows: not started. PORTING.md has what is known.
 - [ ] The portable device's sample rate converter draws straight lines between samples; a
   better one can take its place behind the same two calls.
@@ -240,6 +214,8 @@ stand-in fonts.
 - 2026-11-24, morning: prepared for Windows and Linux: the audio device behind one small
   interface with a portable version, the core cross-checked for both systems, and what every
   shell would write again moved out of Swift.
+- 2026-11-24, later still: a refactor pass and the gate; ENGINEERING.md written. No change to
+  what the app does; cost and start-up measured again.
 - 2026-11-24, later: the app itself moved into the core, behind `andamp_app_`: the Mac's
   shell asks the core what the menu is and does what the core requests. Start-up, cost and
   what a restart brings back were measured again and are as before. The songs of a start

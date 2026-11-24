@@ -32,12 +32,15 @@ pub const TAP_SAMPLES: usize = 2048;
 pub struct AtomicF32(AtomicU32);
 
 impl AtomicF32 {
+    /// An atomic that holds `v`.
     pub fn new(v: f32) -> Self {
         AtomicF32(AtomicU32::new(v.to_bits()))
     }
+    /// The value now.
     pub fn get(&self) -> f32 {
         f32::from_bits(self.0.load(Ordering::Relaxed))
     }
+    /// Sets the value.
     pub fn set(&self, v: f32) {
         self.0.store(v.to_bits(), Ordering::Relaxed);
     }
@@ -94,7 +97,7 @@ impl Tap {
 
     /// Forgets what was heard.
     pub fn clear(&self) {
-        for s in self.samples.iter() {
+        for s in &self.samples {
             s.store(0, Ordering::Relaxed);
         }
     }
@@ -108,23 +111,29 @@ pub struct Shared {
     pub volume: AtomicF32,
     /// The balance as a gain for each side, 0..1.
     pub left: AtomicF32,
+    /// The right side's gain.
     pub right: AtomicF32,
     /// The equalizer: on or off, ten bands and the preamp 0..255 with 128 in the middle, and a
     /// count that goes up when any of them changes.
     pub eq_on: AtomicBool,
+    /// The equalizer's ten bands, 0..255 with 128 in the middle.
     pub eq_bands: [AtomicI32; 10],
+    /// The equalizer's preamp, 0..255 with 128 in the middle.
     pub eq_preamp: AtomicI32,
+    /// A count that goes up when the equalizer changes, so the output works its filters out again.
     pub eq_version: AtomicU32,
     /// The last samples heard.
     pub tap: Tap,
     /// The loudest sample of each side in the last block, 0..1.
     pub level_left: AtomicF32,
+    /// The right side's loudest sample in the last block.
     pub level_right: AtomicF32,
     /// Blocks in which the ring ran empty while the song went on.
     pub underruns: AtomicU64,
 }
 
 impl Shared {
+    /// What a new player and its output share: full volume, nothing playing.
     pub fn new() -> Arc<Shared> {
         Arc::new(Shared {
             playing: AtomicBool::new(false),
@@ -197,6 +206,7 @@ pub struct Equalizer {
 }
 
 impl Equalizer {
+    /// An equalizer for audio at `sample_rate`, flat until told otherwise.
     pub fn new(sample_rate: u32) -> Self {
         Equalizer {
             bands: [Band::default(); 10],
@@ -213,7 +223,11 @@ impl Equalizer {
             return;
         }
         self.version = version;
-        for (band, (hz, value)) in self.bands.iter_mut().zip(EQ_BANDS.iter().zip(&shared.eq_bands)) {
+        for (band, (hz, value)) in self
+            .bands
+            .iter_mut()
+            .zip(EQ_BANDS.iter().zip(&shared.eq_bands))
+        {
             band.set(*hz, eq_db(value.load(Ordering::Relaxed)), self.sample_rate);
         }
         self.preamp = 10f32.powf(eq_db(shared.eq_preamp.load(Ordering::Relaxed)) / 20.0);
@@ -256,7 +270,9 @@ impl Equalizer {
 
 /// A stretch of audio handed to the output: the stream and the end of its ring to read.
 pub struct Source {
+    /// The stream being decoded.
     pub stream: Arc<Stream>,
+    /// The reading end of the ring the decoder fills.
     pub ring: rtrb::Consumer<f32>,
 }
 
@@ -319,7 +335,7 @@ impl Voice {
         let (mut peak_left, mut peak_right) = (0f32, 0f32);
         let mut at = self.tap_at;
         for frame in heard.chunks_exact(2) {
-            shared.tap.push(&mut at, (frame[0] + frame[1]) * 0.5);
+            shared.tap.push(&mut at, f32::midpoint(frame[0], frame[1]));
             peak_left = peak_left.max(frame[0].abs());
             peak_right = peak_right.max(frame[1].abs());
         }
@@ -362,8 +378,11 @@ impl Output {
             rack,
             tap_at: 0,
         };
-        let device = Device::open(sample_rate, Box::new(move |out: &mut [f32]| voice.render(out)))
-            .map_err(|e| format!("the audio output did not open: {e}"))?;
+        let device = Device::open(
+            sample_rate,
+            Box::new(move |out: &mut [f32]| voice.render(out)),
+        )
+        .map_err(|e| format!("the audio output did not open: {e}"))?;
         Ok(Output {
             device,
             sources,

@@ -18,12 +18,25 @@ fn main() {
     let skin_path = std::env::args().nth(1).expect("a skin file");
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../app/Resources");
     let bytes = std::fs::read(&skin_path).expect("the skin");
-    let name = Path::new(&skin_path).file_name().unwrap().to_string_lossy().into_owned();
-    let mut skin = Skin::open(bytes, &name, None, None, read_fonts(&resources.join("fonts")), None, (1728, 1000), |clock| {
-        let mut player = FakePlayer::new(clock);
-        player.play();
-        Box::new(player)
-    })
+    let name = Path::new(&skin_path)
+        .file_name()
+        .unwrap()
+        .to_string_lossy()
+        .into_owned();
+    let mut skin = Skin::open(
+        bytes,
+        &name,
+        None,
+        None,
+        &read_fonts(&resources.join("fonts")),
+        None,
+        (1728, 1000),
+        |clock| {
+            let mut player = FakePlayer::new(clock);
+            player.play();
+            Box::new(player)
+        },
+    )
     .expect("the skin opens");
     skin.step();
     let ids = skin.runtime.drawn_window_ids();
@@ -33,9 +46,15 @@ fn main() {
         let mut kinds: BTreeMap<&str, (usize, i64)> = BTreeMap::new();
         for cmd in window.cmds.iter() {
             let (kind, area) = match cmd {
-                DrawCmd::Image { dst, .. } => ("image", i64::from(dst.width) * i64::from(dst.height)),
-                DrawCmd::Fill { rect, .. } => ("fill", i64::from(rect.width) * i64::from(rect.height)),
-                DrawCmd::Pixels { rect, .. } => ("pixels", i64::from(rect.width) * i64::from(rect.height)),
+                DrawCmd::Image { dst, .. } => {
+                    ("image", i64::from(dst.width) * i64::from(dst.height))
+                }
+                DrawCmd::Fill { rect, .. } => {
+                    ("fill", i64::from(rect.width) * i64::from(rect.height))
+                }
+                DrawCmd::Pixels { rect, .. } => {
+                    ("pixels", i64::from(rect.width) * i64::from(rect.height))
+                }
                 DrawCmd::Text(t) => ("text", i64::from(t.rect.width) * i64::from(t.rect.height)),
                 DrawCmd::Clip(_) => ("clip", 0),
                 DrawCmd::Unclip => ("unclip", 0),

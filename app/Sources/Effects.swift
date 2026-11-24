@@ -148,7 +148,7 @@ final class Effects: NSObject, NSWindowDelegate {
 
     /// Builds the window's rows again from the rack.
     private func rebuild() {
-        list.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        for view in list.arrangedSubviews { view.removeFromSuperview() }
         handlers.removeAll()
         readouts.removeAll()
         for (index, effect) in rack.effects.enumerated() {
