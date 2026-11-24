@@ -4,6 +4,11 @@ Read [PLAN.md](PLAN.md) first: the order of work, how it is built, and the Statu
 which says where things stand. Update Status and its log with every step you finish.
 
 - The player comes first; music sources from other apps come last. Speed is the first measure.
+- The player is for macOS, Windows and Linux ([PORTING.md](PORTING.md)). Whatever does not
+  draw a window or call the system goes in `core/`, with a test; a shell (`app/` is the
+  Mac's) only does what its system alone can. In `core/`, only `player/device/` and the font
+  and folder lists may know their system. After a change to `core/`, `tools/cross-check.sh`
+  says whether it still compiles for Windows and Linux (it needs zig).
 - The engine is the `walkit` crate from crates.io. Do not change the engine from here; work
   with what it offers and note what is missing in PLAN.md.
 - The shell is zsh: an unquoted `$var` with several words is not split. Run loops over such

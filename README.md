@@ -54,6 +54,9 @@ buffer of pixels, the player (decoding, the output, the equalizer) and the effec
 behind a C interface. `app/` is Swift and AppKit: the windows, the menus, files, and the Mac's
 media keys. PLAN.md has more.
 
+The core is written to be the same on Windows and Linux, and compiles for both;
+[PORTING.md](PORTING.md) says what a shell for another system has to do.
+
 ## License
 
 GNU General Public License, version 3 or later; see [LICENSE](LICENSE). The fonts in

@@ -31,14 +31,22 @@ Each step ends with something that runs and is committed. [Status](#status) says
 ## How it is built
 
 ```
-core/   Rust, a static library with a C interface (include/andamp_core.h)
+core/   Rust, the same on every system: a crate, and a static library with a C interface
+        (include/andamp_core.h)
           skin.rs      the engine with its windows set out apart; what each window shows
           host.rs      the engine's host: pictures decoded, text measured
           render.rs    the draw list into one buffer of pixels per window
-          player/      decode, output, playlist, equalizer, what the visualizer reads
-app/    Swift and AppKit: the windows, menus, files, the Mac's media keys
+          player/      decode, playlist, equalizer, what the visualizer reads
+          player/device/  the audio device, the one part written for each system
+          dsp/         effects: the Lua plug-in loader, the graph engine, the rack
+          settings.rs  what is kept between runs, in one file
+app/    the Mac's shell, in Swift and AppKit: the windows, menus, file pickers, media keys
           project.yml  the Xcode project is made from it with XcodeGen
+vis/    builds libprojectM, the Milkdrop engine, as a library beside the app
 ```
+
+[PORTING.md](PORTING.md) says what a shell for Windows or Linux has to do and what the core
+already does for it.
 
 The engine does the hard parts of the desktop already, and the app uses them as they are:
 
@@ -161,6 +169,24 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 - [ ] 7. The App Store
 - [ ] 8. Music sources
 
+### Other systems
+
+- [x] The core compiles for Windows and Linux (`tools/cross-check.sh`: every line, its tests
+  and examples, type-checked from the Mac; nothing linked or run there yet). The audio device
+  is the one part with a version for each system; the portable one (`cpal`, with a sample
+  rate converter) was also built into the Mac's app and measured there: the right speed, no
+  underruns, the same cost.
+- [x] Settings, what an opened file is, folders of songs, Winamp's keys and the effects'
+  loading, state and readouts moved from Swift into the core.
+- [ ] `.github/workflows/ci.yml` builds and tests on the three systems; it has never run,
+  as the repository has no remote.
+- [ ] Still in the Mac's shell, to move before a second shell is written: the app's menu and
+  what its items do, what each of the skin's actions leads to, the Visualizer's presets and
+  keys, the order of a start (PORTING.md lists them).
+- [ ] A shell for Windows: not started. PORTING.md has what is known.
+- [ ] The portable device's sample rate converter draws straight lines between samples; a
+  better one can take its place behind the same two calls.
+
 ### What to do next, in this order
 
 1. Look at it. Everything above was checked by tests, by pictures the app wrote of its own
@@ -196,6 +222,9 @@ stand-in fonts.
   `core/tests` cover windows, drags, the skin's buttons, the player, the equalizer and the
   spectrum; none makes a sound. Checked by `--dump` with AndAmp Dark, walkit's two skins,
   two classic skins and four modern ones from the local test corpus.
+- 2026-11-24, morning: prepared for Windows and Linux: the audio device behind one small
+  interface with a portable version, the core cross-checked for both systems, and what every
+  shell would write again moved out of Swift.
 - 2026-11-24, night, later: damage-only drawing, Bento through its sibling skin, internet
   radio, the equalizer's presets, and Milkdrop through libprojectM in a window of its own.
 - 2026-11-24, night: steps 4 and 5 in their first form: settings, media keys, Finder, the

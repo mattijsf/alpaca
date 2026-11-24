@@ -1,0 +1,39 @@
+# The core on the three systems it is written for, and the Mac's app.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  core:
+    name: core on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      # cpal talks to ALSA on Linux
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+      # no test opens the audio device or a window, so the same tests run everywhere
+      - run: cargo test --release
+        working-directory: core
+      # the portable audio device also builds on a Mac, where it can be run and measured
+      - if: runner.os == 'macOS'
+        run: cargo build --release --features portable-output
+        working-directory: core
+
+  app:
+    name: the Mac's app
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: xcodegen generate
+        working-directory: app
+      - run: >
+          xcodebuild -project app/Andamp.xcodeproj -scheme Andamp -configuration Release
+          -derivedDataPath build build
