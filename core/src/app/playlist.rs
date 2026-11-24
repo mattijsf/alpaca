@@ -9,16 +9,18 @@ use super::App;
 use crate::player::{decode, Player};
 use crate::skin::Skin;
 
-/// Rows a classic playlist scrolls for a notch of a mouse wheel, as Winamp's does.
+/// Rows a playlist scrolls for a notch of a mouse wheel, as Winamp's does.
 const ROWS_A_NOTCH: f32 = 3.0;
 /// The height of a classic playlist's row, in layout pixels.
-const ROW_HEIGHT: f32 = 13.0;
+const CLASSIC_ROW: f32 = 13.0;
+/// The height of a modern playlist's row, in layout pixels.
+const MODERN_ROW: f32 = 15.0;
 /// Steps of the volume, of 255, for a notch of a mouse wheel.
 const VOLUME_A_NOTCH: f32 = 4.0;
 
 /// A row of a classic playlist is at most this high, in layout pixels: the engine does not
-/// say how high a skin's rows are, and with this the app never counts more rows in view than
-/// there are.
+/// say how many rows a window shows, and with this a page of the list is never more than
+/// that.
 const TALLEST_ROW: i32 = 16;
 /// A classic playlist's height less its list: the title bar and the buttons.
 const LIST_FRAME: i32 = 60;
@@ -27,28 +29,33 @@ const LIST_FRAME: i32 = 60;
 const CLASSIC_VOLUME: (i32, i32, i32, i32) = (107, 54, 69, 17);
 
 impl App {
-    /// The mouse wheel at `at`, a place on the viewport in layout pixels. Over a classic
-    /// skin's playlist window it scrolls the list, and over the volume slider it turns the
-    /// volume; anywhere else it does nothing. `delta` is more than 0 for up: in notches of a
-    /// wheel, or with `precise` in points of a trackpad, which the list then follows as far
-    /// as the fingers move.
+    /// The mouse wheel at `at`, a place on the viewport in layout pixels. Over the skin's
+    /// playlist window it scrolls the list, and over the volume slider it turns the volume;
+    /// anywhere else it does nothing. `delta` is more than 0 for up: in notches of a wheel, or
+    /// with `precise` in points of a trackpad, which the list then follows as far as the
+    /// fingers move.
     pub fn wheel(&mut self, at: (i32, i32), delta: f32, precise: bool) {
         let zoom = self.zoom as f32;
         if self.is_over(self.list_window(), at) {
+            let Some(skin) = self.skin.as_mut() else {
+                return;
+            };
+            let classic = skin.runtime.object_info("classic.pl").is_some();
+            let row = if classic { CLASSIC_ROW } else { MODERN_ROW };
             // up is towards the list's start
             let rows = if precise {
-                delta / zoom / ROW_HEIGHT
+                delta / zoom / row
             } else {
                 delta * ROWS_A_NOTCH
             };
             let whole = whole_of(&mut self.wheel_rows, -rows);
             if whole != 0 {
-                let last = self.player.borrow().entries().len() as i32 - 1;
-                self.list_top = (self.list_top + whole).clamp(0, last.max(0));
-                if let Some(skin) = self.skin.as_mut() {
+                if classic {
                     skin.runtime.scroll_classic_playlist(whole);
-                    skin.refresh();
+                } else {
+                    skin.runtime.scroll_playlist(whole);
                 }
+                skin.refresh();
             }
         } else if self.volume_slider().is_some_and(|r| contains(r, at)) {
             // a trackpad's points, at the pace a wheel's notches have
@@ -150,7 +157,8 @@ impl App {
         }
     }
 
-    /// Rows a classic playlist's window surely shows: one at least.
+    /// Rows a classic playlist's window surely shows: one at least. What a page of the list
+    /// is for the keys.
     fn rows_in_view(&mut self) -> i32 {
         let height = self.list_window().and_then(|id| {
             let skin = self.skin.as_mut()?;
@@ -159,23 +167,11 @@ impl App {
         ((height.unwrap_or(0) - LIST_FRAME) / TALLEST_ROW).max(1)
     }
 
-    /// Scrolls a classic playlist so that `row` is in view. The engine does not say how far
-    /// its list is scrolled, so the app keeps count (`list_top`) and sets the list to its
-    /// count: all the way up, then down to it. A drag of the list's own scroll bar is not
-    /// counted, and the next key then brings the list back to the selection.
+    /// Scrolls a classic playlist as little as brings `row` into view; where the listener
+    /// left the list, by the wheel or its scroll bar, is where it starts from.
     fn show_row(&mut self, row: usize) {
-        let (row, screen) = (row as i32, self.rows_in_view());
-        let last = self.player.borrow().entries().len() as i32 - 1;
-        let mut top = self.list_top.clamp(0, last.max(0));
-        if row < top {
-            top = row;
-        } else if row >= top + screen {
-            top = row - screen + 1;
-        }
-        self.list_top = top;
         if let Some(skin) = self.skin.as_mut() {
-            skin.runtime.scroll_classic_playlist(-1_000_000);
-            skin.runtime.scroll_classic_playlist(top);
+            skin.runtime.show_classic_playlist_row(row as i32);
             skin.refresh();
         }
     }

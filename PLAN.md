@@ -110,8 +110,9 @@ Updated with every step. Whoever picks this up, person or model, starts here.
     Ogg, FLAC), with the station's name and the song's title from the stream. File > Add
     Radio Stream…, the playlist's Add menu, a playlist file, or the command line.
   - [x] The equalizer's factory presets, the mouse wheel for the volume, View > Opacity.
-  - [ ] An icon.
-  - [ ] Hovering, and the mouse wheel on a list: the engine has no call for either.
+  - [x] An icon.
+  - [x] The mouse wheel on a list, classic and modern.
+  - [ ] Hovering: the engine has no call for it.
 - [x] 5. Effects: Andamp's `.lua` plug-in format (`core/src/dsp`): the loader in a shut-in
   Lua, the checks, the program and the engine, with the arithmetic of the Kotlin original;
   the six plug-ins Andamp ships; the rack after the equalizer, each effect fading when
@@ -173,8 +174,9 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   it is kept between runs. The core describes the window; the Mac draws it. The delete key
   removes the selected entries and return plays the first; in the playlist's window the
   arrows, page up and down, home and end move the selection, and the list follows it. The
-  wheel and the trackpad scroll a classic playlist under them and turn the volume over the
-  volume slider, and do nothing elsewhere. Command-` goes through the app's windows. A classic playlist follows the
+  wheel and the trackpad scroll the playlist under them, classic or modern, and turn the
+  volume over the volume slider, and do nothing elsewhere. Command-` goes through the app's
+  windows, and the skin draws the one the keys go to as the one in front. A classic playlist follows the
   song that plays: when another song becomes current the list brings it into view. A press
   too short to see, as a tap on a trackpad, still shows the button pressed for a moment. On
   the Mac the skin's windows are one group around the main one, which Mission Control shows
@@ -187,28 +189,28 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 
 ### Known about the engine
 
-- With debug assertions on (`cargo test` without `--release`), walkit 0.10.4's own check
-  that a window drawn in parts equals the window drawn whole stops two tests of
-  `tests/windows.rs`, one always and one now and then. The drawing is right; the check is
-  not. It paints the window a second time, a moment later, and the classic analyzer paints
-  its peaks one step lower the second time, a real clock may have moved on to the next frame,
-  and a visualizer's picture is made anew at every painting. A fix is written in the walkit
-  repository (branch `fix/classic-vis-painted-twice`, not released): with it all tests here
-  pass in debug, the window tests ten times out of ten. Until a release has it, the gate
-  tests in release. What stays: the check can still trip when the player's own time moves
-  between the two paintings, such as the second changing.
+- The engine is walkit's main branch as of 2026-11-24 (`[patch.crates-io]` in
+  `core/Cargo.toml`), ahead of release 0.10.4 by three things the app uses: a row of a
+  classic playlist brought into view (`show_classic_playlist_row`), a modern playlist
+  scrolled (`scroll_playlist`) and the focus given to a window (`focus_window`). The owner
+  expects more changes to walkit before its next release; with that release the pin goes.
+- The same revision has the fix for the engine's own check, under debug assertions, that a
+  window drawn in parts equals the window drawn whole: 0.10.4 stopped two tests of
+  `tests/windows.rs` at it. The check can still trip when the player's own time moves
+  between its two paintings, such as the second changing, so the gate tests in release. The
+  tests were not run in debug again with this revision.
 - A window's new place (`place_window`) shows in `window_rect` after the next tick.
-- The engine does not say how far a classic playlist is scrolled or how high its rows
-  are, and has no call that brings a row into view. The app keeps count of its own scrolling
-  and assumes rows of 16 pixels at most (`app/playlist.rs`), so after a drag of the list's
-  scroll bar the next arrow key brings the list back to the selection. A call
-  `show_classic_playlist_row` in walkit would replace the counting.
-- The engine gives the focus to the window pressed last and has no call to give it to
-  another: when Command-` makes another of the skin's windows the one the keys go to, the
-  title bars do not show it.
-- A modern skin's playlist has no call for the wheel, and nothing says which object is under
-  a point: a modern skin's list does not scroll by the wheel, and its volume slider is found
-  by the id `volume`.
+- The engine does not say how many rows a classic playlist shows or how high they are. A
+  page of the list, for page up and page down, is counted with rows of 16 pixels at most
+  (`app/playlist.rs`), so it is never more than a screen and can be a row or two less.
+- No call brings a row of a modern skin's playlist into view: a modern list scrolls by the
+  wheel, and does not follow the song that plays or the arrow keys.
+- Nothing says which object is under a point: the wheel scrolls a list only over the
+  playlist's own window (`pledit`), not over a list a skin shows inside another window, and
+  a modern skin's volume slider is found by the id `volume`.
+- The engine has no call that takes the focus from every window: when another app takes
+  the keys, the title bar lit last stays lit, where Winamp's all show as behind. Before the
+  first window is given the keys none is lit.
 
 ### What to do next, in this order
 
@@ -234,6 +236,14 @@ stand-in fonts.
 
 ### Log
 
+- 2026-11-24, last: the engine pinned to walkit's main branch for its three new calls. The
+  title bars follow the window the keys go to (Command-`), a modern skin's playlist scrolls
+  by the wheel, and the app no longer counts a classic playlist's scrolling itself: the
+  engine brings a row into view from wherever the list stands, a drag of its scroll bar
+  included. Checked with `--key-window` and `--dump` on walkit's classic skin: the title bar
+  of the window given the keys is lit and the other's is not, for the main window and for
+  the playlist. Command-` itself was not tried by a hand on the keys, and the wheel on a
+  modern list only in a test.
 - 2026-11-23: plan written. Spikes done before it: a source in another app works through
   ExtensionKit; the example app's cost is where and how large it draws, not the engine.
 - 2026-11-23, night: steps 1 to 3 in their first form. `core/` is the engine's host, a

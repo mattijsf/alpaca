@@ -20,6 +20,15 @@ impl App {
         self.skin.as_ref()?.runtime.main_window().map(|id| id.0)
     }
 
+    /// Window `window` of the skin, by the engine's id, is the one the keys go to now, by
+    /// another way than a press on it: the skin shows it as the one in front, and the window
+    /// that was as one behind.
+    pub fn focus(&mut self, window: u32) {
+        if let Some(skin) = self.skin.as_mut() {
+            skin.runtime.focus_window(Skin::window_id(window));
+        }
+    }
+
     /// The file name of the skin worn.
     pub fn skin_name(&self) -> String {
         self.worn
@@ -131,7 +140,6 @@ impl App {
         self.skin = Some(Box::new(skin));
         self.worn = Some(file.to_path_buf());
         // the new skin's list starts at its top, and is brought to the current song again
-        self.list_top = 0;
         self.followed = None;
         self.give_menu_handler();
         self.tell_switches();

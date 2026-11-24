@@ -15,6 +15,8 @@ import UniformTypeIdentifiers
 ///                              corner, a second after the start; may be given more than once
 ///        [--press-pref <id>]   presses that switch or button of the Preferences window, a
 ///                              second after the start; may be given more than once
+///        [--key-window <id>]   gives the keys to that window of the skin, by the id --dump
+///                              prints for it, a second after the start, as Command-` does
 ///        [--quit-after <seconds>]  prints what it would keep for the next run, and quits as
 ///                              the menu's Quit does
 ///        [--dump <folder>]     writes every window as a PNG after two seconds, and quits;
@@ -65,6 +67,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.preferences.show()
                 self.preferences.press(row: String(row))
             }
+        }
+        if let id = controller.option("key-window").flatMap({ UInt32($0) }) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.controller.makeKey(window: id) }
         }
         if let folder = controller.option("dump") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.dump(to: URL(fileURLWithPath: folder)) }

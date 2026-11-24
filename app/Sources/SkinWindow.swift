@@ -36,6 +36,13 @@ final class SkinWindow: NSWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
 
+    // the keys come here now, by a click or by Command-`: the skin shows this window as the
+    // one in front
+    override func becomeKey() {
+        super.becomeKey()
+        surfaceView.becameKey(skinId)
+    }
+
     /// Shows `width` x `height` pixels, rows top first, BGRA with the color multiplied by the
     /// alpha. `changed` is the part that differs from the pixels shown last, when that is
     /// known; without it the whole picture is taken over.
@@ -127,6 +134,8 @@ final class SurfaceView: NSView {
         layer?.contents = surface
         shown = next
     }
+
+    func becameKey(_ window: UInt32) { controller.becameKey(window) }
 
     func picture() -> CGImage? {
         guard surfaces.count == 2 else { return nil }

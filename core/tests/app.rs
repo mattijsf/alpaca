@@ -76,7 +76,7 @@ fn main_corner(app: &mut App) -> (i32, i32) {
 fn the_command_line_is_read_the_same_everywhere() {
     let options = Options::parse(&args(
         "Some.wsz a.mp3 https://radio.example/stream --zoom 2 --volume 0 --effect tone --effect width \
-         -NSDocumentRevisionsDebugMode YES --click 10,20 --click 30,40 --bench 5 --show-vis b.flac",
+         -NSDocumentRevisionsDebugMode YES --click 10,20 --click 30,40 --bench 5 --show-vis --key-window 5 b.flac",
     ));
     // files are kept from the root, so the next run finds them from another folder
     let here = |name: &str| std::env::current_dir().unwrap().join(name);
@@ -94,6 +94,7 @@ fn the_command_line_is_read_the_same_everywhere() {
     assert_eq!(options.effects, ["tone", "width"]);
     assert_eq!(options.get("click").as_deref(), Some("10,20\n30,40"));
     assert_eq!(options.get("bench").as_deref(), Some("5"));
+    assert_eq!(options.get("key-window").as_deref(), Some("5"));
     assert_eq!(options.get("show-vis").as_deref(), Some("1"));
     assert_eq!(options.get("hidden"), None);
     assert_eq!(options.get("dump"), None);
@@ -667,6 +668,70 @@ fn the_wheel_scrolls_the_playlist_under_it_and_turns_the_volume_elsewhere() {
 }
 
 #[test]
+fn the_wheel_scrolls_a_modern_skins_playlist() {
+    let dir = scratch("modern-wheel");
+    let mut app = start("", &dir);
+    let one = song(&dir, "a.wav");
+    app.picked(Ask::AddSongs, &vec![one; 30]);
+    app.wear(&resources().join("skins/walkit-modern.wal"));
+    app.step();
+    let list = {
+        let skin = app.skin().unwrap();
+        let id = skin.runtime.window_of("pledit").expect("a playlist window");
+        skin.runtime.window_rect(id)
+    };
+    // the row under a press near the list's top says how far it scrolled
+    let first_row = |app: &mut App| {
+        let skin = app.skin().unwrap();
+        skin.runtime.pointer_down(list.left + 60, list.top + 26, 1);
+        skin.runtime.pointer_up(list.left + 60, list.top + 26);
+        app.step();
+        app.selection()
+    };
+    assert_eq!(first_row(&mut app), [0]);
+    // two notches down: six rows
+    app.wheel((list.left + 60, list.top + 40), -2.0, false);
+    app.step();
+    assert_eq!(first_row(&mut app), [6]);
+    // a trackpad moves the list as far as the fingers go: 30 points up are two rows back
+    for _ in 0..15 {
+        app.wheel((list.left + 60, list.top + 40), 2.0, true);
+    }
+    app.step();
+    assert_eq!(first_row(&mut app), [4]);
+    // past the top it stops, and outside the window the wheel is not the list's
+    app.wheel((list.left + 60, list.top + 40), 50.0, false);
+    app.wheel((list.left + 60, list.top - 40), -2.0, false);
+    app.step();
+    assert_eq!(first_row(&mut app), [0]);
+}
+
+#[test]
+fn the_window_the_keys_go_to_is_the_skins_one_in_front() {
+    let dir = scratch("focus");
+    let mut app = start("", &dir);
+    app.wear(&resources().join("skins/walkit-classic.wsz"));
+    app.step();
+    let (list, main) = {
+        let skin = app.skin().unwrap();
+        let list = skin.runtime.window_of("pledit").expect("a playlist window");
+        (list, skin.runtime.main_window().unwrap())
+    };
+    let in_front = |app: &mut App| app.skin().unwrap().runtime.focused_window();
+    assert_eq!(in_front(&mut app), Some(main));
+    // the system gave the keys to the playlist's window, with no press on it: the title
+    // bars are drawn anew
+    app.focus(list.0);
+    assert_eq!(in_front(&mut app), Some(list));
+    assert!(app.step() > 0, "the skin shows it");
+    app.focus(main.0);
+    assert_eq!(in_front(&mut app), Some(main));
+    // a window that is none of the skin's changes nothing
+    app.focus(9999);
+    assert_eq!(in_front(&mut app), Some(main));
+}
+
+#[test]
 fn a_press_too_short_to_see_still_shows() {
     let (mut app, _) = with_songs("tap", &["a.wav"]);
     app.wear(&resources().join("skins/walkit-classic.wsz"));
@@ -775,6 +840,18 @@ fn the_playlist_follows_the_song_that_plays() {
     app.step();
     app.step();
     assert_eq!(first_row(&mut app), 0);
+    // a key in the list brings back no more than it must: from the top, the row selected
+    // comes in at the bottom
+    let window = app.skin().unwrap().runtime.window_of("pledit").unwrap().0;
+    app.select(&[16]);
+    app.key_in(window, "down");
+    app.step();
+    assert_eq!(app.selection(), [17]);
+    let top = first_row(&mut app);
+    assert!(
+        (1..=15).contains(&top),
+        "row 17 came in from below: the first row is {top}"
+    );
     // another song, and the list is back with it; another skin, and its list is too
     app.player.borrow_mut().select(20);
     app.step();

@@ -241,10 +241,14 @@ void andamp_app_right_click(AndampApp *app, int32_t x, int32_t y, int32_t touch)
 /// and "right" for five seconds back and on. False for any other key.
 bool andamp_app_key(AndampApp *app, uint32_t window, const char *key);
 
-/// The mouse wheel at `x`, `y` on the viewport, in layout pixels: over a classic skin's
-/// playlist window it scrolls the list, over the volume slider it turns the volume, and
-/// anywhere else it does nothing. `delta` is more than 0 for up, in notches of a wheel, or
-/// with `precise` in points of a trackpad.
+/// Window `window` of the skin (its id, as AndampWindow has it) is the one the keys go to now,
+/// by another way than a press on it: the skin shows it as the one in front on the next step.
+void andamp_app_focus(AndampApp *app, uint32_t window);
+
+/// The mouse wheel at `x`, `y` on the viewport, in layout pixels: over the skin's playlist
+/// window it scrolls the list, over the volume slider it turns the volume, and anywhere else
+/// it does nothing. `delta` is more than 0 for up, in notches of a wheel, or with `precise`
+/// in points of a trackpad.
 void andamp_app_wheel(AndampApp *app, int32_t x, int32_t y, float delta, bool precise);
 
 /// Sets how the skin's own popup menus are shown, for the skin worn and every one after it;
@@ -321,7 +325,7 @@ void andamp_app_save(AndampApp *app);
 
 /// What the command line gave for one of the options the shell answers itself, to free with
 /// andamp_string_free, or null when it was not given: `dump`, `bench`, `quit-after`,
-/// `then-skin`, `presets` with their value, `hidden`, `show-vis`, `show-effects`, `show-prefs`
+/// `then-skin`, `presets`, `key-window` with their value, `hidden`, `show-vis`, `show-effects`, `show-prefs`
 /// with `1`, and
 /// `click` and `press-pref` with a line for each.
 char *andamp_app_option(AndampApp *app, const char *name);

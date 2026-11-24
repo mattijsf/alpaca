@@ -87,8 +87,6 @@ pub struct App {
     wheel_rows: f32,
     /// The same for the volume, in its steps.
     wheel_volume: f32,
-    /// The first row a classic playlist shows, as far as the app has counted its scrolling.
-    list_top: i32,
     /// The song that was current when the playlist was last brought to it.
     followed: Option<usize>,
     /// When the mouse went down, while it is down.
@@ -157,7 +155,6 @@ impl App {
             playlist_due: 0,
             wheel_rows: 0.0,
             wheel_volume: 0.0,
-            list_top: 0,
             followed: None,
             pressed_at: None,
             release: None,

@@ -24,7 +24,7 @@ use crate::player::{location_kind, LocationKind};
 ///
 /// Songs named on the command line play at once. The rest is for checking and measuring, and
 /// the shell does it: `--click x,y` and `--press-pref <id>` (each may be given more than once),
-/// `--quit-after <seconds>`, `--dump <folder>`, `--bench <seconds>`, `--then-skin <file>` and
+/// `--key-window <id>`, `--quit-after <seconds>`, `--dump <folder>`, `--bench <seconds>`, `--then-skin <file>` and
 /// `--hidden`.
 #[derive(Debug, Default, Clone)]
 pub struct Options {
@@ -66,6 +66,8 @@ pub struct Options {
     pub clicks: Vec<String>,
     /// `--press-pref`: rows of the Preferences window the shell presses, by their id.
     pub pref_presses: Vec<String>,
+    /// `--key-window`: the skin's window, by the engine's id, the shell gives the keys to.
+    pub key_window: Option<String>,
 }
 
 impl Options {
@@ -89,6 +91,7 @@ impl Options {
                 "--wasabi" => options.wasabi = value().map(|v| whole(&v)),
                 "--click" => options.clicks.extend(value()),
                 "--press-pref" => options.pref_presses.extend(value()),
+                "--key-window" => options.key_window = value(),
                 "--bench" => options.bench = value(),
                 "--hidden" => options.hidden = true,
                 "--then-skin" => options.then_skin = value(),
@@ -133,6 +136,7 @@ impl Options {
             "presets" => path(&self.presets),
             "click" => (!self.clicks.is_empty()).then(|| self.clicks.join("\n")),
             "press-pref" => (!self.pref_presses.is_empty()).then(|| self.pref_presses.join("\n")),
+            "key-window" => self.key_window.clone(),
             _ => None,
         }
     }
@@ -144,6 +148,7 @@ impl Options {
             && self.bench.is_none()
             && self.clicks.is_empty()
             && self.pref_presses.is_empty()
+            && self.key_window.is_none()
     }
 }
 

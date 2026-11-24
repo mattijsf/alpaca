@@ -400,7 +400,18 @@ final class SkinController {
         return true
     }
 
-    // MARK: for --click, --dump and --bench
+    /// The skin's window `window` became the one the keys go to.
+    func becameKey(_ window: UInt32) {
+        guard skin != nil else { return }
+        andamp_app_focus(app, window)
+        // drawn after this call: a step of the app can itself be what made the window key
+        DispatchQueue.main.async { [weak self] in self?.pump() }
+    }
+
+    // MARK: for --click, --key-window, --dump and --bench
+
+    /// Gives the keys to the skin's window `window`, as Command-` does.
+    func makeKey(window: UInt32) { windows[window]?.makeKey() }
 
     /// A click at `x`, `y` on the viewport, in layout pixels, as if the mouse made it.
     func click(x: Int32, y: Int32) {

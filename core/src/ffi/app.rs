@@ -345,10 +345,21 @@ pub unsafe extern "C" fn andamp_app_key(
     with_app(app, false, |a| a.key_in(window, &key))
 }
 
-/// The mouse wheel at `x`, `y` on the viewport, in layout pixels: over a classic skin's
-/// playlist window it scrolls the list, over the volume slider it turns the volume, and
-/// anywhere else it does nothing. `delta` is more than 0 for up, in notches of a wheel, or
-/// with `precise` in points of a trackpad.
+/// Window `window` of the skin (its id, as [`AndampWindow`](super::AndampWindow) has it) is
+/// the one the keys go to now, by another way than a press on it: the skin shows it as the
+/// one in front on the next step.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_focus(app: *mut AndampApp, window: u32) {
+    with_app(app, (), |a| a.focus(window));
+}
+
+/// The mouse wheel at `x`, `y` on the viewport, in layout pixels: over the skin's playlist
+/// window it scrolls the list, over the volume slider it turns the volume, and anywhere else
+/// it does nothing. `delta` is more than 0 for up, in notches of a wheel, or with `precise`
+/// in points of a trackpad.
 ///
 /// # Safety
 /// `app` is null or a live app.
@@ -595,7 +606,7 @@ pub unsafe extern "C" fn andamp_app_save(app: *mut AndampApp) {
 
 /// What the command line gave for one of the options the shell answers itself, to free with
 /// [`andamp_string_free`](super::andamp_string_free), or null when it was not given: `dump`, `bench`, `quit-after`,
-/// `then-skin`, `presets` with their value, `hidden`, `show-vis`, `show-effects`, `show-prefs` with `1`,
+/// `then-skin`, `presets`, `key-window` with their value, `hidden`, `show-vis`, `show-effects`, `show-prefs` with `1`,
 /// and `click` and `press-pref` with a line for each.
 ///
 /// # Safety

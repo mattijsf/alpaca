@@ -60,8 +60,8 @@ It is one script so the hook, CI and this file cannot disagree about what it con
 (`.github/workflows/ci.yml`) runs only when started by hand: the gate on a Mac, the core's
 tests on Windows and Linux, and a build of the Mac's app. The gate does not build the app.
 
-The tests run in release: with debug assertions on, a check inside walkit 0.10.4 stops two
-window tests (PLAN.md, Known about the engine).
+The tests run in release: with debug assertions on, a check inside the engine can stop a
+window test (PLAN.md, Known about the engine).
 
 ## Architecture
 
@@ -89,7 +89,9 @@ shell ──▶ ffi ──▶ app ──┬──▶ skin ──▶ host, render
   `app` but `ffi`. `skin` holds the player for two things only: to let it move on before a
   step, and to answer the playlist window's own buttons.
 - **The engine is walkit from crates.io.** It is not changed from here. What it lacks is
-  noted in PLAN.md and worked around in `skin` or `host`.
+  noted in PLAN.md and worked around in `skin` or `host`. When the app needs what walkit's
+  main branch has and no release yet, `[patch.crates-io]` in `core/Cargo.toml` pins that
+  revision, and goes with the release.
 - **Only three places know their system**: `player/device/` (the audio device), the list of
   system fonts in `host.rs`, and the app's folder in `settings.rs`. A `cfg(target_os)`
   anywhere else is wrong.
@@ -135,7 +137,7 @@ Rust.
   owns only what dies with it: windows, timers, a menu being shown.
 - **One place writes the settings**: `App::save`, which the shell calls when the app goes to
   the background and when it ends. A run that only looks or measures (`--dump`, `--bench`,
-  `--click`) reads no settings and leaves none.
+  `--click`, `--key-window`) reads no settings and leaves none.
 - **Places on the screen are in points from the top left corner** of the part of the screen
   the windows move on, the same on every system; a layout pixel is `zoom` points. A shell
   turns them into its system's own.
@@ -173,8 +175,9 @@ A change is done when the gate passes and, where it shows, the app was looked at
 - **A test makes its own files** in a scratch folder: songs as WAV bytes, settings, presets.
   The skins are the ones that come with the app.
 - **What only a shell can show is checked through the app**: `--dump` for pictures,
-  `--bench` for cost, `--click`, `--press-pref` and `--quit-after` for what a click, a
-  switch of the Preferences window or a restart does.
+  `--bench` for cost, `--click`, `--press-pref`, `--key-window` and `--quit-after` for what
+  a click, a switch of the Preferences window, the keys going to another window or a restart
+  does.
   What nobody has checked is said so in PLAN.md.
 
 ## Code style

@@ -47,6 +47,7 @@ what the app asks of it.
 | The mouse, in places on the screen | `SkinController`'s mouse calls | `andamp_app_pointer_down`, `_move`, `_up`, `_double_click`, `_right_click`, and `andamp_app_wheel` for the wheel and the trackpad; a release after a press too short to see is held back by the core |
 | Waking up when there is next something to do | `SkinController.schedule` | `andamp_app_next_due_ms`; nothing to do while no window is in sight |
 | The keys | `SkinController.keyDown`, `Visualizer.key` | `andamp_app_key` with the window the key was pressed in and the key's name, and `andamp_app_vis_key` |
+| Saying which of the skin's windows the keys go to | `SkinWindow.becomeKey` | `andamp_app_focus` with the window, whenever the system makes one the key window; the skin then draws it as the one in front |
 | Drawing menus: the bar, the popups, a skin's own | `NSMenu.from(lines:)` | every menu as lines of text (`andamp_app_menu`), by number: the bar, the main popup, and the popups a skin's buttons ask for (options, visualization, the playlist's five buttons, a row's menu, sorting), with the checks, the grayed items and the keys; the pick goes back as a number (`andamp_app_command`) |
 | Doing what the app asks | `AppDelegate.answer` | `andamp_app_take_requests`: quit, hide, about, show a menu at a place, show the Effects or Visualizer window, load a preset, say what went wrong |
 | Letting the listener pick files, folders, a stream's address | `AppDelegate.ask` | the request `ask` with what to pick; the answer goes to `andamp_app_picked` |
