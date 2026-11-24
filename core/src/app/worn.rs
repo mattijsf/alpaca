@@ -90,6 +90,59 @@ impl App {
             .set(&format!("{prefix}zoom"), Some(&self.zoom.to_string()));
     }
 
+    /// Writes down what the skin worn keeps for itself: what its scripts wrote down (a
+    /// drawer left open, a pane's width, the tab shown) and its color theme, for when it is
+    /// worn again.
+    pub(super) fn keep_skin_state(&mut self) {
+        let Some(skin) = self.skin.as_ref() else {
+            return;
+        };
+        let kept = skin.kept();
+        let prefix = format!("kept.{}.", self.skin_name());
+        self.settings.clear(&prefix);
+        self.settings
+            .set(&format!("{prefix}theme"), kept.theme.as_deref());
+        for (name, value) in &kept.settings.attributes {
+            self.settings.set(&format!("{prefix}a.{name}"), Some(value));
+        }
+        for (name, value) in &kept.settings.strings {
+            self.settings.set(&format!("{prefix}s.{name}"), Some(value));
+        }
+        for (name, value) in &kept.settings.ints {
+            self.settings
+                .set(&format!("{prefix}i.{name}"), Some(&value.to_string()));
+        }
+    }
+
+    /// What the skin with the file name `name` kept when it was last worn; nothing for one
+    /// never worn.
+    fn kept_skin_state(&self, name: &str) -> skin::Kept {
+        let prefix = format!("kept.{name}.");
+        let mut kept = skin::Kept::default();
+        for key in self.settings.keys(&prefix) {
+            let Some(value) = self.settings.get(key) else {
+                continue;
+            };
+            let rest = &key[prefix.len()..];
+            if rest == "theme" {
+                kept.theme = Some(value.to_string());
+            } else if let Some(name) = rest.strip_prefix("a.") {
+                kept.settings
+                    .attributes
+                    .insert(name.to_string(), value.to_string());
+            } else if let Some(name) = rest.strip_prefix("s.") {
+                kept.settings
+                    .strings
+                    .insert(name.to_string(), value.to_string());
+            } else if let Some(name) = rest.strip_prefix("i.") {
+                if let Ok(value) = value.parse() {
+                    kept.settings.ints.insert(name.to_string(), value);
+                }
+            }
+        }
+        kept
+    }
+
     /// Wears the skin at `file` in place of the one worn, with its windows where they were
     /// when it was last worn, or else with its main window where the last skin's was. When it
     /// does not open, the skin worn stays and the shell is asked to say why.
@@ -124,6 +177,12 @@ impl App {
         let fonts = skin::read_fonts(&self.resources.join("fonts"));
         let fonts = &fonts;
         let player = self.player.clone();
+        // the skin worn goes: what it kept is written down first, also for when the skin
+        // opened is the same one again
+        if self.skin.is_some() {
+            self.keep_skin_state();
+        }
+        let kept = self.kept_skin_state(&name);
         let mut skin = Skin::open(
             bytes,
             &name,
@@ -132,10 +191,11 @@ impl App {
             fonts,
             file.parent(),
             self.viewport(),
+            Some(&kept),
             |_| Box::new(SkinPlayer(player)),
         )?;
         skin.player = Some(self.player.clone());
-        // the skin worn goes: its places are kept first
+        // its places are kept too
         if self.skin.is_some() {
             self.keep_places();
             self.keep_switches();

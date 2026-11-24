@@ -805,6 +805,75 @@ fn a_skins_windows_stay_together_when_the_size_changed_while_another_was_worn() 
     assert_eq!(under_main(&mut next), docked);
 }
 
+/// A modern skin with a frame of two panes, each with a button, and two color themes.
+const PANES_XML: &str = r#"<WinampAbstractionLayer version="0.8">
+<elements>
+<gammaset id="Plain"><gammagroup id="Things" value="0,0,0"/></gammaset>
+<gammaset id="Blue"><gammagroup id="Things" value="-2000,0,2000"/></gammaset>
+</elements>
+<groupdef id="pane.a"><button id="a.btn" x="0" y="0" w="10" h="10"/></groupdef>
+<groupdef id="pane.b"><button id="b.btn" x="0" y="0" w="10" h="10"/></groupdef>
+<container id="main" name="Panes" default_visible="1"><layout id="normal" w="300" h="100">
+<Wasabi:Frame id="side" x="0" y="0" w="300" h="100" orientation="v" from="right" width="100"
+  minwidth="40" maxwidth="-60" left="pane.a" right="pane.b"/>
+</layout></container>
+</WinampAbstractionLayer>"#;
+
+#[test]
+fn a_skin_is_found_as_it_was_left() {
+    use std::io::Write;
+    let dir = scratch("skin-kept");
+    let panes = dir.join("Panes.wal");
+    {
+        let mut to = zip::ZipWriter::new(std::fs::File::create(&panes).unwrap());
+        to.start_file("skin.xml", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        to.write_all(PANES_XML.as_bytes()).unwrap();
+        to.finish().unwrap();
+    }
+    // where the right pane starts in its window, and the color theme worn
+    let state = |app: &mut App| -> (i32, Option<String>) {
+        app.step();
+        let skin = app.skin().unwrap();
+        let pane = skin.runtime.object_info("b.btn").expect("the right pane");
+        (
+            pane.rect.left,
+            skin.runtime.color_theme().map(str::to_string),
+        )
+    };
+    let mut app = start("", &dir);
+    app.take_requests();
+    let worn = app.wear(&panes);
+    assert!(worn, "{:?}", app.take_requests());
+    let (pane, theme) = state(&mut app);
+    assert_eq!(pane, 200);
+    let window = {
+        let skin = app.skin().unwrap();
+        let id = skin.runtime.main_window().unwrap();
+        skin.runtime.window_rect(id)
+    };
+    // the divider dragged 50 to the left, and the other color theme
+    app.pointer_down(window.left + 195, window.top + 50, 1);
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    app.pointer_move(window.left + 150, window.top + 50);
+    app.pointer_up(window.left + 150, window.top + 50);
+    app.skin().unwrap().runtime.select_color_theme("Blue");
+    assert_ne!(theme.as_deref(), Some("Blue"));
+    assert_eq!(state(&mut app), (150, Some("Blue".to_string())));
+
+    // another skin and back: as it was left
+    app.wear(&resources().join("skins/walkit-modern.wal"));
+    app.step();
+    assert!(app.wear(&panes));
+    assert_eq!(state(&mut app), (150, Some("Blue".to_string())));
+
+    // and the next run finds it so too
+    app.save();
+    let mut next = start("", &dir);
+    assert_eq!(next.skin_name(), "Panes.wal");
+    assert_eq!(state(&mut next), (150, Some("Blue".to_string())));
+}
+
 /// A cursor file of 2 by 2 pixels: red and green over blue and one the mask turns black, its
 /// tip at `tip`.
 fn cursor_file(tip: (u16, u16)) -> Vec<u8> {

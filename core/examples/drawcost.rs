@@ -31,6 +31,7 @@ fn main() {
         &read_fonts(&resources.join("fonts")),
         None,
         (1728, 1000),
+        None,
         |clock| {
             let mut player = FakePlayer::new(clock);
             player.play();

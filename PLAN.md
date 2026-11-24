@@ -289,6 +289,12 @@ stand-in fonts.
   two pixels either side. Four, about
   what a modern skin's sliders have by themselves, was tried first and held on too long
   for the owner.
+- 2026-11-24, one more: a skin is found as it was left. The app kept nothing of what a
+  skin keeps for itself; now what its scripts wrote down (a drawer, a tab, a window's
+  size) and its color theme are in the settings by the skin's file name (`kept.<skin>.`),
+  written when the skin goes and at a save, and handed to the engine before the skin
+  loads. A divider's place is the engine's to keep: by the frame's id, as Winamp keeps it. Checked in the core:
+  Big Bento's playlist pane and Winamp Modern's color theme come back after a restart.
 - 2026-11-24, last of all: a folder of the listener's own skins (`Skins` in the app's
   folder, beside the settings). What is in it is offered in the Skins menu and in the
   Preferences window under the skins that come with the app; Preferences has a button that

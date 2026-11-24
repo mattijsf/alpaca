@@ -15,7 +15,7 @@ use std::time::Instant;
 
 use walkit::draw::{DrawCmd, Rect};
 use walkit::files::{self, LayeredFiles, MemoryFiles, SkinFiles};
-use walkit::host::{Clock, SkinSetup, WindowId};
+use walkit::host::{Clock, SavedSettings, SkinSetup, WindowId};
 use walkit::player::Player;
 use walkit::SkinRuntime;
 
@@ -85,11 +85,22 @@ pub struct Skin {
     pub broken: bool,
 }
 
+/// What a skin keeps between runs: what its scripts wrote down for themselves (a drawer left
+/// open, a pane's width, the tab shown) and the color theme worn.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Kept {
+    /// The skin's settings and its scripts' values, as the engine keeps them.
+    pub settings: SavedSettings,
+    /// The color theme's name; `None` for the one the skin starts with.
+    pub theme: Option<String>,
+}
+
 impl Skin {
     /// Opens the skin archive `bytes` named `file_name`, over the files of `base` when it is a
     /// classic skin and over those of `wasabi` when it is a modern one, with `fonts` under
     /// both, on a screen of `viewport` layout pixels, driven by `player`. `beside` is the
-    /// folder the skin's file is in, where a skin it builds on is looked for.
+    /// folder the skin's file is in, where a skin it builds on is looked for. `kept` is what
+    /// the skin kept when it was last worn: its scripts read it as they start.
     #[allow(clippy::too_many_arguments)]
     pub fn open(
         bytes: Vec<u8>,
@@ -99,6 +110,7 @@ impl Skin {
         fonts: &MemoryFiles,
         beside: Option<&Path>,
         viewport: (i32, i32),
+        kept: Option<&Kept>,
         player: impl FnOnce(Clock) -> Box<dyn Player>,
     ) -> Result<Skin, String> {
         let archive = unzip(bytes)?;
@@ -157,7 +169,13 @@ impl Skin {
         );
         let viewport = (viewport.0.max(1), viewport.1.max(1));
         runtime.set_viewport(viewport.0, viewport.1);
+        if let Some(kept) = kept {
+            runtime.restore_settings(&kept.settings);
+        }
         runtime.load();
+        if let Some(theme) = kept.and_then(|kept| kept.theme.as_deref()) {
+            runtime.select_color_theme(theme);
+        }
         // a mouse lands where it points
         runtime.set_pointer_precise(true);
         // a classic skin's equalizer and playlist start shut: open them, so all three windows
@@ -322,6 +340,14 @@ impl Skin {
         }
         self.stats.draw_nanos += began.elapsed().as_nanos() as u64;
         flags
+    }
+
+    /// What the skin keeps for the next time it is worn, as it is now.
+    pub fn kept(&self) -> Kept {
+        Kept {
+            settings: self.runtime.saved_settings(),
+            theme: self.runtime.color_theme().map(str::to_string),
+        }
     }
 
     /// The windows, bottom to top, as the last [`Skin::step`] left them.

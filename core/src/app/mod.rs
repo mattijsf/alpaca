@@ -403,6 +403,7 @@ impl App {
         }
         self.keep_places();
         self.keep_switches();
+        self.keep_skin_state();
         self.keep_effects();
         if let Err(message) = self.settings.save() {
             eprintln!("andamp: {message}");

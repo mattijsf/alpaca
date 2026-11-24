@@ -23,6 +23,7 @@ fn open(name: &str, playing: bool) -> Skin {
         &fonts,
         None,
         (1728, 1000),
+        None,
         |clock| {
             let mut player = FakePlayer::new(clock);
             if playing {
