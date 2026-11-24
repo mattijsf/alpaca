@@ -137,6 +137,8 @@ impl App {
     /// told when it has shown long enough: at the next [`App::step`] after that moment, which
     /// [`App::next_due_ms`] counts down to.
     pub fn pointer_up(&mut self, x: i32, y: i32) {
+        // a window dragged is kept where a screen shows it once the skin has the release
+        self.unsettled = true;
         let shown_until = self.pressed_at.take().map(|at| at + SHORTEST_PRESS);
         match shown_until {
             Some(due) if Instant::now() < due => self.release = Some(Release { at: (x, y), due }),

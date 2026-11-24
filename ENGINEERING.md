@@ -100,7 +100,7 @@ shell ──▶ ffi ──▶ app ──┬──▶ skin ──▶ host, render
 
 | Path | What it is |
 | --- | --- |
-| `core/src/app/` | The app: `mod.rs` the start, the look and saving; `options.rs` the command line; `request.rs` the commands' numbers, the menus' numbers and what the app asks of a shell; `menu.rs` every menu as text; `commands.rs` what each command and each pick does; `playlist.rs` the selection, file info and the list as a web page; `prefs.rs` the preferences as pages of rows and what setting one does; `worn.rs` the skin worn, its windows' places, the step and what the skin's buttons ask; `visualizer.rs` and `effects.rs` those two windows as the app sees them. |
+| `core/src/app/` | The app: `mod.rs` the start, the look and saving; `options.rs` the command line; `request.rs` the commands' numbers, the menus' numbers and what the app asks of a shell; `menu.rs` every menu as text; `commands.rs` what each command and each pick does; `playlist.rs` the selection, file info and the list as a web page; `prefs.rs` the preferences as pages of rows and what setting one does; `worn.rs` the skin worn, its windows' places, the step and what the skin's buttons ask; `screens.rs` the screens and the rules that keep a window where one shows it; `visualizer.rs` and `effects.rs` those two windows as the app sees them. |
 | `core/src/skin.rs` | The engine running one skin, its windows set out apart, each drawn into its own pixels. |
 | `core/src/host.rs` | What the engine asks of an app: pictures decoded, text measured, actions and switches. |
 | `core/src/render.rs` | A window's draw list into pixels: only what changed, with shapes as runs of rows. |
@@ -109,7 +109,7 @@ shell ──▶ ffi ──▶ app ──┬──▶ skin ──▶ host, render
 | `core/src/settings.rs` | The one file kept between runs. |
 | `core/src/vis.rs` | The Visualizer's presets: which shows, how long, what its keys do. |
 | `core/src/ffi/` | The C interface, by what it takes: `app.rs`, `player.rs`, `skin.rs`. `core/include/andamp_core.h` is written by hand, in step with it. |
-| `core/tests/` | The tests, a file to an area: `app`, `windows`, `player`, `effects`, `settings`. |
+| `core/tests/` | The tests, a file to an area: `app`, `windows`, `screens`, `player`, `effects`, `settings`. |
 | `app/Sources/` | The Mac's shell: `main.swift` answers the app's requests and draws its menus; `SkinController.swift` steps the app and places the windows; `SkinWindow.swift` shows pixels; `SkinCursors.swift` shows the cursor the app names; `WindowCycle.swift` is Command-` through the app's windows; `Preferences.swift`, `Effects.swift`, `Visualizer.swift` and `NowPlaying.swift` are the Mac's own windows and media keys; `Checks.swift` is `--dump` and `--bench`. |
 | `vis/` | Builds libprojectM as a library beside the app. |
 | `tools/` | The gate, the cross-check, and `icon.sh`, which makes the Mac's icon from Andamp's own (`app/icon/andamp.svg`). |
@@ -138,9 +138,12 @@ Rust.
 - **One place writes the settings**: `App::save`, which the shell calls when the app goes to
   the background and when it ends. A run that only looks or measures (`--dump`, `--bench`,
   `--click`, `--key-window`) reads no settings and leaves none.
-- **Places on the screen are in points from the top left corner** of the part of the screen
-  the windows move on, the same on every system; a layout pixel is `zoom` points. A shell
-  turns them into its system's own.
+- **Places on the screen are in points on one desktop**, with y down from a corner the
+  shell picks, the same on every system; a layout pixel is `zoom` points. The shell reports
+  its screens as rectangles in that space (`App::set_screens`), and again when they change;
+  the app keeps which screen each window is on and keeps every window where a screen shows
+  it (`app/screens.rs`). The engine counts from `App::origin`, the top left of the screen the
+  main window is on. A shell turns places into its system's own.
 - **A window of controls is described, not built, by the app.** The preferences are pages of
   rows of a few kinds (a switch, a choice, a slider, a button, text), and the effect rack is
   JSON of the same sort; a shell draws the kinds and knows nothing of what a row means. A

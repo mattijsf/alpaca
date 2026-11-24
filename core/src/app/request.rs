@@ -237,7 +237,7 @@ pub enum Request {
     Popup {
         /// Which menu.
         menu: Menu,
-        /// Where its top left corner goes, in points; `None` for at the mouse.
+        /// Where its top left corner goes, in points on the desktop; `None` for at the mouse.
         at: Option<(i32, i32)>,
     },
     /// Another skin is worn: the windows of the one before are gone.

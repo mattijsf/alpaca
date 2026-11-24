@@ -4,7 +4,8 @@
 
 use std::path::Path;
 
-use super::{command, number_of, App, Ask, Menu, MenuHandler, Request, DEFAULT_SKIN};
+use super::screens::{self, Area};
+use super::{command, number_of, pixel, App, Ask, Menu, MenuHandler, Request, DEFAULT_SKIN};
 use crate::host::HostAction;
 use crate::player::{SkinPlayer, REQUEST_OPEN_FILES};
 use crate::skin::{self, Skin};
@@ -38,43 +39,118 @@ impl App {
             .unwrap_or_default()
     }
 
-    /// The screen in layout pixels.
+    /// The viewport in layout pixels: the part of the screen the main window is on, from
+    /// [`App::origin`].
     pub(super) fn viewport(&self) -> (i32, i32) {
-        (self.screen.0 / self.zoom, self.screen.1 / self.zoom)
-    }
-
-    /// A place on the screen in points as one in layout pixels, kept on the screen.
-    fn on_screen(&self, at: (i32, i32)) -> (i32, i32) {
-        let (w, h) = self.viewport();
-        let pixel = |points: i32| (f64::from(points) / f64::from(self.zoom)).round() as i32;
+        let (x, y) = self.origin();
         (
-            pixel(at.0).min(w - 40).max(0),
-            pixel(at.1).min(h - 20).max(0),
+            (self.view.x + self.view.w - x).div_euclid(self.zoom).max(1),
+            (self.view.y + self.view.h - y).div_euclid(self.zoom).max(1),
         )
     }
 
-    /// Every window's top left corner on the screen in points, by the engine's id, as the
+    /// Every window's top left corner on the desktop in points, by the engine's id, as the
     /// last step left them.
     pub fn places(&self) -> Vec<(u32, (i32, i32))> {
+        let (ox, oy) = self.origin();
         let windows = self.skin.as_ref().map_or(&[][..], |skin| skin.windows());
         windows
             .iter()
-            .map(|w| (w.id, (w.rect.left * self.zoom, w.rect.top * self.zoom)))
+            .map(|w| {
+                (
+                    w.id,
+                    (ox + w.rect.left * self.zoom, oy + w.rect.top * self.zoom),
+                )
+            })
             .collect()
     }
 
-    /// The main window's corner on the screen, in points.
+    /// Every window on the desktop, in points, by the engine's id, as the engine has them
+    /// now, and which of them is the main window.
+    fn on_desktop(&mut self) -> (Vec<(u32, Area)>, usize) {
+        let (zoom, (ox, oy)) = (self.zoom, self.origin());
+        let Some(skin) = self.skin.as_mut() else {
+            return (Vec::new(), 0);
+        };
+        let main = skin.runtime.main_window();
+        let ids = skin.runtime.window_ids();
+        let windows: Vec<(u32, Area)> = ids
+            .iter()
+            .map(|id| {
+                let r = skin.runtime.window_rect(*id);
+                let area = Area::new(
+                    ox + r.left * zoom,
+                    oy + r.top * zoom,
+                    r.width * zoom,
+                    r.height * zoom,
+                );
+                (id.0, area)
+            })
+            .collect();
+        let main = main
+            .and_then(|main| windows.iter().position(|(id, _)| *id == main.0))
+            .unwrap_or(0);
+        (windows, main)
+    }
+
+    /// Puts the windows `at` places on the desktop, and the viewport on the screen of `view`.
+    /// `was` is where they are now.
+    fn put(&mut self, was: &[(u32, Area)], at: &[Area], view: Area) {
+        let moved = view != self.view;
+        self.view = view;
+        let (zoom, (ox, oy)) = (self.zoom, self.origin());
+        let (w, h) = self.viewport();
+        let Some(skin) = self.skin.as_mut() else {
+            return;
+        };
+        skin.set_viewport(w, h);
+        for ((id, before), area) in was.iter().zip(at) {
+            // a new viewport counts every window from another corner
+            if moved || before != area {
+                skin.place_window(*id, pixel(area.x - ox, zoom), pixel(area.y - oy, zoom));
+            }
+        }
+    }
+
+    /// Keeps every window where a screen shows it, and the viewport on the screen the main
+    /// window is on, so that it snaps to that screen's edges and a window opened later opens
+    /// there. Nothing is done while the mouse is down. Says whether a window was put
+    /// somewhere else.
+    pub(super) fn settle(&mut self) -> bool {
+        if self.pressed_at.is_some() || self.release.is_some() {
+            return false;
+        }
+        self.unsettled = false;
+        let before = std::mem::take(&mut self.before);
+        let (windows, main) = self.on_desktop();
+        if windows.is_empty() {
+            self.view = self.screens[0];
+            return false;
+        }
+        let now: Vec<Area> = windows.iter().map(|(_, area)| *area).collect();
+        let at = screens::into_view(&now, main, &self.screens, &before);
+        let view = screens::screen_of(at[main], &self.screens)
+            .map_or(self.screens[0], |i| self.screens[i]);
+        if at == now && view == self.view {
+            return false;
+        }
+        self.put(&windows, &at, view);
+        true
+    }
+
+    /// The main window's corner on the desktop, in points.
     pub(super) fn main_place(&mut self) -> Option<(i32, i32)> {
-        let zoom = self.zoom;
+        let (zoom, (ox, oy)) = (self.zoom, self.origin());
         let skin = self.skin.as_mut()?;
         let main = skin.runtime.main_window()?;
         let rect = skin.runtime.window_rect(main);
-        Some((rect.left * zoom, rect.top * zoom))
+        Some((ox + rect.left * zoom, oy + rect.top * zoom))
     }
 
     /// Writes down where the windows of the skin worn are, for when it is worn again: each
-    /// one's corner on the screen in points, and the size they were kept at, since the windows
-    /// are that many points apart for each of the skin's pixels.
+    /// one's corner on the desktop in points; the screen the main window is on, so that a
+    /// screen gone or moved is seen as such; and the size they were kept at, since the
+    /// windows are that many points apart for each of the skin's pixels.
     pub(super) fn keep_places(&mut self) {
         let places = self.places();
         if places.is_empty() {
@@ -88,6 +164,11 @@ impl App {
         }
         self.settings
             .set(&format!("{prefix}zoom"), Some(&self.zoom.to_string()));
+        let Area { x, y, w, h } = self.view;
+        self.settings.set(
+            &format!("{prefix}screen"),
+            Some(&format!("{x},{y},{w},{h}")),
+        );
     }
 
     /// Writes down what the skin worn keeps for itself: what its scripts wrote down (a
@@ -208,7 +289,32 @@ impl App {
         self.tell_switches();
         self.apply_switches();
 
+        self.put_back_places(&name);
+        self.request(Request::Skin);
+        self.request(Request::Menu);
+        Ok(())
+    }
+
+    /// Puts the windows of the skin just worn, the one with the file name `name`, where they
+    /// were when it was last worn: the main window at its corner on the desktop, and the
+    /// others as far from it in the skin's own pixels as they were, whatever the size was
+    /// then; in points they would be twice as far apart, or half, after a change of the size.
+    /// A skin never worn opens with its main window where the last skin's was, or a little in
+    /// from the main screen's top left corner, and the others docked as the skin sets them
+    /// out. Then every window is kept where a screen shows it.
+    fn put_back_places(&mut self, name: &str) {
         let prefix = format!("at.{name}.");
+        let screen = self
+            .settings
+            .get(&format!("{prefix}screen"))
+            .and_then(parse_area);
+        // places kept before the screens were known count from the main screen's top left
+        let main_screen = self.screens[0];
+        let (sx, sy) = if screen.is_some() {
+            (0, 0)
+        } else {
+            (main_screen.x, main_screen.y)
+        };
         let kept: Vec<(u32, (i32, i32))> = self
             .settings
             .keys(&prefix)
@@ -216,56 +322,49 @@ impl App {
             .filter_map(|key| {
                 let id = key[prefix.len()..].parse().ok()?;
                 let (x, y) = self.settings.get(key)?.split_once(',')?;
-                Some((id, (x.parse().ok()?, y.parse().ok()?)))
+                Some((
+                    id,
+                    (x.parse::<i32>().ok()? + sx, y.parse::<i32>().ok()? + sy),
+                ))
             })
             .collect();
-        let zoom = self.zoom;
-        let main = self
-            .skin
-            .as_ref()
-            .and_then(|skin| skin.runtime.main_window());
-        let corner = main
-            .and_then(|main| kept.iter().find(|(id, _)| *id == main.0))
-            .map(|(_, at)| *at)
-            .or(self.main_corner.take());
-        // the main window's corner is a place on the screen. The others keep their places
-        // from it in the skin's own pixels, whatever the size was when they were kept: in
-        // points they would be twice as far apart, or half, after a change of the size
         let kept_zoom = number_of(&self.settings, &format!("{prefix}zoom"))
             .filter(|zoom| *zoom >= 1)
             .unwrap_or(1);
-        let kept_main = main.and_then(|main| kept.iter().find(|(id, _)| *id == main.0));
-        let others: Vec<(u32, (i32, i32))> = match (kept_main, corner) {
-            (Some((_, from)), Some(corner)) => {
-                let (x, y) = self.on_screen(corner);
-                let pixel = |points: i32| (f64::from(points) / f64::from(kept_zoom)).round() as i32;
-                kept.iter()
-                    .map(|(id, at)| (*id, (x + pixel(at.0 - from.0), y + pixel(at.1 - from.1))))
-                    .collect()
-            }
-            _ => Vec::new(),
+        let zoom = self.zoom;
+        let (windows, main) = self.on_desktop();
+        let Some(&(main_id, anchor)) = windows.get(main) else {
+            return;
         };
-        let corner = corner.map(|at| self.on_screen(at));
-        if let Some(skin) = self.skin.as_mut() {
-            match (main, corner) {
-                (Some(main), Some((x, y))) => {
-                    // the main window goes where it was, and the others come along as they
-                    // are docked; then every window that had a place of its own gets it back
-                    let rect = skin.runtime.window_rect(main);
-                    skin.move_windows(x - rect.left, y - rect.top);
-                    for (id, (x, y)) in others {
-                        if id != main.0 {
-                            skin.place_window(id, x, y);
-                        }
-                    }
-                }
-                // a little in from the screen's top left corner
-                _ => skin.move_windows(120 / zoom, 80 / zoom),
-            }
-        }
-        self.request(Request::Skin);
-        self.request(Request::Menu);
-        Ok(())
+        let kept_main = kept
+            .iter()
+            .find(|(id, _)| *id == main_id)
+            .map(|(_, at)| *at);
+        let corner = kept_main
+            .or(self.main_corner.take())
+            .unwrap_or((main_screen.x + 120, main_screen.y + 80));
+        let at: Vec<Area> = windows
+            .iter()
+            .map(|(id, area)| {
+                let kept = kept.iter().find(|(kept, _)| kept == id).map(|(_, at)| *at);
+                let (x, y) = match (kept_main, kept) {
+                    (Some(from), Some(at)) => (
+                        corner.0 + pixel(at.0 - from.0, kept_zoom) * zoom,
+                        corner.1 + pixel(at.1 - from.1, kept_zoom) * zoom,
+                    ),
+                    // where the skin sets it out from the main window
+                    _ => (corner.0 + area.x - anchor.x, corner.1 + area.y - anchor.y),
+                };
+                Area::new(x, y, area.w, area.h)
+            })
+            .collect();
+        let before: Vec<Area> = screen.filter(|_| kept_main.is_some()).into_iter().collect();
+        let at = screens::into_view(&at, main, &self.screens, &before);
+        let view =
+            screens::screen_of(at[main], &self.screens).map_or(main_screen, |i| self.screens[i]);
+        self.put(&windows, &at, view);
+        self.unsettled = false;
+        self.before.clear();
     }
 
     /// Sets how the skin's own popup menus are shown, for this skin and every one after it.
@@ -303,7 +402,12 @@ impl App {
             self.put_back_playlist();
         }
         self.let_go_when_due();
-        let flags = self.skin.as_mut().map_or(0, |skin| skin.step());
+        let mut flags = self.skin.as_mut().map_or(0, |skin| skin.step());
+        // after a drag, or when the screens changed: the windows are kept in view, and the
+        // step is done again where they were put elsewhere, so the shell has their places now
+        if (flags & skin::MOVED != 0 || self.unsettled) && self.settle() {
+            flags |= self.skin.as_mut().map_or(0, |skin| skin.step()) | skin::MOVED;
+        }
         if self.playlist_due == 2 {
             self.playlist_due = 1;
         }
@@ -340,7 +444,10 @@ impl App {
     /// Answers something a button of the skin asked of the app: `action` is what the engine
     /// handed its host, by Winamp's names.
     pub fn asked(&mut self, action: &HostAction) {
-        let at = action.at.map(|(x, y)| (x * self.zoom, y * self.zoom));
+        let (ox, oy) = self.origin();
+        let at = action
+            .at
+            .map(|(x, y)| (ox + x * self.zoom, oy + y * self.zoom));
         let popup = |menu: Menu| Request::Popup { menu, at };
         match (action.name.as_str(), action.param.as_deref()) {
             ("CLOSE", _) => self.request(Request::Quit),
@@ -407,4 +514,11 @@ impl App {
             _ => {}
         }
     }
+}
+
+/// A rectangle kept as `x,y,w,h`.
+fn parse_area(text: &str) -> Option<Area> {
+    let mut parts = text.split(',').map(|part| part.trim().parse::<i32>().ok());
+    let mut next = || parts.next().flatten();
+    Some(Area::new(next()?, next()?, next()?, next()?))
 }

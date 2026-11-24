@@ -131,8 +131,8 @@ typedef struct AndampApp AndampApp;
 
 /// Makes the app from the `count` arguments of the command line at `args` (without the
 /// program's name), with what comes with it in the folder `resources` (`skins`, `wasabi`,
-/// `fonts`, `plugins`), on a screen of `screen_w` x `screen_h` points: the part the windows
-/// move on. It reads the settings of the last run. Nothing shows until andamp_app_start.
+/// `fonts`, `plugins`), on one screen of `screen_w` x `screen_h` points at the desktop's top
+/// left corner, until andamp_app_set_screens says where the screens are. It reads the settings of the last run. Nothing shows until andamp_app_start.
 /// Free it with andamp_app_free.
 AndampApp *andamp_app_new(const char *const *args, int32_t count, const char *resources,
                           int32_t screen_w, int32_t screen_h);
@@ -295,8 +295,18 @@ bool andamp_app_on_top(AndampApp *app);
 /// How much of the windows shows over what is behind them, in percent: 20 to 100.
 int32_t andamp_app_opacity(AndampApp *app);
 
-/// The part of the screen the windows move on changed, to `w` x `h` points.
-void andamp_app_set_screen(AndampApp *app, int32_t w, int32_t h);
+/// The screens are now the `count` rectangles at `rects`, four numbers each: the left and
+/// top edges, the width and the height of the part of a screen the windows move on, in
+/// points on the desktop with y down; the main screen first. Said before the start and
+/// whenever the screens change; the windows no screen shows come back into view at the next
+/// step.
+void andamp_app_set_screens(AndampApp *app, const int32_t *rects, int32_t count);
+
+/// Where the viewport's top left corner is on the desktop, in points: a window at `x`, `y`
+/// in layout pixels is at `origin + (x, y) * zoom`, and the mouse is handed over in layout
+/// pixels from it. It moves when the main window goes to another screen, so a shell asks
+/// after every step. A null pointer is skipped.
+void andamp_app_origin(AndampApp *app, int32_t *x, int32_t *y);
 
 /// The shell opened the Visualizer window (`open`) or it closed. When it opens, the app asks
 /// for the first preset with a request `preset`.

@@ -36,13 +36,14 @@ C interface (`core/include/andamp_core.h`, the `andamp_app_` calls), which is wh
 does.
 
 The shell makes the app from its command line, the folder of what comes with it and the size
-of the screen, and starts it. From then on it does three things: it steps the app and shows
+of the main screen, says where all its screens are, and starts it. From then on it does three things: it steps the app and shows
 the windows, it hands over the mouse, the keys and the picks from the menu, and it answers
 what the app asks of it.
 
 | A shell's job | On the Mac | What the core gives it |
 | --- | --- | --- |
-| One window for each of the skin's, with no frame, placed where the core says | `SkinWindow.swift`, `SkinController.apply` | each window's place, size and stacking order after every step |
+| One window for each of the skin's, with no frame, placed where the core says | `SkinWindow.swift`, `SkinController.apply` | each window's place, size and stacking order after every step, in layout pixels from `andamp_app_origin` |
+| The screens: where each is, and when one comes, goes or changes | `SkinController.tellScreens`, on `didChangeScreenParametersNotification` | `andamp_app_set_screens` takes the part of each screen the windows move on as rectangles on one desktop, y down, the main screen first; the core keeps which screen the windows are on, between runs too, and brings back into view what no screen shows |
 | Showing a window's pixels, scaled by whole numbers | `SurfaceView` | BGRA with the color multiplied by the alpha, and the part that changed |
 | The mouse, in places on the screen | `SkinController`'s mouse calls | `andamp_app_pointer_down`, `_move`, `_up`, `_double_click`, `_right_click`, and `andamp_app_wheel` for the wheel and the trackpad; a release after a press too short to see is held back by the core |
 | The cursor over the skin | `SkinCursors.swift`, `SurfaceView`'s tracking area | `andamp_app_cursor` for the mouse's place, asked when it moves: the arrow, one of four for what is dragged to size, or a cursor a classic skin brings, whose pictures and steps `andamp_app_cursor_picture` gives; the shell makes its system's cursors from them and steps one that moves |

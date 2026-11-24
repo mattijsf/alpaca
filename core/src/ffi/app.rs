@@ -8,7 +8,7 @@ use std::path::Path;
 use std::rc::Rc;
 
 use super::{c_text, lines, panic_text, string, AndampPlayer, AndampSkin};
-use crate::app::{App, Ask, Menu, MenuHandler};
+use crate::app::{App, Area, Ask, Menu, MenuHandler};
 use crate::vis;
 
 /// Shows a skin's popup menu: `menu` is its items as lines of text (`C`, the id, 1 when
@@ -41,8 +41,8 @@ unsafe fn with_app<T>(app: *mut AndampApp, fallback: T, f: impl FnOnce(&mut App)
 
 /// Makes the app from the `count` arguments of the command line at `args` (without the
 /// program's name), with what comes with it in the folder `resources` (`skins`, `wasabi`,
-/// `fonts`, `plugins`), on a screen of `screen_w` x `screen_h` points: the part the windows
-/// move on. It reads the settings of the last run. Nothing shows until [`andamp_app_start`].
+/// `fonts`, `plugins`), on one screen of `screen_w` x `screen_h` points at the desktop's top
+/// left corner, until [`andamp_app_set_screens`] says where the screens are. It reads the settings of the last run. Nothing shows until [`andamp_app_start`].
 /// Free it with [`andamp_app_free`].
 ///
 /// # Safety
@@ -468,13 +468,47 @@ pub unsafe extern "C" fn andamp_app_opacity(app: *mut AndampApp) -> i32 {
     with_app(app, 100, |a| a.opacity())
 }
 
-/// The part of the screen the windows move on changed, to `w` x `h` points.
+/// The screens are now the `count` rectangles at `rects`, four numbers each: the left and
+/// top edges, the width and the height of the part of a screen the windows move on, in
+/// points on the desktop with y down; the main screen first. Said before the start and
+/// whenever the screens change; the windows no screen shows come back into view at the next
+/// step.
 ///
 /// # Safety
-/// `app` is null or a live app.
+/// `app` is null or a live app; `rects` points at `4 * count` numbers.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_app_set_screen(app: *mut AndampApp, w: i32, h: i32) {
-    with_app(app, (), |a| a.set_screen((w, h)));
+pub unsafe extern "C" fn andamp_app_set_screens(
+    app: *mut AndampApp,
+    rects: *const i32,
+    count: i32,
+) {
+    let count = usize::try_from(count).unwrap_or(0);
+    let screens: Vec<Area> = if rects.is_null() {
+        Vec::new()
+    } else {
+        std::slice::from_raw_parts(rects, count * 4)
+            .chunks_exact(4)
+            .map(|r| Area::new(r[0], r[1], r[2], r[3]))
+            .collect()
+    };
+    with_app(app, (), |a| a.set_screens(&screens));
+}
+
+/// Where the viewport's top left corner is on the desktop, in points: a window at `x`, `y`
+/// in layout pixels is at `origin + (x, y) * zoom`, and the mouse is handed over in layout
+/// pixels from it. It moves when the main window goes to another screen, so a shell asks
+/// after every step. A null pointer is skipped.
+///
+/// # Safety
+/// `app` is null or a live app; `x` and `y` are null or point at an `int32_t`.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_origin(app: *mut AndampApp, x: *mut i32, y: *mut i32) {
+    let (ox, oy) = with_app(app, (0, 0), |a| a.origin());
+    for (out, value) in [(x, ox), (y, oy)] {
+        if !out.is_null() {
+            *out = value;
+        }
+    }
 }
 
 /// The shell opened the Visualizer window (`open`) or it closed. When it opens, the app asks

@@ -37,8 +37,8 @@ already does for it.
 The engine does the hard parts of the desktop already, and the app uses them as they are:
 
 - `Presentation::free_windows` sets the windows out apart and moves, docks and snaps them by
-  Winamp's rules. The app gives the engine the screen as its viewport and puts one `NSWindow`
-  where the engine has each window. A drag is the engine's: the app passes the pointer in
+  Winamp's rules. The app gives the engine the screen the main window is on as its viewport
+  and puts one `NSWindow` where the engine has each window. A drag is the engine's: the app passes the pointer in
   screen places and moves its windows to where the engine put them.
 - `draw_windows_owned` hands out the same list for a window that did not change, so the app
   draws only the windows that did. `take_placed_only` says when windows only moved.
@@ -92,7 +92,10 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   drags, docking and snapping by the engine; double size; always on top; the skin's close,
   minimize, menu and clutter bar buttons; the skin's popup menus as Mac menus.
   - [ ] A click on a clear part of a shaped window goes to the app, not to what is under it.
-  - [ ] More than one screen: the windows move on the main screen's visible part only.
+  - [x] More than one screen: the windows go onto any screen and come back on the screen and
+    at the place they were left; a screen gone brings them back whole onto the main screen,
+    a docked group together; no window is left where no screen shows it. They snap to the
+    edges of the screen the main window is on.
   - [x] A skin that builds on another finds it beside its own file: Bento reads Big Bento's
     scripts and pictures from `../Big Bento/`, and shows whole with `BigBento.wal` or a
     `Big Bento` folder next to `Bento.wal`. Checked with Bento, MMD3, Winamp3's default and
@@ -181,8 +184,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   too short to see, as a tap on a trackpad, still shows the button pressed for a moment. On
   the Mac the skin's windows are one group around the main one, which Mission Control shows
   as one, and the app has Andamp's icon.
-- [ ] The Mac's shell does not yet tell the app when the screen changes
-  (`andamp_app_set_screen`): the windows keep the screen of the start.
+- [x] The Mac's shell tells the app where its screens are, and again when one comes, goes or
+  changes (`andamp_app_set_screens`).
 - [ ] A shell for Windows: not started. PORTING.md has what is known.
 - [ ] The portable device's sample rate converter draws straight lines between samples; a
   better one can take its place behind the same two calls.
@@ -209,6 +212,9 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 - Nothing says which control is under a point but for a list (`scroll_at`): a modern
   skin's volume slider is found by the id `volume`, and one a skin names otherwise does not
   turn by the wheel.
+- The engine has one viewport, and a window snaps to its edges only: the app gives it the
+  screen the main window is on. A window apart on another screen snaps to the other windows
+  there, not to that screen's edges.
 - The engine has no call that takes the focus from every window: when another app takes
   the keys, the title bar lit last stays lit, where Winamp's all show as behind. Before the
   first window is given the keys none is lit.
@@ -237,6 +243,20 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
 
 ### Log
 
+- 2026-11-24, after the skins' state: the owner found the player did not come back on the
+  screen it was left on. The Mac's shell took the screen with the keys at the start
+  (`NSScreen.main`) as the only one, and places were kept from its top left: with the player
+  on the laptop's screen left of a monitor, a restart put it at the monitor's left edge (seen
+  here: kept at -1000,300, back at 0,300), and with the keys on the other screen at the start
+  every place counted from that screen instead. Now the shell reports every screen as a
+  rectangle on one desktop and again when they change; the core keeps the places on that
+  desktop with the screen the main window was on, gives the engine that screen as its
+  viewport, and keeps every window where a screen shows it (`app/screens.rs`): a group of
+  windows that touch moves as one, from a screen gone to one of its size if there is one,
+  else to the main screen, at the place it had there and then whole. Places kept before
+  count from the main screen's top left. Tested in the core with two screens
+  (`tests/screens.rs`). On the Mac it was checked with this Mac's two screens by starting the
+  app with places on each; the screens' coming and going while it runs only in the core.
 - 2026-11-24, after that: the owner found the wheel dead on a modern skin. Big Bento shows
   its playlist inside its one window, and the app scrolled only over a playlist window. The
   wheel now asks the engine for the list under the point (`scroll_at`, written in walkit's

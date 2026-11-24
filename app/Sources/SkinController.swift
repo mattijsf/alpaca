@@ -5,8 +5,10 @@ import AppKit
 /// The app's windows on the desktop: one for each window of the skin worn.
 ///
 /// The library has the app (`andamp_app_`): its player, the skin, the menu, what each command
-/// does. The engine has the screen as its viewport, in layout pixels: a layout pixel is `zoom`
-/// points. After every step the controller puts one `SkinWindow` where the engine has each of
+/// does. The controller tells it where the screens are, as rectangles on the desktop in points
+/// from the main screen's top left corner with y down, and again whenever they change. The
+/// engine counts in layout pixels from the library's origin, the top left of the screen the
+/// main window is on: a layout pixel is `zoom` points. After every step the controller puts one `SkinWindow` where the engine has each of
 /// its windows and hands over the pixels of those that changed. It sleeps until the engine
 /// says the skin next changes by itself. What the library asks that only the Mac can do, it
 /// hands to `onRequests`.
@@ -20,9 +22,9 @@ final class SkinController {
     private var windows: [UInt32: SkinWindow] = [:]
     /// The engine's windows from the bottom up, as last shown.
     private var order: [UInt32] = []
-    /// The part of the screen the windows move on, in points.
-    private let area: NSRect
     private var timer: Timer?
+    /// What watches the screens coming, going and changing.
+    private var screenWatcher: NSObjectProtocol?
     /// What watches the windows going out of sight and coming back.
     private var watchers: [NSObjectProtocol] = []
     private var touch: Int32 = 0
@@ -56,7 +58,7 @@ final class SkinController {
 
     /// Makes the app from the command line, with what is in the bundle's resources.
     init() {
-        area = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+        let area = NSScreen.screens.first?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let arguments = CommandLine.arguments.dropFirst().map { UnsafePointer(strdup($0)) }
         defer { for argument in arguments { free(UnsafeMutablePointer(mutating: argument)) } }
         guard
@@ -72,11 +74,48 @@ final class SkinController {
                 let controller = Unmanaged<SkinController>.fromOpaque(context).takeUnretainedValue()
                 return controller.showSkinMenu(String(cString: menu))
             }, Unmanaged.passUnretained(self).toOpaque())
+        tellScreens()
+        screenWatcher = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            self.tellScreens()
+            self.stale = true
+            self.pump(force: true)
+        }
     }
 
     deinit {
+        if let screenWatcher { NotificationCenter.default.removeObserver(screenWatcher) }
         dropWindows()
         andamp_app_free(app)
+    }
+
+    /// The top of the main screen, from the bottom of it: the desktop the library knows counts
+    /// down from here, where the Mac counts up from the bottom.
+    private var desktopTop: CGFloat { NSScreen.screens.first?.frame.maxY ?? 900 }
+
+    /// Tells the library where the screens are: the part of each the windows move on, less the
+    /// menu bar and the Dock, in whole points inside it. The first is the main screen, the one
+    /// with the menu bar in the system's settings.
+    private func tellScreens() {
+        let top = desktopTop
+        var rects: [Int32] = []
+        for screen in NSScreen.screens {
+            let frame = screen.visibleFrame
+            let (left, upper) = (frame.minX.rounded(.up), (top - frame.maxY).rounded(.up))
+            let (right, lower) = (frame.maxX.rounded(.down), (top - frame.minY).rounded(.down))
+            rects += [Int32(left), Int32(upper), Int32(right - left), Int32(lower - upper)]
+        }
+        rects.withUnsafeBufferPointer { andamp_app_set_screens(app, $0.baseAddress, Int32($0.count / 4)) }
+    }
+
+    /// Where the library counts the windows and the mouse from, on the desktop.
+    private var origin: (x: CGFloat, y: CGFloat) {
+        var x: Int32 = 0
+        var y: Int32 = 0
+        andamp_app_origin(app, &x, &y)
+        return (CGFloat(x), CGFloat(y))
     }
 
     /// Wears the first skin, shows it, and then puts the playlist back.
@@ -97,9 +136,9 @@ final class SkinController {
         return String(cString: value)
     }
 
-    /// A place in points from the top left corner of the area, as a place on the screen.
+    /// A place on the library's desktop, in points, as a place on the Mac's screens.
     func screenPoint(_ x: Int, _ y: Int) -> NSPoint {
-        NSPoint(x: area.minX + CGFloat(x), y: area.maxY - CGFloat(y))
+        NSPoint(x: CGFloat(x), y: desktopTop - CGFloat(y))
     }
 
     /// Closes the windows; the skin they showed is gone.
@@ -171,12 +210,14 @@ final class SkinController {
         }
         let seen = infos.map(\.id)
         let z = CGFloat(zoom)
-        // the engine counts from the top left of the area, the screen from its bottom left
+        let (ox, oy) = origin
+        let top = desktopTop
+        // the engine counts from the origin down, the Mac from the main screen's bottom up
         var wanted: [UInt32: NSRect] = [:]
         for info in infos {
             wanted[info.id] = NSRect(
-                x: area.minX + CGFloat(info.x) * z,
-                y: area.maxY - CGFloat(info.y + info.h) * z,
+                x: ox + CGFloat(info.x) * z,
+                y: top - oy - CGFloat(info.y + info.h) * z,
                 width: CGFloat(info.w) * z, height: CGFloat(info.h) * z)
             if windows[info.id] == nil { windows[info.id] = makeWindow(info.id) }
         }
@@ -348,7 +389,8 @@ final class SkinController {
     private func point() -> (Int32, Int32) {
         let p = NSEvent.mouseLocation
         let z = CGFloat(zoom)
-        return (Int32(((p.x - area.minX) / z).rounded(.down)), Int32(((area.maxY - p.y) / z).rounded(.down)))
+        let (ox, oy) = origin
+        return (Int32(((p.x - ox) / z).rounded(.down)), Int32(((desktopTop - p.y - oy) / z).rounded(.down)))
     }
 
     func mouseDown(_ event: NSEvent) {

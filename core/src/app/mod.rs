@@ -9,8 +9,9 @@
 //! as a [`Request`]: quit, hide, let the listener pick a file, show a menu at a place. The
 //! answer to a pick comes back through [`App::picked`]. Nothing here knows its system.
 //!
-//! Places on the screen are in points from the top left corner of the part of the screen the
-//! windows move on: a layout pixel of the skin is [`App::zoom`] points.
+//! Places on the screen are in points on the desktop, from a corner the shell picks, with y
+//! down: a layout pixel of the skin is [`App::zoom`] points. The shell says where its screens
+//! are ([`App::set_screens`]); the app keeps every window where one of them shows it.
 
 mod commands;
 mod effects;
@@ -20,12 +21,14 @@ mod playlist;
 mod pointer;
 mod prefs;
 mod request;
+mod screens;
 mod visualizer;
 mod worn;
 
 pub use options::Options;
 pub use pointer::Cursor;
 pub use request::{command, Ask, Menu, Request};
+pub use screens::{into_view, seen, Area};
 
 use std::cell::RefCell;
 use std::collections::BTreeSet;
@@ -66,8 +69,16 @@ pub struct App {
     fonts: Rc<Fonts>,
     /// The app's own folder, where the listener's plug-ins are.
     config: Option<PathBuf>,
-    /// The part of the screen the windows move on, in points.
-    screen: (i32, i32),
+    /// The part of each screen the windows move on, on the desktop: the main screen first.
+    screens: Vec<Area>,
+    /// The screen the engine has as its viewport: the one the main window is on.
+    view: Area,
+    /// The screens as they were before they last changed, until the windows were kept in view
+    /// on the new ones.
+    before: Vec<Area>,
+    /// Set when the windows are to be kept in view at the next step: after a drag, a change of
+    /// the size or of the screens.
+    unsettled: bool,
     zoom: i32,
     on_top: bool,
     /// How much of the windows shows over what is behind them, in percent.
@@ -105,8 +116,9 @@ pub struct App {
 
 impl App {
     /// The app as the command line `args` (without the program's name) and the settings of
-    /// the last run make it, with what comes with it in the folder `resources`, on a screen
-    /// of `screen` points. Nothing shows until [`App::start`].
+    /// the last run make it, with what comes with it in the folder `resources`, on one screen
+    /// of `screen` points with its top left corner at the desktop's; [`App::set_screens`]
+    /// says where the screens are. Nothing shows until [`App::start`].
     pub fn new(args: &[String], resources: &Path, screen: (i32, i32)) -> App {
         App::with(
             Options::parse(args),
@@ -148,7 +160,10 @@ impl App {
             resources: resources.to_path_buf(),
             fonts: Rc::new(Fonts::new(&resources.join("fonts"))),
             config,
-            screen: (screen.0.max(1), screen.1.max(1)),
+            screens: vec![Area::new(0, 0, screen.0.max(1), screen.1.max(1))],
+            view: Area::new(0, 0, screen.0.max(1), screen.1.max(1)),
+            before: Vec::new(),
+            unsettled: false,
             zoom,
             on_top: settings.get("ontop") == Some("1"),
             opacity: if opacity >= 20 { opacity.min(100) } else { 100 },
@@ -344,16 +359,21 @@ impl App {
         let corner = self.main_place();
         self.zoom = zoom;
         let (w, h) = self.viewport();
+        let (ox, oy) = self.origin();
         if let Some(skin) = self.skin.as_mut() {
             skin.set_viewport(w, h);
             // the engine first puts its windows where they fit the screen now
             skin.step();
             if let (Some(main), Some((x, y))) = (skin.runtime.main_window(), corner) {
                 let rect = skin.runtime.window_rect(main);
-                let pixel = |points: i32| (f64::from(points) / f64::from(zoom)).round() as i32;
-                skin.move_windows(pixel(x) - rect.left, pixel(y) - rect.top);
+                skin.move_windows(
+                    pixel(x - ox, zoom) - rect.left,
+                    pixel(y - oy, zoom) - rect.top,
+                );
             }
         }
+        // twice as large, a window can reach past what the screens show
+        self.unsettled = true;
         self.tell_switches();
         self.request(Request::Look);
         self.request(Request::Menu);
@@ -374,13 +394,44 @@ impl App {
         self.request(Request::Menu);
     }
 
-    /// The part of the screen the windows move on changed, to `screen` points.
-    pub fn set_screen(&mut self, screen: (i32, i32)) {
-        self.screen = (screen.0.max(1), screen.1.max(1));
-        let (w, h) = self.viewport();
-        if let Some(skin) = self.skin.as_mut() {
-            skin.set_viewport(w, h);
+    /// The screens are now `screens`: the part of each that the windows move on, on the
+    /// desktop, the main screen first. A shell says so before the start and whenever a screen
+    /// comes, goes, moves or changes its size. At the next [`App::step`] every window that no
+    /// screen shows any more comes back into view, a group docked together as one. An empty
+    /// list changes nothing.
+    pub fn set_screens(&mut self, screens: &[Area]) {
+        let screens: Vec<Area> = screens
+            .iter()
+            .copied()
+            .filter(|s| s.w > 0 && s.h > 0)
+            .collect();
+        if screens.is_empty() || screens == self.screens {
+            return;
         }
+        let before = std::mem::replace(&mut self.screens, screens);
+        if self.skin.is_none() {
+            self.view = self.screens[0];
+            return;
+        }
+        // the windows were last kept in view on the screens of before the first change
+        if self.before.is_empty() {
+            self.before = before;
+        }
+        self.unsettled = true;
+    }
+
+    /// The screens, as the shell last said: the main one first.
+    pub fn screens(&self) -> &[Area] {
+        &self.screens
+    }
+
+    /// Where the viewport's top left corner is on the desktop, in points: a window the engine
+    /// has at `x`, `y` in layout pixels is at `origin + (x, y) * zoom`. It is the top left of
+    /// the screen the main window is on, on a whole layout pixel of the desktop, and moves
+    /// when the main window goes to another screen.
+    pub fn origin(&self) -> (i32, i32) {
+        let up = |v: i32| (v + self.zoom - 1).div_euclid(self.zoom) * self.zoom;
+        (up(self.view.x), up(self.view.y))
     }
 
     // between runs
@@ -445,6 +496,11 @@ impl App {
             player.position_ms(),
         )
     }
+}
+
+/// `points` as whole layout pixels of `zoom` points each, the nearest.
+fn pixel(points: i32, zoom: i32) -> i32 {
+    (f64::from(points) / f64::from(zoom)).round() as i32
 }
 
 /// The whole number kept under `key`.
