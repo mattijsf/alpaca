@@ -274,6 +274,13 @@ stand-in fonts.
   now does the same, and the app tells the engine a mouse drives it (a touch slop of 0), so
   a press means what is under it for every control. Not seen in the VM, which did not
   answer; one over the other, a pane still stops at its minimum.
+- 2026-11-24, at the end: Command-` went nowhere. The Mac leaves a window that belongs to
+  another's group out of its cycling, and the skin's windows are one group since Mission
+  Control shows them as one. The shell now goes through the app's windows itself, the
+  skin's from the top down and then the others, back with Shift. Checked by posting the
+  key to a copy of the app: main, equalizer, playlist and round, and back; not by a hand on
+  the keys. It answers the key left of 1 and the character it types, not another key the
+  listener may have set for it in the system's settings.
 - 2026-11-24, last of all: a folder of the listener's own skins (`Skins` in the app's
   folder, beside the settings). What is in it is offered in the Skins menu and in the
   Preferences window under the skins that come with the app; Preferences has a button that

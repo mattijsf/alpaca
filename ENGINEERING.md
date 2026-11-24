@@ -110,7 +110,7 @@ shell ──▶ ffi ──▶ app ──┬──▶ skin ──▶ host, render
 | `core/src/vis.rs` | The Visualizer's presets: which shows, how long, what its keys do. |
 | `core/src/ffi/` | The C interface, by what it takes: `app.rs`, `player.rs`, `skin.rs`. `core/include/andamp_core.h` is written by hand, in step with it. |
 | `core/tests/` | The tests, a file to an area: `app`, `windows`, `player`, `effects`, `settings`. |
-| `app/Sources/` | The Mac's shell: `main.swift` answers the app's requests and draws its menus; `SkinController.swift` steps the app and places the windows; `SkinWindow.swift` shows pixels; `SkinCursors.swift` shows the cursor the app names; `Preferences.swift`, `Effects.swift`, `Visualizer.swift` and `NowPlaying.swift` are the Mac's own windows and media keys; `Checks.swift` is `--dump` and `--bench`. |
+| `app/Sources/` | The Mac's shell: `main.swift` answers the app's requests and draws its menus; `SkinController.swift` steps the app and places the windows; `SkinWindow.swift` shows pixels; `SkinCursors.swift` shows the cursor the app names; `WindowCycle.swift` is Command-` through the app's windows; `Preferences.swift`, `Effects.swift`, `Visualizer.swift` and `NowPlaying.swift` are the Mac's own windows and media keys; `Checks.swift` is `--dump` and `--bench`. |
 | `vis/` | Builds libprojectM as a library beside the app. |
 | `tools/` | The gate, the cross-check, and `icon.sh`, which makes the Mac's icon from Andamp's own (`app/icon/andamp.svg`). |
 | `spikes/` | Experiments kept for their findings; outside the gate. |

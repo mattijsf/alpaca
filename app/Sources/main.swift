@@ -50,6 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.onRequests = { [weak self] lines in self?.answer(lines) }
         controller.start()
         NSApp.mainMenu = makeMenu()
+        WindowCycle.install()
         nowPlaying = NowPlaying(controller: controller)
         controller.onStep = { [weak self] in self?.nowPlaying?.update() }
         NSApp.activate(ignoringOtherApps: true)
