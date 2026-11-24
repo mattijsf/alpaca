@@ -98,39 +98,82 @@ impl App {
         Some((window.left + r.left, window.top + r.top, r.width, r.height))
     }
 
-    /// A key pressed in window `window` of the skin, by its name. In the playlist's window
-    /// `up` and `down` move the selection a row, `pageup` and `pagedown` a screen, `home` and
-    /// `end` to the list's ends, as in Winamp's playlist; every other key, and every key in
-    /// another window, is [`App::key`]'s. False for a key that is none of these.
+    /// A key pressed in window `window` of the skin, by its name, with `shift+` before it while
+    /// Shift is held. In the playlist's window, and in a window whose list was pressed last
+    /// (Bento's playlist in its main window), `up` and `down` move the selection a row,
+    /// `pageup` and `pagedown` a screen, `home` and `end` to the list's ends, as in Winamp's
+    /// playlist; with Shift they select every row from where the keys started to there.
+    /// Every other key, and every key in another window, is [`App::key`]'s. False for a key
+    /// that is none of these.
     pub fn key_in(&mut self, window: u32, key: &str) -> bool {
-        if self.list_window() != Some(window) {
-            return self.key(key);
+        let (range, plain) = match key.strip_prefix("shift+") {
+            Some(plain) => (true, plain),
+            None => (false, key),
+        };
+        if self.list_window() != Some(window) && !self.playlist_has_keys(window) {
+            return self.key(plain);
         }
         let screen = self.rows_in_view();
         let last = self.player.borrow().entries().len() as i32 - 1;
         let selected = self.selection();
-        // from the selection's end on the side the key goes to; with nothing selected the
-        // first press selects the current song
-        let (first, end) = (
-            selected.first().map(|r| *r as i32),
-            selected.last().map(|r| *r as i32),
-        );
+        // from the selection's end on the side the key goes to, or with Shift from the row the
+        // keys went to last; with nothing selected the first press selects the current song
         let current = self.player.borrow().index() as i32;
-        let to = match key {
+        let (first, end) = match (range, self.key_anchor) {
+            (true, Some(anchor)) if selected.contains(&anchor) => {
+                let far = if selected.first() == Some(&anchor) {
+                    selected.last()
+                } else {
+                    selected.first()
+                };
+                let far = far.map(|r| *r as i32);
+                (far, far)
+            }
+            _ => (
+                selected.first().map(|r| *r as i32),
+                selected.last().map(|r| *r as i32),
+            ),
+        };
+        let to = match plain {
             "up" => first.map_or(current, |row| row - 1),
             "down" => end.map_or(current, |row| row + 1),
             "pageup" => first.map_or(current, |row| row - screen),
             "pagedown" => end.map_or(current, |row| row + screen),
             "home" => 0,
             "end" => last,
-            _ => return self.key(key),
+            _ => return self.key(plain),
         };
         if last >= 0 {
             let row = to.clamp(0, last) as usize;
-            self.select(&[row]);
+            match (range, self.key_anchor.filter(|a| selected.contains(a))) {
+                (true, Some(anchor)) => {
+                    let rows: Vec<usize> = (anchor.min(row)..=anchor.max(row)).collect();
+                    self.select(&rows);
+                }
+                (true, None) => {
+                    let from = selected.first().copied().unwrap_or(row);
+                    self.key_anchor = Some(from);
+                    let rows: Vec<usize> = (from.min(row)..=from.max(row)).collect();
+                    self.select(&rows);
+                }
+                (false, _) => {
+                    self.key_anchor = Some(row);
+                    self.select(&[row]);
+                }
+            }
             self.show_row(row);
         }
         true
+    }
+
+    /// Whether the playlist in window `window` has the keyboard, as the engine says: since a
+    /// press on it, also where a skin shows it inside another window, as Bento's main window
+    /// holds it. Only while `window` is the one the engine has in front.
+    fn playlist_has_keys(&mut self, window: u32) -> bool {
+        self.skin.as_mut().is_some_and(|skin| {
+            skin.runtime.focused_window().map(|id| id.0) == Some(window)
+                && skin.runtime.focused_part() == Some(walkit::host::FocusedPart::Playlist)
+        })
     }
 
     /// Brings the current song into the middle of the playlist, classic or modern, when

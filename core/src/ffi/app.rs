@@ -286,6 +286,17 @@ pub unsafe extern "C" fn andamp_app_pointer_down(app: *mut AndampApp, x: i32, y:
     with_app(app, (), |a| a.pointer_down(x, y, touch));
 }
 
+/// The keys held with the next presses: `add` is the system's key for picking playlist rows one
+/// by one (Command on a Mac, Control elsewhere), `range` is Shift, for picking the rows from
+/// the last one picked. Call it before [`andamp_app_pointer_down`].
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_modifiers(app: *mut AndampApp, add: bool, range: bool) {
+    with_app(app, (), |a| a.set_modifiers(add, range));
+}
+
 /// The mouse moved to `x`, `y` while down.
 ///
 /// # Safety

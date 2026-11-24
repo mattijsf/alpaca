@@ -356,6 +356,8 @@ final class SkinController {
         let (x, y) = point()
         touch += 1
         pressed = true
+        let held = event.modifierFlags
+        andamp_app_modifiers(app, held.contains(.command), held.contains(.shift))
         andamp_app_pointer_down(app, x, y, touch)
         if event.clickCount == 2 { andamp_app_double_click(app, x, y, touch) }
         pump()
@@ -411,9 +413,13 @@ final class SkinController {
             126: "up", 125: "down", 123: "left", 124: "right", 49: "space", 51: "delete", 117: "delete",
             36: "return", 76: "return", 116: "pageup", 121: "pagedown", 115: "home", 119: "end",
         ]
-        guard let key = named[event.keyCode] ?? event.charactersIgnoringModifiers?.lowercased(),
-            andamp_app_key(app, window, key)
-        else { return false }
+        guard let name = named[event.keyCode] ?? event.charactersIgnoringModifiers?.lowercased() else {
+            return false
+        }
+        // Shift goes along with the keys that move a selection
+        let moves = ["up", "down", "pageup", "pagedown", "home", "end"].contains(name)
+        let key = moves && event.modifierFlags.contains(.shift) ? "shift+" + name : name
+        guard andamp_app_key(app, window, key) else { return false }
         pump(force: true)
         return true
     }

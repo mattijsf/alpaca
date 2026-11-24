@@ -319,6 +319,15 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
   screen that was partly covered (Winamp Modern playing 5.5 to 8.1% of a core before, 7.4%
   after; walkit-modern 2.1 to 5.4% before, 4.6% after; idle no steps in either; the first
   window 150 to 200 ms in both).
+- 2026-11-24, a playlist inside another window: Bento's playlist did not take the arrow
+  keys. In Winamp the playlist inside a skin is its own window, which takes the keyboard on
+  a click (its window procedure gives itself the focus on a left button press), and the
+  owner saw the same in the VM. walkit now says which part of a skin has the keys
+  (`focused_part`), and a modern playlist selects several rows by Command and Shift as a
+  classic one does. The app sends the keys
+  there; Shift with the arrows selects a run, Command and Shift with a click as in
+  Winamp's playlist. Select All, Invert, Delete and Return already reached the playlist
+  from any window. Checked in the core, also on Big Bento; not by hand.
 - 2026-11-24, last of all: a folder of the listener's own skins (`Skins` in the app's
   folder, beside the settings). What is in it is offered in the Skins menu and in the
   Preferences window under the skins that come with the app; Preferences has a button that

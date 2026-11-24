@@ -113,6 +113,15 @@ impl App {
         }
     }
 
+    /// The keys held with the next presses: `add`, the system's key for picking rows one by
+    /// one (Command on a Mac, Control elsewhere, which Winamp's playlist calls Ctrl), and
+    /// `range`, Shift, for picking the rows from the last one picked. As in Winamp's playlist.
+    pub fn set_modifiers(&mut self, add: bool, range: bool) {
+        if let Some(skin) = self.skin.as_mut() {
+            skin.runtime.set_pointer_modifiers(add, range);
+        }
+    }
+
     /// The mouse moved to `x`, `y` while down.
     pub fn pointer_move(&mut self, x: i32, y: i32) {
         // after the mouse let go there is nothing to drag, also while the skin does not know yet

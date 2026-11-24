@@ -94,6 +94,9 @@ pub struct App {
     wheel_volume: f32,
     /// The song that was current when the playlist was last brought to it.
     followed: Option<usize>,
+    /// The row the keys with Shift select from, as Winamp's playlist counts them: the row
+    /// the last key without Shift went to.
+    key_anchor: Option<usize>,
     /// When the mouse went down, while it is down.
     pressed_at: Option<std::time::Instant>,
     /// A release the skin has not been told of yet: the press was too short to be seen.
@@ -162,6 +165,7 @@ impl App {
             wheel_rows: 0.0,
             wheel_volume: 0.0,
             followed: None,
+            key_anchor: None,
             pressed_at: None,
             release: None,
             settings,

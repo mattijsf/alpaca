@@ -228,6 +228,11 @@ void andamp_app_pointer_down(AndampApp *app, int32_t x, int32_t y, int32_t touch
 void andamp_app_pointer_move(AndampApp *app, int32_t x, int32_t y);
 void andamp_app_pointer_up(AndampApp *app, int32_t x, int32_t y);
 
+/// The keys held with the next presses: `add` is the system's key for picking playlist rows one
+/// by one (Command on a Mac, Control elsewhere), `range` is Shift, for picking the rows from
+/// the last one picked. Call it before andamp_app_pointer_down.
+void andamp_app_modifiers(AndampApp *app, bool add, bool range);
+
 /// The press `touch` at `x`, `y` was the second of a double click; call it after
 /// andamp_app_pointer_down for that press.
 void andamp_app_double_click(AndampApp *app, int32_t x, int32_t y, int32_t touch);

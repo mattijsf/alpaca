@@ -1269,6 +1269,88 @@ fn a_modern_skins_playlist_follows_the_song_and_the_keys() {
     assert_eq!(first_row(&mut app), 15);
 }
 
+/// A modern skin whose main window holds two buttons over a playlist, as Bento's holds one.
+const LIST_INSIDE_XML: &str = r#"<WinampAbstractionLayer version="0.8">
+<container id="main" name="Inside" default_visible="1"><layout id="normal" w="200" h="140">
+<button id="b.play" action="PLAY" x="3" y="4" w="30" h="12"/>
+<button id="b.stop" action="STOP" x="46" y="4" w="30" h="12"/>
+<component id="list" param="guid:{45F3F7C1-A6F3-4ee6-A15E-125E92FC3F8D}" x="0" y="20" w="200" h="120"/>
+</layout></container>
+</WinampAbstractionLayer>"#;
+
+#[test]
+fn a_playlist_inside_another_window_takes_its_keys_after_a_press() {
+    use std::io::Write;
+    let dir = scratch("list-inside");
+    let inside = dir.join("Inside.wal");
+    {
+        let mut to = zip::ZipWriter::new(std::fs::File::create(&inside).unwrap());
+        to.start_file("skin.xml", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        to.write_all(LIST_INSIDE_XML.as_bytes()).unwrap();
+        to.finish().unwrap();
+    }
+    let mut app = start("", &dir);
+    let one = song(&dir, "a.wav");
+    app.picked(Ask::AddSongs, &vec![one; 10]);
+    assert!(app.wear(&inside));
+    app.step();
+    let (main, at) = {
+        let skin = app.skin().unwrap();
+        let id = skin.runtime.main_window().unwrap();
+        (id.0, skin.runtime.window_rect(id))
+    };
+    let volume = app.player.borrow().volume();
+    // rows from y 23 of the window, 15 high
+    let press = |app: &mut App, row: i32, touch: i32| {
+        let (x, y) = (at.left + 60, at.top + 30 + row * 15);
+        app.pointer_down(x, y, touch);
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        app.pointer_up(x, y);
+        app.step();
+    };
+    // before a press on the list the arrows are the window's: the volume
+    assert!(app.key_in(main, "up"));
+    assert_eq!(app.player.borrow().volume(), volume + 5);
+    // pressed, the list has them: the selection moves, the volume stays
+    press(&mut app, 2, 1);
+    assert_eq!(app.selection(), [2]);
+    assert!(app.key_in(main, "down"));
+    assert_eq!(app.selection(), [3]);
+    assert_eq!(app.player.borrow().volume(), volume + 5);
+    // Shift with the arrows selects from where the keys were
+    assert!(app.key_in(main, "shift+down"));
+    assert!(app.key_in(main, "shift+down"));
+    assert_eq!(app.selection(), [3, 4, 5]);
+    assert!(app.key_in(main, "shift+up"));
+    assert_eq!(app.selection(), [3, 4]);
+    // Command picks rows one by one, Shift a run of them
+    app.set_modifiers(true, false);
+    press(&mut app, 7, 2);
+    app.set_modifiers(false, false);
+    assert_eq!(app.selection(), [3, 4, 7]);
+    press(&mut app, 0, 3);
+    app.set_modifiers(false, true);
+    press(&mut app, 2, 4);
+    app.set_modifiers(false, false);
+    assert_eq!(app.selection(), [0, 1, 2]);
+    // select all and delete reach the list wherever the keys are
+    app.command(command::SELECT_ALL);
+    assert_eq!(app.selection().len(), 10);
+    app.command(command::SELECT_NONE);
+    press(&mut app, 4, 5);
+    assert!(app.key_in(main, "delete"));
+    assert_eq!(app.player.borrow().entries().len(), 9);
+    // a press on a button takes the keys back to the window
+    app.pointer_down(at.left + 60, at.top + 9, 6);
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    app.pointer_up(at.left + 60, at.top + 9);
+    app.step();
+    let volume = app.player.borrow().volume();
+    assert!(app.key_in(main, "down"));
+    assert_eq!(app.player.borrow().volume(), volume - 5);
+}
+
 #[test]
 fn the_arrow_keys_move_the_selection_in_the_playlists_window() {
     let dir = scratch("arrows");
