@@ -346,18 +346,18 @@ final class SkinController {
         pump()
     }
 
-    /// A key with no modifier: Winamp's keys, and delete and return for the playlist. The
-    /// library knows what each does. False for a key that is none of them.
-    func keyDown(_ event: NSEvent) -> Bool {
+    /// A key with no modifier, pressed in the skin's window `window`: Winamp's keys, and in
+    /// the playlist's window the arrows, delete and return. The library knows what each does
+    /// where. False for a key that is none of them.
+    func keyDown(_ event: NSEvent, in window: UInt32) -> Bool {
         guard event.modifierFlags.intersection([.command, .control, .option]).isEmpty else { return false }
-        // the keys with no letter, by the key itself: the arrows, the space bar, backspace and
-        // delete, return and enter
+        // the keys with no letter, by the key itself
         let named: [UInt16: String] = [
             126: "up", 125: "down", 123: "left", 124: "right", 49: "space", 51: "delete", 117: "delete",
-            36: "return", 76: "return",
+            36: "return", 76: "return", 116: "pageup", 121: "pagedown", 115: "home", 119: "end",
         ]
         guard let key = named[event.keyCode] ?? event.charactersIgnoringModifiers?.lowercased(),
-            andamp_app_key(app, key)
+            andamp_app_key(app, window, key)
         else { return false }
         pump(force: true)
         return true

@@ -171,9 +171,10 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   (Command and comma) holds the skin, the size, shuffle and repeat, the time shown, the classic
   visualizer's mode and style, and the Milkdrop window's presets, stay and frame rate; all of
   it is kept between runs. The core describes the window; the Mac draws it. The delete key
-  removes the selected entries and return plays the first; the wheel and the trackpad scroll
-  a classic playlist under them and turn the volume anywhere else. A modern skin's playlist
-  does not scroll by the wheel yet: the engine has no call for it.
+  removes the selected entries and return plays the first; in the playlist's window the
+  arrows, page up and down, home and end move the selection, and the list follows it. The
+  wheel and the trackpad scroll a classic playlist under them and turn the volume over the
+  volume slider, and do nothing elsewhere. Command-` goes through the app's windows.
 - [ ] The Mac's shell does not yet tell the app when the screen changes
   (`andamp_app_set_screen`): the windows keep the screen of the start.
 - [ ] A shell for Windows: not started. PORTING.md has what is known.
@@ -193,6 +194,14 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   tests in release. What stays: the check can still trip when the player's own time moves
   between the two paintings, such as the second changing.
 - A window's new place (`place_window`) shows in `window_rect` after the next tick.
+- The engine does not say how far a classic playlist is scrolled or how high its rows
+  are, and has no call that brings a row into view. The app keeps count of its own scrolling
+  and assumes rows of 16 pixels at most (`app/playlist.rs`), so after a drag of the list's
+  scroll bar the next arrow key brings the list back to the selection. A call
+  `show_classic_playlist_row` in walkit would replace the counting.
+- A modern skin's playlist has no call for the wheel, and nothing says which object is under
+  a point: a modern skin's list does not scroll by the wheel, and its volume slider is found
+  by the id `volume`.
 
 ### What to do next, in this order
 

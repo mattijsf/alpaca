@@ -618,19 +618,120 @@ fn the_wheel_scrolls_the_playlist_under_it_and_turns_the_volume_elsewhere() {
     app.step();
     assert_eq!(first_row(&mut app), [0]);
 
-    // over the main window the wheel is the volume
-    app.wheel((main.left + 100, main.top + 50), -3.0, false);
+    // over the volume slider the wheel is the volume: Winamp has it at 107, 58 of the main
+    // window
+    let slider = (main.left + 130, main.top + 62);
+    app.wheel(slider, -3.0, false);
     assert_eq!(app.player.borrow().volume(), volume - 12);
     for _ in 0..16 {
-        app.wheel((main.left + 100, main.top + 50), 2.0, true);
+        app.wheel(slider, 2.0, true);
     }
     assert_eq!(
         app.player.borrow().volume(),
         volume - 12 + 8,
         "32 points are two notches"
     );
+    // anywhere else on the skin it does nothing
+    let volume = app.player.borrow().volume();
+    for at in [
+        (main.left + 30, main.top + 30),
+        (main.left + 200, main.top + 100),
+        (5, 5),
+    ] {
+        app.wheel(at, -3.0, false);
+    }
+    assert_eq!(app.player.borrow().volume(), volume);
     app.step();
     assert_eq!(first_row(&mut app), [0], "the list stays");
+
+    // a modern skin names its slider
+    app.wear(&resources().join("skins/walkit-modern.wal"));
+    app.step();
+    let (window, slider) = {
+        let skin = app.skin().unwrap();
+        let slider = skin.runtime.object_info("volume").expect("a volume slider");
+        (skin.runtime.window_rect(slider.window), slider.rect)
+    };
+    app.wheel(
+        (window.left + slider.left + 10, window.top + slider.top + 4),
+        2.0,
+        false,
+    );
+    assert_eq!(app.player.borrow().volume(), volume + 8);
+    app.wheel(
+        (window.left + slider.left + 10, window.top + slider.top - 20),
+        2.0,
+        false,
+    );
+    assert_eq!(app.player.borrow().volume(), volume + 8);
+}
+
+#[test]
+fn the_arrow_keys_move_the_selection_in_the_playlists_window() {
+    let dir = scratch("arrows");
+    let mut app = start("", &dir);
+    let one = song(&dir, "a.wav");
+    app.picked(Ask::AddSongs, &vec![one; 30]);
+    app.wear(&resources().join("skins/walkit-classic.wsz"));
+    app.step();
+    let (list, main, at) = {
+        let skin = app.skin().unwrap();
+        let list = skin.runtime.window_of("pledit").expect("a playlist window");
+        let rect = skin.runtime.window_rect(list);
+        (list.0, skin.runtime.main_window().unwrap().0, rect)
+    };
+    let volume = app.player.borrow().volume();
+
+    // the first press selects the current song, the next ones move from it
+    assert!(app.key_in(list, "down"));
+    assert_eq!(app.selection(), [0]);
+    assert!(app.key_in(list, "down"));
+    assert!(app.key_in(list, "down"));
+    assert_eq!(app.selection(), [2]);
+    assert!(app.key_in(list, "up"));
+    assert_eq!(app.selection(), [1]);
+    assert_eq!(
+        app.player.borrow().volume(),
+        volume,
+        "not the volume, in this window"
+    );
+    assert!(app.key_in(list, "end"));
+    assert_eq!(app.selection(), [29]);
+    assert!(app.key_in(list, "down"));
+    assert_eq!(app.selection(), [29], "the list ends there");
+    assert!(app.key_in(list, "home"));
+    assert!(app.key_in(list, "up"));
+    assert_eq!(app.selection(), [0]);
+
+    // the list follows the selection: after going down past what shows, the row under a
+    // press near the list's bottom edge of rows is the selected one or one near it
+    for _ in 0..12 {
+        app.key_in(list, "down");
+    }
+    assert_eq!(app.selection(), [12]);
+    app.step();
+    let skin = app.skin().unwrap();
+    skin.runtime.pointer_down(at.left + 60, at.top + 26, 1);
+    skin.runtime.pointer_up(at.left + 60, at.top + 26);
+    app.step();
+    let top = app.selection()[0];
+    assert!(
+        (10..=12).contains(&top),
+        "the list scrolled with the selection: its first row is {top}"
+    );
+
+    // return plays what is selected, delete removes it
+    app.select(&[5]);
+    assert!(app.key_in(list, "return"));
+    assert_eq!(app.player.borrow().index(), 5);
+    app.command(command::STOP);
+    assert!(app.key_in(list, "delete"));
+    assert_eq!(app.player.borrow().entries().len(), 29);
+
+    // in the main window the arrows are Winamp's: the volume
+    assert!(app.key_in(main, "up"));
+    assert_eq!(app.player.borrow().volume(), volume + 5);
+    assert!(app.selection().is_empty());
 }
 
 #[test]

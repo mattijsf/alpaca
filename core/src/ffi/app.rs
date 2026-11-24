@@ -266,22 +266,29 @@ pub unsafe extern "C" fn andamp_app_open(app: *mut AndampApp, locations: *const 
     with_app(app, (), |a| a.open(&locations));
 }
 
-/// Answers a key, by its name: "delete" takes the selected entries out of the playlist and
-/// "return" plays the first of them; "z" previous, "x" play, "c" or "space" pause, "v" stop,
-/// "b" next, "up" and "down" for the volume, "left" and "right" for five seconds back and on.
-/// False for any other key.
+/// Answers a key pressed in window `window` of the skin (its id, as
+/// [`AndampWindow`](super::AndampWindow) has it), by the key's name. In the playlist's window "up" and "down" move the selection a row,
+/// "pageup" and "pagedown" a screen, "home" and "end" to the list's ends. Everywhere: "delete"
+/// takes the selected entries out of the playlist and "return" plays the first of them; "z"
+/// previous, "x" play, "c" or "space" pause, "v" stop, "b" next, "up" and "down" for the
+/// volume, "left" and "right" for five seconds back and on. False for any other key.
 ///
 /// # Safety
 /// `app` is null or a live app; `key` is a C string.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_app_key(app: *mut AndampApp, key: *const c_char) -> bool {
+pub unsafe extern "C" fn andamp_app_key(
+    app: *mut AndampApp,
+    window: u32,
+    key: *const c_char,
+) -> bool {
     let key = string(key);
-    with_app(app, false, |a| a.key(&key))
+    with_app(app, false, |a| a.key_in(window, &key))
 }
 
 /// The mouse wheel at `x`, `y` on the viewport, in layout pixels: over a classic skin's
-/// playlist window it scrolls the list, anywhere else it turns the volume. `delta` is more
-/// than 0 for up, in notches of a wheel, or with `precise` in points of a trackpad.
+/// playlist window it scrolls the list, over the volume slider it turns the volume, and
+/// anywhere else it does nothing. `delta` is more than 0 for up, in notches of a wheel, or
+/// with `precise` in points of a trackpad.
 ///
 /// # Safety
 /// `app` is null or a live app.

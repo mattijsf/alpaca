@@ -25,6 +25,8 @@ final class SkinWindow: NSWindow {
         isMovable = false
         isReleasedWhenClosed = false
         animationBehavior = .none
+        // a window without a title bar is left out of Command-` unless it says otherwise
+        collectionBehavior.insert(.participatesInCycle)
         contentView = surfaceView
         // the keys go to the view
         initialFirstResponder = surfaceView
@@ -150,7 +152,8 @@ final class SurfaceView: NSView {
     override var acceptsFirstResponder: Bool { true }
 
     override func keyDown(with event: NSEvent) {
-        if !controller.keyDown(event) { super.keyDown(with: event) }
+        let skinWindow = (window as? SkinWindow)?.skinId ?? 0
+        if !controller.keyDown(event, in: skinWindow) { super.keyDown(with: event) }
     }
 
     // files dropped on a window: songs to play, or a skin to wear
