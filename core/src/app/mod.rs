@@ -82,6 +82,10 @@ pub struct App {
     /// 2 from the start until the first step, 1 until the second, which puts the playlist
     /// back; then 0.
     playlist_due: u8,
+    /// What is left of the wheel's turns over the playlist, in rows, short of a whole one.
+    wheel_rows: f32,
+    /// The same for the volume, in its steps.
+    wheel_volume: f32,
 }
 
 impl App {
@@ -142,6 +146,8 @@ impl App {
             started: false,
             waiting: Vec::new(),
             playlist_due: 0,
+            wheel_rows: 0.0,
+            wheel_volume: 0.0,
             settings,
             options,
         };

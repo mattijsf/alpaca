@@ -7,7 +7,7 @@ use std::ffi::{c_char, CString};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::rc::Rc;
 
-use super::{c_text, panic_text, string};
+use super::{c_text, panic_text};
 use crate::player::Player;
 
 /// The app's player behind the C interface. Every skin opened with it shows and drives it.
@@ -255,18 +255,6 @@ pub unsafe extern "C" fn andamp_player_take_wave(
     let wave = with_player(player, Vec::new(), |p| p.take_wave(max));
     std::ptr::copy_nonoverlapping(wave.as_ptr(), out, wave.len());
     wave.len() as i32
-}
-
-/// Answers one of Winamp's keys, by its name: "z" previous, "x" play, "c" or "space" pause,
-/// "v" stop, "b" next, "up" and "down" for the volume, "left" and "right" for five seconds
-/// back and on. False for any other key.
-///
-/// # Safety
-/// `player` is null or a live player; `key` is a C string.
-#[no_mangle]
-pub unsafe extern "C" fn andamp_player_key(player: *mut AndampPlayer, key: *const c_char) -> bool {
-    let key = string(key);
-    with_player(player, false, |p| p.key(&key))
 }
 
 /// Control `param` of effect `index` at `value` as the listener reads it ("50 %", "-3.0 dB"),

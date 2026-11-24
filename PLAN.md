@@ -170,7 +170,10 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   I and V open the options, file info and the visualization menu. A Preferences window
   (Command and comma) holds the skin, the size, shuffle and repeat, the time shown, the classic
   visualizer's mode and style, and the Milkdrop window's presets, stay and frame rate; all of
-  it is kept between runs. The core describes the window; the Mac draws it.
+  it is kept between runs. The core describes the window; the Mac draws it. The delete key
+  removes the selected entries and return plays the first; the wheel and the trackpad scroll
+  a classic playlist under them and turn the volume anywhere else. A modern skin's playlist
+  does not scroll by the wheel yet: the engine has no call for it.
 - [ ] The Mac's shell does not yet tell the app when the screen changes
   (`andamp_app_set_screen`): the windows keep the screen of the start.
 - [ ] A shell for Windows: not started. PORTING.md has what is known.

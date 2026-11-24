@@ -8,7 +8,51 @@ use std::path::PathBuf;
 use super::App;
 use crate::player::{decode, Player};
 
+/// Rows a classic playlist scrolls for a notch of a mouse wheel, as Winamp's does.
+const ROWS_A_NOTCH: f32 = 3.0;
+/// The height of a classic playlist's row, in layout pixels.
+const ROW_HEIGHT: f32 = 13.0;
+/// Steps of the volume, of 255, for a notch of a mouse wheel.
+const VOLUME_A_NOTCH: f32 = 4.0;
+
 impl App {
+    /// The mouse wheel at `at`, a place on the viewport in layout pixels. Over a classic
+    /// skin's playlist window it scrolls the list; anywhere else it turns the volume, as in
+    /// Winamp. `delta` is more than 0 for up: in notches of a wheel, or with `precise` in
+    /// points of a trackpad, which the list then follows as far as the fingers move.
+    pub fn wheel(&mut self, at: (i32, i32), delta: f32, precise: bool) {
+        let zoom = self.zoom as f32;
+        let Some(skin) = self.skin.as_mut() else {
+            return;
+        };
+        let over_list = skin.runtime.window_of("pledit").is_some_and(|id| {
+            let r = skin.runtime.window_rect(id);
+            (r.left..r.left + r.width).contains(&at.0) && (r.top..r.top + r.height).contains(&at.1)
+        });
+        if over_list {
+            // up is towards the list's start
+            let rows = if precise {
+                delta / zoom / ROW_HEIGHT
+            } else {
+                delta * ROWS_A_NOTCH
+            };
+            let whole = whole_of(&mut self.wheel_rows, -rows);
+            if whole != 0 {
+                skin.runtime.scroll_classic_playlist(whole);
+                skin.refresh();
+            }
+        } else {
+            // a trackpad's points, at the pace a wheel's notches have
+            let steps = if precise { delta / 16.0 } else { delta } * VOLUME_A_NOTCH;
+            let whole = whole_of(&mut self.wheel_volume, steps);
+            if whole != 0 {
+                let mut player = self.player.borrow_mut();
+                let volume = (player.volume() + whole).clamp(0, 255);
+                player.set_volume(volume);
+            }
+        }
+    }
+
     /// The rows selected in the playlist window, lowest first.
     pub fn selection(&self) -> Vec<usize> {
         let mut rows = self
@@ -146,6 +190,15 @@ impl App {
             time(total.min(i64::from(i32::MAX)) as i32),
         )
     }
+}
+
+/// Adds `more` to what is `kept` of a turn of the wheel, and takes the whole steps out of it:
+/// a trackpad turns by fractions, and what is left over counts towards the next step.
+fn whole_of(kept: &mut f32, more: f32) -> i32 {
+    *kept += more;
+    let whole = kept.trunc();
+    *kept -= whole;
+    whole as i32
 }
 
 /// Milliseconds as a listener reads them: `3:07`, or `1:02:03` from an hour on.

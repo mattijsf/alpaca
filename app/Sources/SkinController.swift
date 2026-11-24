@@ -248,12 +248,12 @@ final class SkinController {
         timer = next
     }
 
-    /// The mouse wheel anywhere on the skin turns the volume, as in Winamp.
+    /// The mouse wheel or the trackpad: the library scrolls the playlist under it or turns
+    /// the volume.
     func scrollWheel(_ event: NSEvent) {
-        let turn = event.hasPreciseScrollingDeltas ? event.scrollingDeltaY / 4 : event.scrollingDeltaY * 4
-        guard abs(turn) >= 0.5 else { return }
-        let volume = Int(andamp_player_volume(player)) + Int(turn.rounded())
-        andamp_player_set_volume(player, Int32(max(0, min(255, volume))))
+        guard event.scrollingDeltaY != 0 else { return }
+        let (x, y) = point()
+        andamp_app_wheel(app, x, y, Float(event.scrollingDeltaY), event.hasPreciseScrollingDeltas)
         pump(force: true)
     }
 
@@ -346,13 +346,18 @@ final class SkinController {
         pump()
     }
 
-    /// Winamp's keys, with no modifier: the library knows what each does. False for a key that
-    /// is not one of them.
+    /// A key with no modifier: Winamp's keys, and delete and return for the playlist. The
+    /// library knows what each does. False for a key that is none of them.
     func keyDown(_ event: NSEvent) -> Bool {
         guard event.modifierFlags.intersection([.command, .control, .option]).isEmpty else { return false }
-        let arrows: [UInt16: String] = [126: "up", 125: "down", 123: "left", 124: "right", 49: "space"]
-        guard let key = arrows[event.keyCode] ?? event.charactersIgnoringModifiers?.lowercased(),
-            andamp_player_key(player, key)
+        // the keys with no letter, by the key itself: the arrows, the space bar, backspace and
+        // delete, return and enter
+        let named: [UInt16: String] = [
+            126: "up", 125: "down", 123: "left", 124: "right", 49: "space", 51: "delete", 117: "delete",
+            36: "return", 76: "return",
+        ]
+        guard let key = named[event.keyCode] ?? event.charactersIgnoringModifiers?.lowercased(),
+            andamp_app_key(app, key)
         else { return false }
         pump(force: true)
         return true

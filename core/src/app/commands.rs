@@ -144,6 +144,19 @@ impl App {
         }
     }
 
+    /// Answers a key, by its name. `delete` takes the selected entries out of the playlist and
+    /// `return` plays the first of them, as in Winamp's playlist; the rest are Winamp's own
+    /// keys, which the player knows ([`Player::key`](crate::player::Player::key)). False for
+    /// a key that is none of these.
+    pub fn key(&mut self, key: &str) -> bool {
+        match key {
+            "delete" => self.command(super::command::REMOVE_SELECTED),
+            "return" => self.command(super::command::PLAY_SELECTED),
+            _ => return self.player.borrow_mut().key(key),
+        }
+        true
+    }
+
     /// Shuffle or repeat changed: the skin's buttons and the menu bar show it.
     fn modes_changed(&mut self) {
         self.refresh_skin();

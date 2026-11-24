@@ -266,6 +266,36 @@ pub unsafe extern "C" fn andamp_app_open(app: *mut AndampApp, locations: *const 
     with_app(app, (), |a| a.open(&locations));
 }
 
+/// Answers a key, by its name: "delete" takes the selected entries out of the playlist and
+/// "return" plays the first of them; "z" previous, "x" play, "c" or "space" pause, "v" stop,
+/// "b" next, "up" and "down" for the volume, "left" and "right" for five seconds back and on.
+/// False for any other key.
+///
+/// # Safety
+/// `app` is null or a live app; `key` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_key(app: *mut AndampApp, key: *const c_char) -> bool {
+    let key = string(key);
+    with_app(app, false, |a| a.key(&key))
+}
+
+/// The mouse wheel at `x`, `y` on the viewport, in layout pixels: over a classic skin's
+/// playlist window it scrolls the list, anywhere else it turns the volume. `delta` is more
+/// than 0 for up, in notches of a wheel, or with `precise` in points of a trackpad.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_wheel(
+    app: *mut AndampApp,
+    x: i32,
+    y: i32,
+    delta: f32,
+    precise: bool,
+) {
+    with_app(app, (), |a| a.wheel((x, y), delta, precise));
+}
+
 /// Sets how the skin's own popup menus are shown, for the skin worn and every one after it;
 /// `context` is handed back to `handler`.
 ///

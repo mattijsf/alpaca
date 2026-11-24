@@ -127,11 +127,6 @@ void andamp_player_apply_preset(AndampPlayer *player, int32_t index, int32_t pre
 /// that takes every sample once.
 int32_t andamp_player_take_wave(AndampPlayer *player, float *out, int32_t max);
 
-/// Answers one of Winamp's keys, by its name: "z" previous, "x" play, "c" or "space" pause,
-/// "v" stop, "b" next, "up" and "down" for the volume, "left" and "right" for five seconds
-/// back and on. False for any other key.
-bool andamp_player_key(AndampPlayer *player, const char *key);
-
 /// Control `param` of effect `index` at `value` as the listener reads it ("50 %", "-3.0 dB"),
 /// to free with andamp_string_free.
 char *andamp_player_effect_readout(AndampPlayer *player, int32_t index, int32_t param, float value);
@@ -230,6 +225,17 @@ void andamp_app_picked(AndampApp *app, const char *what, const char *answer);
 /// skin is worn; songs, folders, playlist files and radio streams play. Before
 /// andamp_app_start it waits for the start.
 void andamp_app_open(AndampApp *app, const char *locations);
+
+/// Answers a key, by its name: "delete" takes the selected entries out of the playlist and
+/// "return" plays the first of them; "z" previous, "x" play, "c" or "space" pause, "v" stop,
+/// "b" next, "up" and "down" for the volume, "left" and "right" for five seconds back and on.
+/// False for any other key.
+bool andamp_app_key(AndampApp *app, const char *key);
+
+/// The mouse wheel at `x`, `y` on the viewport, in layout pixels: over a classic skin's
+/// playlist window it scrolls the list, anywhere else it turns the volume. `delta` is more
+/// than 0 for up, in notches of a wheel, or with `precise` in points of a trackpad.
+void andamp_app_wheel(AndampApp *app, int32_t x, int32_t y, float delta, bool precise);
 
 /// Sets how the skin's own popup menus are shown, for the skin worn and every one after it;
 /// `context` is handed back to `handler`, which stays callable for as long as the app lives.

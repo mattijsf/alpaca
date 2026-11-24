@@ -575,6 +575,90 @@ fn the_playlists_selection_follows_its_commands() {
 }
 
 #[test]
+fn the_wheel_scrolls_the_playlist_under_it_and_turns_the_volume_elsewhere() {
+    let dir = scratch("wheel");
+    let mut app = start("", &dir);
+    let one = song(&dir, "a.wav");
+    app.picked(Ask::AddSongs, &vec![one; 30]);
+    app.wear(&resources().join("skins/walkit-classic.wsz"));
+    app.step();
+    let (list, main) = {
+        let skin = app.skin().unwrap();
+        let list = skin.runtime.window_of("pledit").expect("a playlist window");
+        let main = skin.runtime.main_window().unwrap();
+        (
+            skin.runtime.window_rect(list),
+            skin.runtime.window_rect(main),
+        )
+    };
+    // the row under a press near the list's top says how far it scrolled
+    let first_row = |app: &mut App| {
+        let skin = app.skin().unwrap();
+        skin.runtime.pointer_down(list.left + 60, list.top + 26, 1);
+        skin.runtime.pointer_up(list.left + 60, list.top + 26);
+        app.step();
+        app.selection()
+    };
+    assert_eq!(first_row(&mut app), [0]);
+    let volume = app.player.borrow().volume();
+
+    // two notches down over the list: six rows
+    app.wheel((list.left + 60, list.top + 40), -2.0, false);
+    app.step();
+    assert_eq!(first_row(&mut app), [6]);
+    assert_eq!(app.player.borrow().volume(), volume, "the volume stays");
+    // a trackpad moves the list as far as the fingers go: 26 points up are two rows back
+    for _ in 0..13 {
+        app.wheel((list.left + 60, list.top + 40), 2.0, true);
+    }
+    app.step();
+    assert_eq!(first_row(&mut app), [4]);
+    // past the top it stops
+    app.wheel((list.left + 60, list.top + 40), 50.0, false);
+    app.step();
+    assert_eq!(first_row(&mut app), [0]);
+
+    // over the main window the wheel is the volume
+    app.wheel((main.left + 100, main.top + 50), -3.0, false);
+    assert_eq!(app.player.borrow().volume(), volume - 12);
+    for _ in 0..16 {
+        app.wheel((main.left + 100, main.top + 50), 2.0, true);
+    }
+    assert_eq!(
+        app.player.borrow().volume(),
+        volume - 12 + 8,
+        "32 points are two notches"
+    );
+    app.step();
+    assert_eq!(first_row(&mut app), [0], "the list stays");
+}
+
+#[test]
+fn the_delete_key_removes_the_selection_and_return_plays_it() {
+    let (mut app, _) = with_songs("keys", &["a.wav", "b.wav", "c.wav"]);
+    assert!(app.key("delete"), "the key is the playlist's");
+    assert_eq!(titles(&app).len(), 3, "nothing selected: nothing goes");
+    app.select(&[0, 2]);
+    assert!(app.key("delete"));
+    assert_eq!(titles(&app), ["b"]);
+    assert!(app.selection().is_empty());
+    app.picked(Ask::AddSongs, &[]);
+    app.select(&[0]);
+    assert!(app.key("return"));
+    assert_eq!(
+        app.player.borrow().status(),
+        walkit::player::Status::Playing
+    );
+    // Winamp's keys still go to the player
+    assert!(app.key("v"));
+    assert_eq!(
+        app.player.borrow().status(),
+        walkit::player::Status::Stopped
+    );
+    assert!(!app.key("q"), "not a key of the app's");
+}
+
+#[test]
 fn removing_takes_the_selection_or_what_is_not_selected() {
     let (mut app, dir) = with_songs("remove", &["a.wav", "b.wav", "c.wav", "d.wav"]);
     app.command(command::REMOVE_SELECTED);
