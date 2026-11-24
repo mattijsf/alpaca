@@ -27,6 +27,8 @@ final class SkinController {
     private var watchers: [NSObjectProtocol] = []
     private var touch: Int32 = 0
     private var pressed = false
+    /// Shows the cursor that belongs where the mouse is.
+    private lazy var cursors = SkinCursors(app: app)
     /// Set while one of the skin's menus is open: the engine waits for the answer inside a
     /// mouse call, and must not be called again until it has it.
     private var inMenu = false
@@ -136,6 +138,7 @@ final class SkinController {
             switch line {
             case "skin":
                 dropWindows()
+                cursors.forget()
                 stale = true
             case "look":
                 for window in windows.values {
@@ -363,6 +366,20 @@ final class SkinController {
         let (x, y) = point()
         andamp_app_pointer_move(app, x, y)
         pump()
+        showCursor()
+    }
+
+    /// The mouse moved over the skin with no button down, or left it: the library says which
+    /// cursor belongs where it is, and the arrow belongs off the skin.
+    func mouseMoved(inside: Bool) {
+        guard skin != nil, !pressed, !inMenu else { return }
+        showCursor(inside: inside)
+    }
+
+    /// The cursor the library names for the mouse's place, or the arrow off the skin.
+    private func showCursor(inside: Bool = true) {
+        let (x, y) = point()
+        cursors.show(inside ? andamp_app_cursor(app, x, y) : UInt32(ANDAMP_CURSOR_ARROW))
     }
 
     /// The library holds a release back when the press was too short to be seen, and the
@@ -373,6 +390,7 @@ final class SkinController {
         let (x, y) = point()
         andamp_app_pointer_up(app, x, y)
         pump()
+        showCursor()
     }
 
     func rightMouseDown(_ event: NSEvent) {

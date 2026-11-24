@@ -4,7 +4,7 @@
 
 use std::path::Path;
 
-use super::{command, App, Ask, Menu, MenuHandler, Request, DEFAULT_SKIN};
+use super::{command, number_of, App, Ask, Menu, MenuHandler, Request, DEFAULT_SKIN};
 use crate::host::HostAction;
 use crate::player::{SkinPlayer, REQUEST_OPEN_FILES};
 use crate::skin::{self, Skin};
@@ -72,7 +72,9 @@ impl App {
         Some((rect.left * zoom, rect.top * zoom))
     }
 
-    /// Writes down where the windows of the skin worn are, for when it is worn again.
+    /// Writes down where the windows of the skin worn are, for when it is worn again: each
+    /// one's corner on the screen in points, and the size they were kept at, since the windows
+    /// are that many points apart for each of the skin's pixels.
     pub(super) fn keep_places(&mut self) {
         let places = self.places();
         if places.is_empty() {
@@ -84,6 +86,8 @@ impl App {
             self.settings
                 .set(&format!("{prefix}{id}"), Some(&format!("{x},{y}")));
         }
+        self.settings
+            .set(&format!("{prefix}zoom"), Some(&self.zoom.to_string()));
     }
 
     /// Wears the skin at `file` in place of the one worn, with its windows where they were
@@ -165,11 +169,24 @@ impl App {
             .and_then(|main| kept.iter().find(|(id, _)| *id == main.0))
             .map(|(_, at)| *at)
             .or(self.main_corner.take());
+        // the main window's corner is a place on the screen. The others keep their places
+        // from it in the skin's own pixels, whatever the size was when they were kept: in
+        // points they would be twice as far apart, or half, after a change of the size
+        let kept_zoom = number_of(&self.settings, &format!("{prefix}zoom"))
+            .filter(|zoom| *zoom >= 1)
+            .unwrap_or(1);
+        let kept_main = main.and_then(|main| kept.iter().find(|(id, _)| *id == main.0));
+        let others: Vec<(u32, (i32, i32))> = match (kept_main, corner) {
+            (Some((_, from)), Some(corner)) => {
+                let (x, y) = self.on_screen(corner);
+                let pixel = |points: i32| (f64::from(points) / f64::from(kept_zoom)).round() as i32;
+                kept.iter()
+                    .map(|(id, at)| (*id, (x + pixel(at.0 - from.0), y + pixel(at.1 - from.1))))
+                    .collect()
+            }
+            _ => Vec::new(),
+        };
         let corner = corner.map(|at| self.on_screen(at));
-        let others: Vec<(u32, (i32, i32))> = kept
-            .iter()
-            .map(|(id, at)| (*id, self.on_screen(*at)))
-            .collect();
         if let Some(skin) = self.skin.as_mut() {
             match (main, corner) {
                 (Some(main), Some((x, y))) => {

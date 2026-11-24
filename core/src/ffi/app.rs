@@ -326,6 +326,39 @@ pub unsafe extern "C" fn andamp_app_right_click(app: *mut AndampApp, x: i32, y: 
     with_app(app, (), |a| a.right_click(x, y, touch));
 }
 
+/// The cursor for the mouse at `x`, `y` on the viewport, in layout pixels: 0 the arrow, 1 left
+/// and right, 2 up and down, 3 the diagonal of a window's bottom right corner, 4 the other
+/// diagonal, and from 100 on a cursor the skin brings, whose pictures
+/// [`andamp_app_cursor_picture`] gives. While a divider or a window's edge is dragged it stays
+/// that drag's.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_cursor(app: *mut AndampApp, x: i32, y: i32) -> u32 {
+    with_app(app, 0, |a| a.cursor_at(x, y).number())
+}
+
+/// The pictures of the cursor [`andamp_app_cursor`] gave as `cursor` (100 or more), as whole
+/// numbers, `count` of them, to free with [`andamp_words_free`](super::andamp_words_free):
+/// how many steps, then for each step the picture it shows and for how many milliseconds; how
+/// many pictures, then for each its width, its height, the tip's place from the left and from
+/// the top, and its pixels row by row from the top, each `0xAARRGGBB` with the color not
+/// multiplied by the alpha. Null, with a `count` of 0, when the skin worn has no such cursor.
+///
+/// # Safety
+/// `app` is null or a live app; `count` points to a number to write.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_cursor_picture(
+    app: *mut AndampApp,
+    cursor: u32,
+    count: *mut usize,
+) -> *mut u32 {
+    let slot = cursor.checked_sub(crate::app::Cursor::SKIN);
+    let words = with_app(app, None, |a| a.cursor_picture(slot?));
+    super::give_words(words, count)
+}
+
 /// Answers a key pressed in window `window` of the skin (its id, as
 /// [`AndampWindow`](super::AndampWindow) has it), by the key's name. In the playlist's window "up" and "down" move the selection a row,
 /// "pageup" and "pagedown" a screen, "home" and "end" to the list's ends. Everywhere: "delete"
@@ -356,9 +389,9 @@ pub unsafe extern "C" fn andamp_app_focus(app: *mut AndampApp, window: u32) {
     with_app(app, (), |a| a.focus(window));
 }
 
-/// The mouse wheel at `x`, `y` on the viewport, in layout pixels: over the skin's playlist
-/// window it scrolls the list, over the volume slider it turns the volume, and anywhere else
-/// it does nothing. `delta` is more than 0 for up, in notches of a wheel, or with `precise`
+/// The mouse wheel at `x`, `y` on the viewport, in layout pixels: over a list of the skin,
+/// wherever it shows one, it scrolls the list, over the volume slider it turns the volume,
+/// and anywhere else it does nothing. `delta` is more than 0 for up, in notches of a wheel, or with `precise`
 /// in points of a trackpad.
 ///
 /// # Safety

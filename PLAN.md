@@ -190,9 +190,9 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 ### Known about the engine
 
 - The engine is walkit's main branch as of 2026-11-24 (`[patch.crates-io]` in
-  `core/Cargo.toml`), ahead of release 0.10.4 by three things the app uses: a row of a
-  classic playlist brought into view (`show_classic_playlist_row`), a modern playlist
-  scrolled (`scroll_playlist`) and the focus given to a window (`focus_window`). The owner
+  `core/Cargo.toml`), ahead of release 0.10.4 by what the app uses: a row of a classic
+  playlist brought into view (`show_classic_playlist_row`), the list under a point scrolled
+  (`scroll_at`) and the focus given to a window (`focus_window`). The owner
   expects more changes to walkit before its next release; with that release the pin goes.
 - The same revision has the fix for the engine's own check, under debug assertions, that a
   window drawn in parts equals the window drawn whole: 0.10.4 stopped two tests of
@@ -205,9 +205,9 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   (`app/playlist.rs`), so it is never more than a screen and can be a row or two less.
 - No call brings a row of a modern skin's playlist into view: a modern list scrolls by the
   wheel, and does not follow the song that plays or the arrow keys.
-- Nothing says which object is under a point: the wheel scrolls a list only over the
-  playlist's own window (`pledit`), not over a list a skin shows inside another window, and
-  a modern skin's volume slider is found by the id `volume`.
+- Nothing says which control is under a point but for a list (`scroll_at`): a modern
+  skin's volume slider is found by the id `volume`, and one a skin names otherwise does not
+  turn by the wheel.
 - The engine has no call that takes the focus from every window: when another app takes
   the keys, the title bar lit last stays lit, where Winamp's all show as behind. Before the
   first window is given the keys none is lit.
@@ -236,6 +236,35 @@ stand-in fonts.
 
 ### Log
 
+- 2026-11-24, after that: the owner found the wheel dead on a modern skin. Big Bento shows
+  its playlist inside its one window, and the app scrolled only over a playlist window. The
+  wheel now asks the engine for the list under the point (`scroll_at`, written in walkit's
+  branch `feat/scroll-list-under-point`): a playlist wherever a skin shows it, a list of
+  color themes too. Checked in the core on Winamp3x, Winamp Modern, MMD3 and Big Bento: on
+  each a list is found where it shows, and a turn of the wheel draws it anew.
+- 2026-11-24, after that again: the owner found that Bento's panels cannot be resized,
+  where Winamp's can: the engine drew a frame's divider and had no drag for it. Written in
+  walkit's branch `feat/frame-divider-drag`: the divider follows the pointer between the
+  frame's limits. Checked in the core on Big Bento: the playlist's pane goes from 35 pixels
+  wide to all but 141 of its row. Not compared with Winamp in the VM, which did not answer:
+  whether 5.666 moves the divider in steps, and what `jump` does below the minimum. The
+  place of a divider is not kept between runs.
+- 2026-11-24, and again: the owner found the divider thin to take and without a cursor. It
+  is 8 pixels, as Winamp lays it out; a press now takes it from up to 6 pixels beside it
+  where nothing else takes the press (the engine's touch slop), and the engine says which
+  cursor belongs at a point (`pointer_shape_at`): left and right or up and down over a
+  divider, and the same or a diagonal over a window's resize grip. The Mac's shell follows
+  the mouse over the skin's windows and sets it. Checked in the core on Big Bento and with
+  a test on a classic playlist's corner; the cursor itself was not seen on the screen.
+- 2026-11-24, once more: two things the owner found. A classic skin's own cursors, moving
+  ones too: the engine had them, the app now says which belongs where
+  (`andamp_app_cursor`, 100 and up) and gives its pictures, and the Mac's shell makes
+  cursors of them. Tested in the core with a skin given a cursor file; no cursor was seen
+  on the screen by me. And a skin's windows came back twice as far apart, or half, when
+  the size had changed while another skin was worn: places were kept in points only. The
+  size is now kept with them (`at.<skin>.zoom`), and the windows other than the main one
+  come back as far from it in the skin's own pixels as they were. Places kept before this
+  have no size with them and are read as kept at the plain size.
 - 2026-11-24, last of all: a folder of the listener's own skins (`Skins` in the app's
   folder, beside the settings). What is in it is offered in the Skins menu and in the
   Preferences window under the skins that come with the app; Preferences has a button that

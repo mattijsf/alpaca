@@ -45,6 +45,7 @@ what the app asks of it.
 | One window for each of the skin's, with no frame, placed where the core says | `SkinWindow.swift`, `SkinController.apply` | each window's place, size and stacking order after every step |
 | Showing a window's pixels, scaled by whole numbers | `SurfaceView` | BGRA with the color multiplied by the alpha, and the part that changed |
 | The mouse, in places on the screen | `SkinController`'s mouse calls | `andamp_app_pointer_down`, `_move`, `_up`, `_double_click`, `_right_click`, and `andamp_app_wheel` for the wheel and the trackpad; a release after a press too short to see is held back by the core |
+| The cursor over the skin | `SkinCursors.swift`, `SurfaceView`'s tracking area | `andamp_app_cursor` for the mouse's place, asked when it moves: the arrow, one of four for what is dragged to size, or a cursor a classic skin brings, whose pictures and steps `andamp_app_cursor_picture` gives; the shell makes its system's cursors from them and steps one that moves |
 | Waking up when there is next something to do | `SkinController.schedule` | `andamp_app_next_due_ms`; nothing to do while no window is in sight |
 | The keys | `SkinController.keyDown`, `Visualizer.key` | `andamp_app_key` with the window the key was pressed in and the key's name, and `andamp_app_vis_key` |
 | Saying which of the skin's windows the keys go to | `SkinWindow.becomeKey` | `andamp_app_focus` with the window, whenever the system makes one the key window; the skin then draws it as the one in front |

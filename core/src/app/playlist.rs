@@ -29,14 +29,19 @@ const LIST_FRAME: i32 = 60;
 const CLASSIC_VOLUME: (i32, i32, i32, i32) = (107, 54, 69, 17);
 
 impl App {
-    /// The mouse wheel at `at`, a place on the viewport in layout pixels. Over the skin's
-    /// playlist window it scrolls the list, and over the volume slider it turns the volume;
-    /// anywhere else it does nothing. `delta` is more than 0 for up: in notches of a wheel, or
-    /// with `precise` in points of a trackpad, which the list then follows as far as the
-    /// fingers move.
+    /// The mouse wheel at `at`, a place on the viewport in layout pixels. Over a list of the
+    /// skin, wherever it shows one, it scrolls the list, and over the volume slider it turns
+    /// the volume; anywhere else it does nothing. `delta` is more than 0 for up: in notches
+    /// of a wheel, or with `precise` in points of a trackpad, which the list then follows as
+    /// far as the fingers move.
     pub fn wheel(&mut self, at: (i32, i32), delta: f32, precise: bool) {
         let zoom = self.zoom as f32;
-        if self.is_over(self.list_window(), at) {
+        // a turn of nothing asks the engine whether a list is under the point
+        let over_list = self
+            .skin
+            .as_mut()
+            .is_some_and(|skin| skin.runtime.scroll_at(at.0, at.1, 0));
+        if over_list {
             let Some(skin) = self.skin.as_mut() else {
                 return;
             };
@@ -50,11 +55,7 @@ impl App {
             };
             let whole = whole_of(&mut self.wheel_rows, -rows);
             if whole != 0 {
-                if classic {
-                    skin.runtime.scroll_classic_playlist(whole);
-                } else {
-                    skin.runtime.scroll_playlist(whole);
-                }
+                skin.runtime.scroll_at(at.0, at.1, whole);
                 skin.refresh();
             }
         } else if self.volume_slider().is_some_and(|r| contains(r, at)) {
@@ -74,15 +75,6 @@ impl App {
     fn list_window(&self) -> Option<u32> {
         let skin = self.skin.as_ref()?;
         skin.runtime.window_of("pledit").map(|id| id.0)
-    }
-
-    /// Whether `at`, a place on the viewport, is over window `id`.
-    fn is_over(&mut self, id: Option<u32>, at: (i32, i32)) -> bool {
-        let (Some(id), Some(skin)) = (id, self.skin.as_mut()) else {
-            return false;
-        };
-        let r = skin.runtime.window_rect(Skin::window_id(id));
-        contains((r.left, r.top, r.width, r.height), at)
     }
 
     /// Where the volume slider is on the viewport: left, top, width, height. A classic skin's

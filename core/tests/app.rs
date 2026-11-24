@@ -6,7 +6,7 @@
 
 use std::path::{Path, PathBuf};
 
-use andamp_core::app::{command, App, Ask, Menu, Options, Request};
+use andamp_core::app::{command, App, Ask, Cursor, Menu, Options, Request};
 use andamp_core::host::HostAction;
 use andamp_core::player::Player;
 use andamp_core::vis::{by_name, Key, Presets};
@@ -725,6 +725,167 @@ fn the_listeners_own_skins_are_offered_after_the_apps() {
 }
 
 #[test]
+fn the_cursor_says_what_a_press_would_size() {
+    let dir = scratch("cursor");
+    let mut app = start("", &dir);
+    app.wear(&resources().join("skins/walkit-classic.wsz"));
+    app.step();
+    let (list, main) = {
+        let skin = app.skin().unwrap();
+        let list = skin.runtime.window_of("pledit").expect("a playlist window");
+        let main = skin.runtime.main_window().unwrap();
+        (
+            skin.runtime.window_rect(list),
+            skin.runtime.window_rect(main),
+        )
+    };
+    // a classic playlist is sized by its bottom right corner; the rest is the arrow's
+    assert_eq!(
+        app.cursor_at(list.left + list.width - 4, list.top + list.height - 4),
+        Cursor::Diagonal
+    );
+    assert_eq!(app.cursor_at(list.left + 60, list.top + 40), Cursor::Arrow);
+    assert_eq!(app.cursor_at(main.left + 60, main.top + 40), Cursor::Arrow);
+    assert_eq!(app.cursor_at(5, 5), Cursor::Arrow, "off the skin");
+}
+
+#[test]
+fn a_skins_windows_stay_together_when_the_size_changed_while_another_was_worn() {
+    let dir = scratch("places-zoom");
+    let mut app = start("", &dir);
+    let classic = resources().join("skins/walkit-classic.wsz");
+    let modern = resources().join("skins/walkit-modern.wal");
+    // how far under the main window the others sit, in layout pixels
+    let under_main = |app: &mut App| -> Vec<(i32, i32)> {
+        app.step();
+        app.step();
+        let zoom = app.zoom();
+        let main = app.main_window().unwrap();
+        let places = app.places();
+        let (_, at) = *places.iter().find(|(id, _)| *id == main).unwrap();
+        let mut offsets: Vec<(i32, i32)> = places
+            .iter()
+            .filter(|(id, _)| *id != main)
+            .map(|(_, (x, y))| ((x - at.0) / zoom, (y - at.1) / zoom))
+            .collect();
+        offsets.sort_unstable();
+        offsets
+    };
+    app.wear(&classic);
+    let docked = under_main(&mut app);
+    assert_eq!(docked, [(0, 116), (0, 232)]);
+    // double size, another skin, back to the plain size there, and the first skin again: its
+    // windows are as far apart in its own pixels as they were, not in points of the screen
+    app.set_zoom(2);
+    assert_eq!(under_main(&mut app), docked);
+    let corner = app.places().last().copied();
+    app.wear(&modern);
+    app.set_zoom(1);
+    app.wear(&classic);
+    assert_eq!(under_main(&mut app), docked, "docked as it was left");
+    assert_eq!(
+        app.places().last().copied(),
+        corner,
+        "the main window's corner is where it was on the screen"
+    );
+    // and the other way: kept at the plain size, worn again at double size
+    app.wear(&modern);
+    app.set_zoom(2);
+    app.wear(&classic);
+    assert_eq!(under_main(&mut app), docked);
+    // the next run finds them the same way
+    app.wear(&modern);
+    app.set_zoom(1);
+    app.save();
+    let mut next = start("", &dir);
+    next.wear(&classic);
+    assert_eq!(under_main(&mut next), docked);
+}
+
+/// A cursor file of 2 by 2 pixels: red and green over blue and one the mask turns black, its
+/// tip at `tip`.
+fn cursor_file(tip: (u16, u16)) -> Vec<u8> {
+    let mut picture = Vec::new();
+    picture.extend(40u32.to_le_bytes());
+    picture.extend(2i32.to_le_bytes());
+    picture.extend(4i32.to_le_bytes());
+    picture.extend(1u16.to_le_bytes());
+    picture.extend(24u16.to_le_bytes());
+    picture.extend([0u8; 24]);
+    // rows from the bottom, three bytes a pixel, filled up to four bytes
+    picture.extend([0xff, 0, 0, 0xff, 0xff, 0xff, 0, 0]);
+    picture.extend([0, 0, 0xff, 0, 0xff, 0, 0, 0]);
+    // the mask, a bit a pixel: set for the bottom right one
+    picture.extend([0x40, 0, 0, 0]);
+    picture.extend([0, 0, 0, 0]);
+    let mut file = vec![0, 0, 2, 0, 1, 0, 2, 2, 0, 0];
+    file.extend(tip.0.to_le_bytes());
+    file.extend(tip.1.to_le_bytes());
+    file.extend((picture.len() as u32).to_le_bytes());
+    file.extend(22u32.to_le_bytes());
+    file.extend(picture);
+    file
+}
+
+#[test]
+fn a_classic_skins_own_cursor_shows_where_the_skin_has_one() {
+    use std::io::Write;
+    let dir = scratch("skin-cursor");
+    // the app's classic skin with a cursor for the volume and balance sliders added
+    let with_cursor = dir.join("Cursors.wsz");
+    {
+        let from = std::fs::File::open(resources().join("skins/walkit-classic.wsz")).unwrap();
+        let mut from = zip::ZipArchive::new(from).unwrap();
+        let mut to = zip::ZipWriter::new(std::fs::File::create(&with_cursor).unwrap());
+        for n in 0..from.len() {
+            to.raw_copy_file(from.by_index_raw(n).unwrap()).unwrap();
+        }
+        to.start_file("VOLBAL.CUR", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        to.write_all(&cursor_file((1, 0))).unwrap();
+        to.finish().unwrap();
+    }
+    let mut app = start("", &dir);
+    assert!(app.wear(&with_cursor));
+    app.step();
+    let main = {
+        let skin = app.skin().unwrap();
+        let id = skin.runtime.main_window().unwrap();
+        skin.runtime.window_rect(id)
+    };
+    // over the volume slider it is the skin's; the C interface numbers those from 100
+    let over_volume = app.cursor_at(main.left + 130, main.top + 62);
+    assert_eq!(over_volume, Cursor::Skin(0));
+    assert_eq!(over_volume.number(), Cursor::SKIN);
+    // one step that stands still, one picture of 2 by 2 with its tip at 1, 0
+    assert_eq!(
+        app.cursor_picture(0).expect("the cursor's pictures"),
+        [
+            1,
+            0,
+            0,
+            1,
+            2,
+            2,
+            1,
+            0,
+            0xffff_0000,
+            0xff00_ff00,
+            0xff00_00ff,
+            0xff00_0000
+        ]
+    );
+    // where the skin brings no cursor the arrow stays, and there are no pictures to give
+    assert_eq!(app.cursor_at(main.left + 60, main.top + 40), Cursor::Arrow);
+    assert_eq!(app.cursor_picture(8), None);
+    // another skin, without cursors: the arrow over its volume slider too
+    app.wear(&resources().join("skins/walkit-classic.wsz"));
+    app.step();
+    assert_eq!(app.cursor_at(main.left + 130, main.top + 62), Cursor::Arrow);
+    assert_eq!(app.cursor_picture(0), None);
+}
+
+#[test]
 fn the_wheel_scrolls_a_modern_skins_playlist() {
     let dir = scratch("modern-wheel");
     let mut app = start("", &dir);
@@ -756,9 +917,11 @@ fn the_wheel_scrolls_a_modern_skins_playlist() {
     }
     app.step();
     assert_eq!(first_row(&mut app), [4]);
-    // past the top it stops, and outside the window the wheel is not the list's
+    // past the top it stops; outside the window, and over the window's title bar above the
+    // list, the wheel is not the list's
     app.wheel((list.left + 60, list.top + 40), 50.0, false);
     app.wheel((list.left + 60, list.top - 40), -2.0, false);
+    app.wheel((list.left + 60, list.top + 8), -2.0, false);
     app.step();
     assert_eq!(first_row(&mut app), [0]);
 }

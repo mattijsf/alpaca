@@ -23,11 +23,12 @@ ureq = "3"
 # effect plug-ins are Lua files: the interpreter, built from its own sources
 mlua = { version = "0.10", features = ["lua54", "vendored"] }
 
-# walkit as merged after 0.10.4, until its next release is on crates.io: the calls that bring
-# a playlist's row into view, scroll a modern playlist and give a window the focus. With the
-# release, this goes and the version above names it.
+# walkit from the checkout beside this one, on its branch feat/frame-divider-drag, until that
+# branch and the one under it are merged: the list under a point scrolled, a frame's divider
+# dragged, the cursor at a point. Then a revision of walkit's main branch is named here
+# again, and with walkit's next release this goes and the version above names it.
 [patch.crates-io]
-walkit = { git = "https://github.com/mattijsf/walkit", rev = "a2205ad96a072fe5bd28b1e804bd1badcfb14ea9" }
+walkit = { path = "../../walkit/crates/walkit" }
 
 # the audio device: the Mac's own output unit there, the cpal crate everywhere else
 [target.'cfg(target_os = "macos")'.dependencies]

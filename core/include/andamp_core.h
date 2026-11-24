@@ -42,6 +42,9 @@ typedef struct {
 /// Frees text a call gave.
 void andamp_string_free(char *text);
 
+/// Frees whole numbers a call gave, with the count it gave.
+void andamp_words_free(uint32_t *words, size_t count);
+
 /// How many windows the skin shows.
 int32_t andamp_skin_window_count(AndampSkin *skin);
 
@@ -233,6 +236,29 @@ void andamp_app_double_click(AndampApp *app, int32_t x, int32_t y, int32_t touch
 /// menu. `touch` numbers it as a press.
 void andamp_app_right_click(AndampApp *app, int32_t x, int32_t y, int32_t touch);
 
+/// What andamp_app_cursor answers: one of the system's cursors, or from ANDAMP_CURSOR_SKIN on
+/// one the skin brings.
+#define ANDAMP_CURSOR_ARROW 0
+#define ANDAMP_CURSOR_LEFT_RIGHT 1
+#define ANDAMP_CURSOR_UP_DOWN 2
+#define ANDAMP_CURSOR_DIAGONAL 3
+#define ANDAMP_CURSOR_OTHER_DIAGONAL 4
+#define ANDAMP_CURSOR_SKIN 100
+
+/// The cursor for the mouse at `x`, `y` on the viewport, in layout pixels: the arrow, left and
+/// right, up and down, the diagonal of a window's bottom right corner, the other diagonal, or
+/// a cursor the skin brings, whose pictures andamp_app_cursor_picture gives. While a divider
+/// or a window's edge is dragged it stays that drag's.
+uint32_t andamp_app_cursor(AndampApp *app, int32_t x, int32_t y);
+
+/// The pictures of the cursor andamp_app_cursor gave as `cursor` (ANDAMP_CURSOR_SKIN or more),
+/// as whole numbers, `count` of them, to free with andamp_words_free: how many steps, then for
+/// each step the picture it shows and for how many milliseconds; how many pictures, then for
+/// each its width, its height, the tip's place from the left and from the top, and its pixels
+/// row by row from the top, each 0xAARRGGBB with the color not multiplied by the alpha. Null,
+/// with a `count` of 0, when the skin worn has no such cursor.
+uint32_t *andamp_app_cursor_picture(AndampApp *app, uint32_t cursor, size_t *count);
+
 /// Answers a key pressed in window `window` of the skin (its id, as AndampWindow has it), by
 /// the key's name. In the playlist's window "up" and "down" move the selection a row, "pageup"
 /// and "pagedown" a screen, "home" and "end" to the list's ends. Everywhere: "delete" takes the
@@ -245,9 +271,9 @@ bool andamp_app_key(AndampApp *app, uint32_t window, const char *key);
 /// by another way than a press on it: the skin shows it as the one in front on the next step.
 void andamp_app_focus(AndampApp *app, uint32_t window);
 
-/// The mouse wheel at `x`, `y` on the viewport, in layout pixels: over the skin's playlist
-/// window it scrolls the list, over the volume slider it turns the volume, and anywhere else
-/// it does nothing. `delta` is more than 0 for up, in notches of a wheel, or with `precise`
+/// The mouse wheel at `x`, `y` on the viewport, in layout pixels: over a list of the skin,
+/// wherever it shows one, it scrolls the list, over the volume slider it turns the volume,
+/// and anywhere else it does nothing. `delta` is more than 0 for up, in notches of a wheel, or with `precise`
 /// in points of a trackpad.
 void andamp_app_wheel(AndampApp *app, int32_t x, int32_t y, float delta, bool precise);
 

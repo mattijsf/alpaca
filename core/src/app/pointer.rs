@@ -8,6 +8,7 @@
 //! what it does comes that moment later.
 
 use std::time::{Duration, Instant};
+use walkit::host::PointerShape;
 
 use super::App;
 
@@ -21,7 +22,87 @@ pub(super) struct Release {
     due: Instant,
 }
 
+/// The cursor a shell shows over a place of the skin: one of the system's, by what a press
+/// there takes hold of, or a picture the skin brings.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Cursor {
+    /// The plain arrow.
+    Arrow,
+    /// Dragged left and right: a divider between panes side by side, a window's side.
+    LeftRight,
+    /// Dragged up and down: a divider between panes one over the other, a window's top or
+    /// bottom.
+    UpDown,
+    /// A window's bottom right or top left corner.
+    Diagonal,
+    /// A window's bottom left or top right corner.
+    OtherDiagonal,
+    /// A classic skin's own cursor, by its number among the 29 a skin can bring;
+    /// [`App::cursor_picture`] gives its pictures.
+    Skin(u32),
+}
+
+impl Cursor {
+    /// The first of the numbers that name a skin's own cursors in the C interface.
+    pub const SKIN: u32 = 100;
+
+    /// The cursor as the C interface numbers it: 0 to 4 for the system's, and
+    /// [`Cursor::SKIN`] and up for the skin's own.
+    pub fn number(self) -> u32 {
+        match self {
+            Cursor::Arrow => 0,
+            Cursor::LeftRight => 1,
+            Cursor::UpDown => 2,
+            Cursor::Diagonal => 3,
+            Cursor::OtherDiagonal => 4,
+            Cursor::Skin(slot) => Cursor::SKIN + slot,
+        }
+    }
+}
+
 impl App {
+    /// The cursor for the mouse at `x`, `y` on the viewport, in layout pixels. A classic skin
+    /// that brings a cursor for the place shows it; without one, and on a modern skin, it is
+    /// the system's for what a press there sizes, else the arrow. While a divider or a
+    /// window's edge is dragged it stays that drag's, wherever the mouse is.
+    pub fn cursor_at(&mut self, x: i32, y: i32) -> Cursor {
+        let Some(skin) = self.skin.as_mut() else {
+            return Cursor::Arrow;
+        };
+        if let Some(slot) = skin.runtime.classic_cursor_at(x, y) {
+            if skin.runtime.classic_cursor(slot).is_some() {
+                return Cursor::Skin(slot as u32);
+            }
+        }
+        match skin.runtime.pointer_shape_at(x, y) {
+            PointerShape::Arrow => Cursor::Arrow,
+            PointerShape::LeftRight => Cursor::LeftRight,
+            PointerShape::UpDown => Cursor::UpDown,
+            PointerShape::Diagonal => Cursor::Diagonal,
+            PointerShape::OtherDiagonal => Cursor::OtherDiagonal,
+        }
+    }
+
+    /// The pictures of the skin's own cursor `slot`, as [`Cursor::Skin`] numbers it, in whole
+    /// numbers: how many steps it has, then for each step the picture it shows and for how
+    /// many milliseconds (one step with no time for a cursor that stands still); how many
+    /// pictures, then for each its width, its height, the tip's place from the left and from
+    /// the top, and its pixels row by row from the top, each `0xAARRGGBB` with the color not
+    /// multiplied by the alpha. `None` when the skin worn has no such cursor.
+    pub fn cursor_picture(&mut self, slot: u32) -> Option<Vec<u32>> {
+        let cursor = self.skin.as_mut()?.runtime.classic_cursor(slot as usize)?;
+        let mut words = vec![cursor.steps.len() as u32];
+        for (frame, ms) in &cursor.steps {
+            words.extend([*frame as u32, *ms]);
+        }
+        words.push(cursor.frames.len() as u32);
+        for frame in &cursor.frames {
+            words.extend([frame.width, frame.height, frame.hot_x, frame.hot_y]);
+            words.extend(&frame.argb);
+        }
+        Some(words)
+    }
+
     /// The mouse went down at `x`, `y` on the viewport, in layout pixels; `touch` numbers the
     /// press.
     pub fn pointer_down(&mut self, x: i32, y: i32, touch: i32) {

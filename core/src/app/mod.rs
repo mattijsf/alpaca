@@ -24,6 +24,7 @@ mod visualizer;
 mod worn;
 
 pub use options::Options;
+pub use pointer::Cursor;
 pub use request::{command, Ask, Menu, Request};
 
 use std::cell::RefCell;

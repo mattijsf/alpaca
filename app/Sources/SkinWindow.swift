@@ -156,6 +156,18 @@ final class SurfaceView: NSView {
     override func mouseDragged(with event: NSEvent) { controller.mouseDragged(event) }
     override func mouseUp(with event: NSEvent) { controller.mouseUp(event) }
     override func rightMouseDown(with event: NSEvent) { controller.rightMouseDown(event) }
+    override func mouseMoved(with event: NSEvent) { controller.mouseMoved(inside: true) }
+    override func mouseExited(with event: NSEvent) { controller.mouseMoved(inside: false) }
+
+    // the mouse is followed over the window also while another app has the keys, for the cursor
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        trackingAreas.forEach(removeTrackingArea)
+        addTrackingArea(
+            NSTrackingArea(
+                rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+                owner: self, userInfo: nil))
+    }
     override func scrollWheel(with event: NSEvent) { controller.scrollWheel(event) }
 
     override var acceptsFirstResponder: Bool { true }
