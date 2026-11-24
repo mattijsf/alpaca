@@ -193,7 +193,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   `core/Cargo.toml`, a revision by its number), ahead of release 0.10.4 by what the app
   uses: a row of a classic playlist brought into view (`show_classic_playlist_row`), the
   list under a point scrolled (`scroll_at`), a frame's divider dragged, the cursor that
-  belongs at a point (`pointer_shape_at`) and the focus given to a window (`focus_window`).
+  belongs at a point (`pointer_shape_at`), the focus given to a window (`focus_window`) and a wider snap for
+  the equalizer's and the balance's sliders (`Presentation::snap_reach`).
   The owner expects more changes to walkit before its next release; with that release the
   pin goes.
 - The same revision has the fix for the engine's own check, under debug assertions, that a
@@ -281,6 +282,13 @@ stand-in fonts.
   key to a copy of the app: main, equalizer, playlist and round, and back; not by a hand on
   the keys. It answers the key left of 1 and the character it types, not another key the
   listener may have set for it in the system's settings.
+- 2026-11-24, the last entry of the day: the equalizer's sliders seemed not to snap to
+  flat. They did, as Winamp's do: on a classic skin within a pixel of the middle. The owner
+  asked for more, and for the balance too. walkit has a setting for it
+  (`Presentation::snap_reach`), and the app asks for
+  two pixels either side. Four, about
+  what a modern skin's sliders have by themselves, was tried first and held on too long
+  for the owner.
 - 2026-11-24, last of all: a folder of the listener's own skins (`Skins` in the app's
   folder, beside the settings). What is in it is offered in the Skins menu and in the
   Preferences window under the skins that come with the app; Preferences has a button that

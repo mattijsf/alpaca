@@ -889,6 +889,71 @@ fn a_classic_skins_own_cursor_shows_where_the_skin_has_one() {
 }
 
 #[test]
+fn the_equalizer_and_the_balance_snap_to_the_middle_from_two_pixels_off() {
+    let dir = scratch("eq-snap");
+    let mut app = start("", &dir);
+    app.wear(&resources().join("skins/walkit-classic.wsz"));
+    app.step();
+    let eq = {
+        let skin = app.skin().unwrap();
+        let id = skin.runtime.window_of("equalizer").expect("the equalizer");
+        skin.runtime.window_rect(id)
+    };
+    // the first band's values as its thumb is dragged down through the middle, a pixel at a
+    // time: flat for four pixels, where Winamp's reach gives two
+    let band = |app: &App| -> i32 {
+        let state = app.player.borrow().state();
+        let bands = state.split(';').find_map(|f| f.strip_prefix("bands="));
+        bands
+            .and_then(|b| b.split(',').next()?.parse().ok())
+            .unwrap()
+    };
+    app.pointer_down(eq.left + 85, eq.top + 45, 1);
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    let mut flat = 0;
+    for y in 50..=90 {
+        app.pointer_move(eq.left + 85, eq.top + y);
+        if band(&app) == 128 {
+            flat += 1;
+        }
+    }
+    app.pointer_up(eq.left + 85, eq.top + 90);
+    app.step();
+    assert_eq!(flat, 4);
+    assert_ne!(
+        band(&app),
+        128,
+        "let go past the middle, it is where it was dragged to"
+    );
+
+    // the balance, in the main window: its thumb's middle five places are the middle, where
+    // Winamp's reach gives three
+    let main = {
+        let skin = app.skin().unwrap();
+        let id = skin.runtime.main_window().unwrap();
+        skin.runtime.window_rect(id)
+    };
+    let pan = |app: &App| -> i32 {
+        let state = app.player.borrow().state();
+        let pan = state.split(';').find_map(|f| f.strip_prefix("pan="));
+        pan.and_then(|p| p.parse().ok()).unwrap()
+    };
+    app.pointer_down(main.left + 196, main.top + 63, 2);
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    let mut centred = 0;
+    for x in 184..=208 {
+        app.pointer_move(main.left + x, main.top + 63);
+        if pan(&app) == 0 {
+            centred += 1;
+        }
+    }
+    app.pointer_move(main.left + 214, main.top + 63);
+    app.pointer_up(main.left + 214, main.top + 63);
+    app.step();
+    assert_eq!(centred, 5);
+}
+
+#[test]
 fn the_wheel_scrolls_a_modern_skins_playlist() {
     let dir = scratch("modern-wheel");
     let mut app = start("", &dir);

@@ -31,6 +31,10 @@ pub const MOVED: u32 = 1;
 /// [`Skin::step`] says a window's pixels changed.
 pub const DRAWN: u32 = 2;
 
+/// Layout pixels either side of its middle within which a dragged equalizer or balance slider
+/// snaps to the middle.
+const SNAP_REACH: i32 = 2;
+
 /// One window of the skin as the app shows it.
 pub struct Window {
     /// The engine's id for it, the same for as long as the skin is loaded.
@@ -169,6 +173,10 @@ impl Skin {
         // a mouse points at one pixel: a press means what is under it, as in Winamp, and not
         // the control a finger would have meant a few pixels beside it
         presentation.touch_slop = 0;
+        // Winamp's classic equalizer and balance snap to the middle within a pixel of it,
+        // too little to feel on a trackpad: two either side. Four was tried and held on too
+        // long
+        presentation.snap_reach = SNAP_REACH;
         runtime.set_presentation(&presentation);
         runtime.tick();
         Ok(Skin {

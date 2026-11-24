@@ -25,10 +25,10 @@ mlua = { version = "0.10", features = ["lua54", "vendored"] }
 
 # walkit as merged after 0.10.4, until its next release is on crates.io: the calls that bring
 # a playlist's row into view, scroll the list under a point, drag a frame's divider, say which
-# cursor belongs at a point and give a window the focus. With the release, this goes and the
-# version above names it.
+# cursor belongs at a point, give a window the focus and widen a slider's snap. With the
+# release, this goes and the version above names it.
 [patch.crates-io]
-walkit = { git = "https://github.com/mattijsf/walkit", rev = "02438dc5a49b171a31f4739c0d3fed85eac01dff" }
+walkit = { git = "https://github.com/mattijsf/walkit", rev = "ca1cc08bfa05b2f31eabc1d9eeb97728210b4b12" }
 
 # the audio device: the Mac's own output unit there, the cpal crate everywhere else
 [target.'cfg(target_os = "macos")'.dependencies]
