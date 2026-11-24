@@ -178,14 +178,11 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 
 ### What to do next, in this order
 
-1. Look at it. Everything above was checked by tests, by pictures the app wrote of its own
-   windows (`--dump`) and by measurements, with the sound turned down to nothing; nobody has
-   yet dragged a window, heard a song or watched Milkdrop move. The first hour with it will
-   find things.
-   - Does a click on a clear part of a shaped window (MMD3's corner) reach what is under it?
-   - Dragging, docking and snapping are the engine's, and tested through it; how they feel
-     on the desktop is not.
-   - The Effects and Visualizer windows are plain Mac windows.
+1. Looked at, by the owner on 2026-11-24, with the build of that day: dragging, docking and
+   snapping feel right; a click on a clear corner of a shaped window reaches what is under it;
+   it sounds right, and the equalizer and an effect do what they should; the Effects and
+   Visualizer windows are fine as plain Mac windows, so Milkdrop in a skin's own window can
+   wait.
 2. What the engine could offer, since the rest of the cost is its own: a tick that says what
    changed without building the draw lists; the playlist as something that says when it
    changed (it is asked for whole, several times a tick); the mouse wheel and hovering; a
@@ -214,6 +211,7 @@ stand-in fonts.
 - 2026-11-24, morning: prepared for Windows and Linux: the audio device behind one small
   interface with a portable version, the core cross-checked for both systems, and what every
   shell would write again moved out of Swift.
+- 2026-11-24, evening: the owner used the app for the first time and found nothing wrong.
 - 2026-11-24, later still: a refactor pass and the gate; ENGINEERING.md written. No change to
   what the app does; cost and start-up measured again.
 - 2026-11-24, later: the app itself moved into the core, behind `andamp_app_`: the Mac's
