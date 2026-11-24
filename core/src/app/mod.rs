@@ -253,19 +253,47 @@ impl App {
 
     /// The skins that come with the app: their file names, in order.
     pub fn builtin_skins(&self) -> Vec<String> {
-        let mut names: Vec<String> = std::fs::read_dir(self.resources.join("skins"))
-            .map(|entries| {
-                entries
-                    .flatten()
-                    .map(|e| e.file_name().to_string_lossy().into_owned())
-                    .collect()
-            })
+        skins_in(&self.resources.join("skins"))
+    }
+
+    /// Where the listener's own skins are kept: in the app's folder, beside its settings.
+    /// A skin file put there is in the menu the next time the menu is made.
+    pub fn skins_folder(&self) -> Option<PathBuf> {
+        self.config.as_ref().map(|config| config.join("Skins"))
+    }
+
+    /// The listener's own skins, from [`App::skins_folder`]: their file names, in order. One
+    /// with the name of a skin that comes with the app is left out, and no more are named
+    /// than the menu has numbers for.
+    pub fn own_skins(&self) -> Vec<String> {
+        let builtin = self.builtin_skins();
+        let mut names = self
+            .skins_folder()
+            .map(|folder| skins_in(&folder))
             .unwrap_or_default();
-        names.retain(|name| {
-            !name.starts_with('.') && location_kind(Path::new(name)) == LocationKind::Skin
-        });
-        names.sort();
+        names.retain(|name| !builtin.contains(name));
+        names.truncate(command::SKINS.saturating_sub(builtin.len()));
         names
+    }
+
+    /// The skins the menu offers, in its order: those that come with the app, then the
+    /// listener's own.
+    pub fn skins(&self) -> Vec<String> {
+        let mut names = self.builtin_skins();
+        names.extend(self.own_skins());
+        names
+    }
+
+    /// The file of the skin the menu offers as `name`.
+    pub(super) fn skin_file(&self, name: &str) -> Option<PathBuf> {
+        if self.builtin_skins().iter().any(|file| file == name) {
+            return Some(self.builtin(name));
+        }
+        let folder = self.skins_folder()?;
+        self.own_skins()
+            .iter()
+            .any(|file| file == name)
+            .then(|| folder.join(name))
     }
 
     fn request(&mut self, request: Request) {
@@ -417,4 +445,21 @@ fn number_of(settings: &Settings, key: &str) -> Option<i32> {
 fn is_url(location: &str) -> bool {
     let lower = location.to_ascii_lowercase();
     lower.starts_with("http://") || lower.starts_with("https://")
+}
+
+/// The skin files in `folder`: their names, ordered as a file browser has them.
+fn skins_in(folder: &Path) -> Vec<String> {
+    let mut names: Vec<String> = std::fs::read_dir(folder)
+        .map(|entries| {
+            entries
+                .flatten()
+                .map(|e| e.file_name().to_string_lossy().into_owned())
+                .collect()
+        })
+        .unwrap_or_default();
+    names.retain(|name| {
+        !name.starts_with('.') && location_kind(Path::new(name)) == LocationKind::Skin
+    });
+    names.sort_by(|a, b| crate::vis::by_name(a, b));
+    names
 }

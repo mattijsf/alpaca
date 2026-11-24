@@ -668,6 +668,63 @@ fn the_wheel_scrolls_the_playlist_under_it_and_turns_the_volume_elsewhere() {
 }
 
 #[test]
+fn the_listeners_own_skins_are_offered_after_the_apps() {
+    let dir = scratch("own-skins");
+    // before the folder is there, and with what is no skin in it
+    let mut app = start("", &dir);
+    assert!(app.own_skins().is_empty());
+    let folder = app.skins_folder().expect("a folder for skins");
+    assert_eq!(folder, dir.join("Skins"));
+    std::fs::create_dir_all(&folder).unwrap();
+    let dark = resources().join("skins/AndAmp Dark.wsz");
+    for name in [
+        "Mine 10.wsz",
+        "mine 9.wsz",
+        "AndAmp Light.wsz",
+        ".hidden.wsz",
+    ] {
+        std::fs::copy(&dark, folder.join(name)).unwrap();
+    }
+    std::fs::write(folder.join("notes.txt"), "not a skin").unwrap();
+    // by name as a file browser has them; one named as a skin of the app's is the app's
+    assert_eq!(app.own_skins(), ["mine 9.wsz", "Mine 10.wsz"]);
+    let builtin = app.builtin_skins().len() as i32;
+    let bar = app.menu(Menu::Bar);
+    let lines: Vec<&str> = bar.lines().collect();
+    let first = format!("C\t{}\t0\t0\tmine 9\t", command::SKIN + builtin);
+    let at = lines
+        .iter()
+        .position(|l| *l == first)
+        .unwrap_or_else(|| panic!("the bar has {first:?}:\n{bar}"));
+    assert_eq!(lines[at - 1], "S", "under a line of their own");
+    assert_eq!(
+        lines[at + 1],
+        format!("C\t{}\t0\t0\tMine 10\t", command::SKIN + builtin + 1)
+    );
+
+    // picked from the menu it is worn and checked, and the next run wears it again
+    app.command(command::SKIN + builtin + 1);
+    assert_eq!(app.skin_name(), "Mine 10.wsz");
+    assert!(app.menu(Menu::Popup).contains(&format!(
+        "C\t{}\t1\t0\tMine 10\t",
+        command::SKIN + builtin + 1
+    )));
+    app.save();
+    let mut next = start("", &dir);
+    assert_eq!(next.skin_name(), "Mine 10.wsz");
+
+    // the Preferences window offers it too, and shows the folder
+    assert!(next.preferences().contains("mine 9.wsz"));
+    next.set_preference("skin", "mine 9.wsz");
+    assert_eq!(next.skin_name(), "mine 9.wsz");
+    next.set_preference("skin", "notes.txt");
+    assert_eq!(next.skin_name(), "mine 9.wsz");
+    next.take_requests();
+    next.set_preference("skins.reveal", "");
+    assert_eq!(next.take_requests(), [Request::Reveal(folder)]);
+}
+
+#[test]
 fn the_wheel_scrolls_a_modern_skins_playlist() {
     let dir = scratch("modern-wheel");
     let mut app = start("", &dir);

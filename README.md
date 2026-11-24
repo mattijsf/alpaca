@@ -11,7 +11,8 @@ It is early. [PLAN.md](PLAN.md) says what is done, what is not, and what comes n
 
 - The skin's windows on the desktop, see-through where the skin is, at Winamp's size or
   double. AndAmp Dark, Light and Spot come with the app; a skin of your own opens from the
-  File menu, from Finder, or by dropping it on a window.
+  File menu, from Finder, or by dropping it on a window, and one put in the app's `Skins`
+  folder (Preferences shows it) is in the Skins menu from then on.
 - MP3, AAC, ALAC, FLAC, Ogg Vorbis, WAV and AIFF files, folders of them and `.m3u`, `.m3u8`
   and `.pls` playlists, and internet radio streams by their address. The playlist window's
   menus select, remove, crop and sort, drop dead files and duplicates, show a file's info

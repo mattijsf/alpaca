@@ -101,8 +101,11 @@ pub mod command {
     pub const VIS_OFF: i32 = 62;
     /// Opacity 100 %, and one more for every 10 % less, down to 40 %.
     pub const OPACITY: i32 = 100;
-    /// The first skin that comes with the app, and one more for each after it, by name.
+    /// The first skin the menu offers, and one more for each after it: those that come with
+    /// the app by name, then the listener's own by name.
     pub const SKIN: i32 = 200;
+    /// How many skins have a number.
+    pub const SKINS: usize = 100;
     /// The equalizer set flat, and one more for each factory preset.
     pub const EQ_PRESET: i32 = 300;
 }

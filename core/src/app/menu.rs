@@ -96,7 +96,7 @@ impl App {
                 m.plain(command::FILE_INFO, "File Info…", some);
                 m.end();
                 m.sub("Skins");
-                self.skins(&mut m);
+                self.skin_items(&mut m);
                 m.end();
                 m.sub("View");
                 m.item(command::DOUBLE_SIZE, "Double Size", "d", self.zoom > 1);
@@ -117,7 +117,7 @@ impl App {
                 m.separator();
                 m.item(command::OPEN_SKIN, "Open Skin…", "", false);
                 m.sub("Skins");
-                self.skins(&mut m);
+                self.skin_items(&mut m);
                 m.end();
                 m.separator();
                 m.item(command::DOUBLE_SIZE, "Double Size", "", self.zoom > 1);
@@ -141,7 +141,7 @@ impl App {
                 m.item(command::PREFERENCES, "Preferences…", "", false);
                 m.separator();
                 m.sub("Skins");
-                self.skins(&mut m);
+                self.skin_items(&mut m);
                 m.end();
                 m.separator();
                 let left = self.time_remaining();
@@ -202,10 +202,15 @@ impl App {
         m.0
     }
 
-    /// The skins that come with the app, the one worn checked.
-    fn skins(&self, m: &mut Lines) {
+    /// The skins that come with the app, then the listener's own under a line, the one
+    /// worn checked.
+    fn skin_items(&self, m: &mut Lines) {
         let worn = self.skin_name();
-        for (n, file) in self.builtin_skins().iter().enumerate() {
+        let builtin = self.builtin_skins().len();
+        for (n, file) in self.skins().iter().enumerate() {
+            if n == builtin {
+                m.separator();
+            }
             let name = Path::new(file)
                 .file_stem()
                 .map(|s| s.to_string_lossy().into_owned());

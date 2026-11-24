@@ -22,7 +22,7 @@ impl App {
             SORT_FILENAME, SORT_PATH, SORT_TITLE, STOP, TIME_ELAPSED, TIME_REMAINING, VISUALIZER,
             VIS_ANALYZER, VIS_OFF, VIS_SCOPE,
         };
-        let skins = SKIN..SKIN + 100;
+        let skins = SKIN..SKIN + super::command::SKINS as i32;
         let presets = EQ_PRESET..=EQ_PRESET + EQ_PRESETS.len() as i32;
         match id {
             OPEN_FILES => self.request(Request::Ask(Ask::OpenSongs)),
@@ -130,8 +130,8 @@ impl App {
                 self.set_opacity(100 - (id - OPACITY) * 10);
             }
             id if skins.contains(&id) => {
-                if let Some(name) = self.builtin_skins().get((id - SKIN) as usize) {
-                    let file = self.builtin(name);
+                let name = self.skins().into_iter().nth((id - SKIN) as usize);
+                if let Some(file) = name.and_then(|name| self.skin_file(&name)) {
                     self.wear(&file);
                 }
             }

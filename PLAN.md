@@ -236,6 +236,13 @@ stand-in fonts.
 
 ### Log
 
+- 2026-11-24, last of all: a folder of the listener's own skins (`Skins` in the app's
+  folder, beside the settings). What is in it is offered in the Skins menu and in the
+  Preferences window under the skins that come with the app; Preferences has a button that
+  shows the folder. The owner asked for Winamp3x, Winamp Modern, MMD3 and Big Bento: they
+  are in that folder on this Mac, not in the repository, and each was looked at with
+  `--dump`. A file added while the app runs is in the menu bar when the bar is next made
+  anew; the popup menus and the Preferences window read the folder each time.
 - 2026-11-24, last: the engine pinned to walkit's main branch for its three new calls. The
   title bars follow the window the keys go to (Command-`), a modern skin's playlist scrolls
   by the wheel, and the app no longer counts a classic playlist's scrolling itself: the

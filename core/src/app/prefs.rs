@@ -193,7 +193,7 @@ impl App {
     pub fn preferences(&self) -> String {
         let player = self.player.borrow();
         let worn = self.skin_name();
-        let skins = self.builtin_skins();
+        let skins = self.skins();
         let mut skin_options: Vec<(String, String)> = skins
             .iter()
             .map(|file| {
@@ -218,6 +218,7 @@ impl App {
             heading("Skin"),
             choice("skin", "Skin", &worn, &skin_options),
             action("skin.open", "Open Skin File…"),
+            action("skins.reveal", "Show Skins Folder"),
             heading("Windows"),
             toggle("double", "Double size", self.zoom > 1),
             toggle("ontop", "Always on top", self.on_top),
@@ -343,8 +344,7 @@ impl App {
         let on = value == "1";
         match id {
             "skin" => {
-                if self.builtin_skins().iter().any(|file| file == value) {
-                    let file = self.builtin(value);
+                if let Some(file) = self.skin_file(value) {
                     self.wear(&file);
                 }
             }
@@ -395,6 +395,13 @@ impl App {
             "plugins.reveal" => {
                 if let Some(folder) = self.plugins_folder() {
                     // the folder is made when the first plug-in is added: make it now
+                    let _ = std::fs::create_dir_all(&folder);
+                    self.request(Request::Reveal(folder));
+                }
+            }
+            "skins.reveal" => {
+                if let Some(folder) = self.skins_folder() {
+                    // the folder is the listener's to fill: it is there from the first look
                     let _ = std::fs::create_dir_all(&folder);
                     self.request(Request::Reveal(folder));
                 }
