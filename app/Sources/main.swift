@@ -87,7 +87,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     if let stream = URL(string: arg) { songs.append(stream) }
                 default:
                     let file = URL(fileURLWithPath: arg)
-                    if AppDelegate.skinTypes.contains(file.pathExtension.lowercased()) {
+                    if andamp_location_kind(arg) == 1 {
                         skin = file
                     } else {
                         songs.append(file)
@@ -219,6 +219,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             andamp_string_free(state)
         }
         effects.save()
+        settings.save()
     }
 
     private func open(_ skin: URL) {
@@ -238,40 +239,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// The file name endings of a playlist file.
-    static let listTypes = ["m3u", "m3u8", "pls"]
-
-    /// Files dropped on a window or opened from Finder: a skin is worn, songs and the songs
-    /// of folders and playlist files are played.
+    /// Files dropped on a window or opened from Finder: a skin is worn; songs, folders of
+    /// songs, playlist files and radio streams take the playlist's place and play.
     private func dropped(_ files: [URL]) {
-        let kind = { (file: URL) in file.pathExtension.lowercased() }
-        if let skin = files.first(where: { Self.skinTypes.contains(kind($0)) }) { open(skin) }
-        let rest = files.filter { !Self.skinTypes.contains(kind($0)) }
+        let isSkin = { (file: URL) in andamp_location_kind(SkinController.location(file)) == 1 }
+        if let skin = files.first(where: isSkin) { open(skin) }
+        let rest = files.filter { !isSkin($0) }
         guard !rest.isEmpty else { return }
-        andamp_player_clear(controller.player)
-        for file in rest {
-            if Self.listTypes.contains(kind(file)) {
-                controller.add(list: file)
-            } else {
-                controller.add(files: songs(in: file))
-            }
-        }
-        if andamp_player_count(controller.player) > 0 { andamp_player_play_index(controller.player, 0) }
-        controller.pump(force: true)
-    }
-
-    /// `file` itself, or when it is a folder the files in it and in the folders under it, by name.
-    private func songs(in file: URL) -> [URL] {
-        var isFolder: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: file.path, isDirectory: &isFolder), isFolder.boolValue
-        else { return [file] }
-        let found = FileManager.default.enumerator(
-            at: file, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles])
-        let files = (found?.allObjects as? [URL] ?? []).filter {
-            (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true
-                && UTType(filenameExtension: $0.pathExtension)?.conforms(to: .audio) == true
-        }
-        return files.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+        controller.play(files: rest)
     }
 
     /// What the playlist window's buttons ask of the app.
@@ -284,14 +259,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             panel.canChooseDirectories = true
             panel.canChooseFiles = false
             panel.allowsMultipleSelection = true
-            if panel.runModal() == .OK { controller.add(files: panel.urls.flatMap(songs(in:))) }
+            if panel.runModal() == .OK { controller.add(files: panel.urls) }
         case "list_load":
             let panel = NSOpenPanel()
-            panel.allowedContentTypes = Self.listTypes.compactMap { UTType(filenameExtension: $0) }
-            if panel.runModal() == .OK, let file = panel.url {
-                andamp_player_clear(controller.player)
-                controller.add(list: file)
-            }
+            panel.allowedContentTypes = ["m3u", "m3u8", "pls"].compactMap { UTType(filenameExtension: $0) }
+            if panel.runModal() == .OK, let file = panel.url { controller.play(files: [file]) }
         case "list_save":
             let panel = NSSavePanel()
             panel.allowedContentTypes = [UTType(filenameExtension: "m3u8")].compactMap { $0 }
@@ -382,7 +354,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.allowedContentTypes = [.audio]
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = true
-        return panel.runModal() == .OK && !panel.urls.isEmpty ? panel.urls.flatMap(songs(in:)) : nil
+        return panel.runModal() == .OK && !panel.urls.isEmpty ? panel.urls : nil
     }
 
     /// Asks for the address of a radio stream and adds it to the playlist.

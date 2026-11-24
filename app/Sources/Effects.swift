@@ -23,23 +23,9 @@ struct Rack: Decodable {
         let scale: Double
         let decimals: Int
         let zero: String
+        /// The value as the listener reads it: "50 %", "-3.0 dB".
+        let readout: String
         let options: [Option]
-
-        /// The value as the listener reads it, by the rules of Andamp's plug-in reference: the
-        /// `zero` text at the minimum; a share of one as a whole number of hundredths; else the
-        /// value times its scale, with its unit.
-        func readout(_ value: Double) -> String {
-            if !zero.isEmpty, value <= min { return zero }
-            if scale == 1, unit == "pc" || (unit.isEmpty && max <= 1) {
-                return String(Int((value * 100).rounded()))
-            }
-            let places = decimals >= 0 ? decimals : ((max - min) * scale <= 50 ? 1 : 0)
-            let symbols = [
-                "db": " dB", "hz": " Hz", "khz": " kHz", "ms": " ms", "s": " s", "pc": " %",
-                "semitone12TET": " st", "coef": "", "degree": "°", "bar": " bars",
-            ]
-            return String(format: "%.\(places)f", value * scale) + (symbols[unit] ?? "")
-        }
     }
 
     struct Preset: Decodable {
@@ -87,11 +73,8 @@ final class Effects: NSObject, NSWindowDelegate {
         super.init()
     }
 
-    /// Where the listener's own plug-ins are kept.
-    private var folder: URL? {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("Andamp/Plugins", isDirectory: true)
-    }
+    /// Where the listener's own plug-ins are kept: in the app's folder, beside its settings.
+    private var folder: URL? { settings.folder?.appendingPathComponent("Plugins", isDirectory: true) }
 
     /// The rack as it stands.
     var rack: Rack {
@@ -103,7 +86,9 @@ final class Effects: NSObject, NSWindowDelegate {
 
     /// Loads the plug-ins at the start when the listener left one on, so it is heard at once.
     func loadIfLeftOn() {
-        if settings.effects.values.contains(where: { $0["on"] as? Bool == true }) { load() }
+        // a line of the kept state is an effect's id, 1 for on, and its controls
+        let left = (settings.effects ?? "").split(separator: "\n")
+        if left.contains(where: { $0.split(separator: "\t").dropFirst().first == "1" }) { load() }
     }
 
     /// Loads every plug-in once, and puts each back as the listener left it.
@@ -112,31 +97,20 @@ final class Effects: NSObject, NSWindowDelegate {
         loaded = true
         let bundled = Bundle.main.url(forResource: "plugins", withExtension: nil)
         for (folder, mine) in [(bundled, false), (folder, true)] {
-            guard let folder else { continue }
-            let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
-            for file in files.filter({ $0.pathExtension == "lua" }).sorted(by: { $0.path < $1.path }) {
-                guard let source = try? String(contentsOf: file, encoding: .utf8) else { continue }
-                var error: UnsafeMutablePointer<CChar>?
-                let index = andamp_player_add_effect(player, source, &error)
-                if let error {
-                    FileHandle.standardError.write(
-                        Data("andamp: \(file.lastPathComponent): \(String(cString: error))\n".utf8))
-                    andamp_string_free(error)
-                }
-                if index >= 0, mine { own.insert(rack.effects[Int(index)].id) }
-            }
-        }
-        let saved = settings.effects
-        for (index, effect) in rack.effects.enumerated() {
-            guard let was = saved[effect.id] else { continue }
-            let values = was["values"] as? [String: Double] ?? [:]
-            for (place, param) in effect.params.enumerated() {
-                if let value = values[param.id] {
-                    andamp_player_set_effect_value(player, Int32(index), Int32(place), Float(value))
+            guard let folder, let result = andamp_player_add_effects(player, folder.path) else { continue }
+            defer { andamp_string_free(result) }
+            // a line for each file: its name, its place in the rack or -1, and why it was refused
+            for line in String(cString: result).split(separator: "\n") {
+                let parts = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+                guard parts.count >= 3, let index = Int(parts[1]) else { continue }
+                if index < 0 {
+                    FileHandle.standardError.write(Data("andamp: \(parts[0]): \(parts[2])\n".utf8))
+                } else if mine, rack.effects.indices.contains(index) {
+                    own.insert(rack.effects[index].id)
                 }
             }
-            andamp_player_set_effect_on(player, Int32(index), was["on"] as? Bool ?? false)
         }
+        if let left = settings.effects { andamp_player_restore_effects(player, left) }
     }
 
     /// Switches on the effect with `id`, for the command line.
@@ -151,14 +125,9 @@ final class Effects: NSObject, NSWindowDelegate {
 
     /// Keeps which effects are on and where their controls stand.
     func save() {
-        guard loaded else { return }
-        var all: [String: [String: Any]] = [:]
-        for effect in rack.effects {
-            var values: [String: Double] = [:]
-            for param in effect.params { values[param.id] = param.value }
-            all[effect.id] = ["on": effect.on, "values": values]
-        }
-        settings.effects = all
+        guard loaded, let state = andamp_player_effects_state(player) else { return }
+        settings.effects = String(cString: state)
+        andamp_string_free(state)
     }
 
     // MARK: the window
@@ -345,14 +314,17 @@ final class Effects: NSObject, NSWindowDelegate {
         default:
             let made = NSSlider(value: param.value, minValue: param.min, maxValue: param.max, target: nil, action: nil)
             made.isContinuous = true
-            let shown = text(param.readout(param.value))
+            let shown = text(param.readout)
             shown.alignment = .right
             shown.widthAnchor.constraint(equalToConstant: 70).isActive = true
             readout = shown
             on(made) { [weak self] sender in
                 let value = (sender as? NSSlider)?.doubleValue ?? param.value
                 set(value)
-                shown.stringValue = param.readout(value)
+                if let read = andamp_player_effect_readout(self?.player, Int32(index), Int32(place), Float(value)) {
+                    shown.stringValue = String(cString: read)
+                    andamp_string_free(read)
+                }
                 // kept when the drag ends, not at every step of it
                 if NSApp.currentEvent?.type == .leftMouseUp { self?.save() }
             }

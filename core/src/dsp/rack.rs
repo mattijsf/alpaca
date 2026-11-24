@@ -193,6 +193,69 @@ impl Rack {
         Ok(at)
     }
 
+    /// Adds every `.lua` file of the folder `dir`, by name. Gives each file's name with its
+    /// place in the rack, or why it was refused.
+    pub fn add_folder(&mut self, dir: &std::path::Path) -> Vec<(String, Result<usize, String>)> {
+        let mut files: Vec<_> = std::fs::read_dir(dir)
+            .map(|entries| entries.flatten().map(|e| e.path()).collect())
+            .unwrap_or_default();
+        files.retain(|path: &std::path::PathBuf| path.extension().is_some_and(|e| e.eq_ignore_ascii_case("lua")));
+        files.sort();
+        files
+            .iter()
+            .map(|file| {
+                let name = file.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                let added = std::fs::read_to_string(file)
+                    .map_err(|e| e.to_string())
+                    .and_then(|source| self.add(&source));
+                (name, added)
+            })
+            .collect()
+    }
+
+    /// Which effects are on and where their controls stand, as text for the next run: a line
+    /// for each effect, its id, 1 or 0 for on, and its controls as `id=value`, with tabs between.
+    pub fn state(&self) -> String {
+        self.effects
+            .iter()
+            .map(|effect| {
+                let values: Vec<String> = effect
+                    .plugin
+                    .params
+                    .iter()
+                    .zip(&effect.values)
+                    .map(|(param, value)| format!("{}={value}", param.id))
+                    .collect();
+                format!("{}\t{}\t{}\n", effect.plugin.info.id, u8::from(effect.on), values.join("\t"))
+            })
+            .collect()
+    }
+
+    /// Puts back what [`Rack::state`] gave, for the effects that are in the rack: a control
+    /// the text does not name stays where it is, and one the plug-in no longer has is ignored.
+    pub fn restore(&mut self, state: &str) {
+        for line in state.lines() {
+            let mut parts = line.split('\t');
+            let (Some(id), Some(on)) = (parts.next(), parts.next()) else {
+                continue;
+            };
+            let Some(index) = self.effects.iter().position(|e| e.plugin.info.id == id) else {
+                continue;
+            };
+            for part in parts {
+                let Some((param, value)) = part.split_once('=') else {
+                    continue;
+                };
+                let place = self.effects[index].plugin.params.iter().position(|p| p.id == param);
+                if let (Some(place), Ok(value)) = (place, value.parse::<f32>()) {
+                    self.set_value(index, place, value);
+                }
+            }
+            self.send(Command::Settle { effect: index });
+            self.set_on(index, on == "1");
+        }
+    }
+
     /// Takes effect `index` out of the rack.
     pub fn remove(&mut self, index: usize) {
         if index < self.effects.len() {

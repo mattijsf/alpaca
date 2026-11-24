@@ -429,10 +429,11 @@ final class SkinController {
     /// A song as the library takes it: a file by its path, a radio stream by its address.
     static func location(_ song: URL) -> String { song.isFileURL ? song.path : song.absoluteString }
 
-    /// Adds audio files and radio streams to the playlist; how many of them were taken.
+    /// Adds songs, folders of songs, playlist files and radio streams to the playlist; how many
+    /// entries joined.
     @discardableResult
     func add(files: [URL]) -> Int {
-        let added = files.filter { andamp_player_add(player, Self.location($0)) >= 0 }.count
+        let added = files.reduce(0) { $0 + Int(andamp_player_add_location(player, Self.location($1))) }
         pump(force: true)
         return added
     }
@@ -441,12 +442,6 @@ final class SkinController {
     func play(files: [URL]) {
         andamp_player_clear(player)
         if add(files: files) > 0 { andamp_player_play_index(player, 0) }
-        pump(force: true)
-    }
-
-    /// Adds the songs a playlist file names.
-    func add(list: URL) {
-        andamp_player_add_list(player, list.path)
         pump(force: true)
     }
 
@@ -527,29 +522,15 @@ final class SkinController {
         pump()
     }
 
-    /// Winamp's keys, with no modifier: Z X C V B for the transport, the arrows for the
-    /// volume and for five seconds back and on. False for a key that is not one of them.
+    /// Winamp's keys, with no modifier: the library knows what each does. False for a key that
+    /// is not one of them.
     func keyDown(_ event: NSEvent) -> Bool {
         guard event.modifierFlags.intersection([.command, .control, .option]).isEmpty else { return false }
-        switch event.charactersIgnoringModifiers?.lowercased() {
-        case "z": command(ANDAMP_PREVIOUS)
-        case "x": command(ANDAMP_PLAY)
-        case "c", " ": command(ANDAMP_PAUSE)
-        case "v": command(ANDAMP_STOP)
-        case "b": command(ANDAMP_NEXT)
-        default:
-            switch event.keyCode {
-            case 126: setVolume(Int(andamp_player_volume(player)) + 5)  // up
-            case 125: setVolume(Int(andamp_player_volume(player)) - 5)  // down
-            case 123:  // left
-                andamp_player_seek_by(player, -5000)
-                pump(force: true)
-            case 124:  // right
-                andamp_player_seek_by(player, 5000)
-                pump(force: true)
-            default: return false
-            }
-        }
+        let arrows: [UInt16: String] = [126: "up", 125: "down", 123: "left", 124: "right", 49: "space"]
+        guard let key = arrows[event.keyCode] ?? event.charactersIgnoringModifiers?.lowercased(),
+            andamp_player_key(player, key)
+        else { return false }
+        pump(force: true)
         return true
     }
 

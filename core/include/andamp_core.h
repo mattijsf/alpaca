@@ -238,4 +238,64 @@ void andamp_player_restore(AndampPlayer *player, const char *state);
 /// that takes every sample once.
 int32_t andamp_player_take_wave(AndampPlayer *player, float *out, int32_t max);
 
+/// What the file or address `location` is, by its name: 0 a song, a folder or a radio stream,
+/// 1 a skin, 2 a playlist file.
+int32_t andamp_location_kind(const char *location);
+
+/// Adds whatever `location` is to the end of the playlist: a song, a radio stream by its
+/// address, the songs a playlist file names, or the songs of a folder and the folders under
+/// it. Gives how many entries joined.
+int32_t andamp_player_add_location(AndampPlayer *player, const char *location);
+
+/// Answers one of Winamp's keys, by its name: "z" previous, "x" play, "c" or "space" pause,
+/// "v" stop, "b" next, "up" and "down" for the volume, "left" and "right" for five seconds
+/// back and on. False for any other key.
+bool andamp_player_key(AndampPlayer *player, const char *key);
+
+/// Adds every effect plug-in (.lua) of the folder `dir` to the rack. Gives a line for each
+/// file, to free with andamp_string_free: its name, its place in the rack or -1, and why it
+/// was refused, with tabs between.
+char *andamp_player_add_effects(AndampPlayer *player, const char *dir);
+
+/// Which effects are on and where their controls stand, as text for the next run, to free
+/// with andamp_string_free and hand to andamp_player_restore_effects.
+char *andamp_player_effects_state(AndampPlayer *player);
+
+/// Puts the effects back as andamp_player_effects_state left them.
+void andamp_player_restore_effects(AndampPlayer *player, const char *state);
+
+/// Control `param` of effect `index` at `value` as the listener reads it ("50 %", "-3.0 dB"),
+/// to free with andamp_string_free.
+char *andamp_player_effect_readout(AndampPlayer *player, int32_t index, int32_t param, float value);
+
+/// The settings the app keeps between runs: one file, the same on every system.
+typedef struct AndampSettings AndampSettings;
+
+/// The folder the app keeps its settings and the listener's plug-ins in, to free with
+/// andamp_string_free: Application Support on a Mac, the roaming AppData on Windows, the XDG
+/// config folder elsewhere. Null when the system names no home.
+char *andamp_config_dir(void);
+
+/// Opens the settings in the folder `dir`, or with null settings that start empty and are
+/// never written, for a run that only looks. Free them with andamp_settings_free.
+AndampSettings *andamp_settings_open(const char *dir);
+
+/// Writes the settings when they changed, and frees them.
+void andamp_settings_free(AndampSettings *settings);
+
+/// The value of `key`, to free with andamp_string_free; null when it is not set.
+char *andamp_settings_get(AndampSettings *settings, const char *key);
+
+/// Sets `key` to `value`, or forgets it when `value` is null.
+void andamp_settings_set(AndampSettings *settings, const char *key, const char *value);
+
+/// The keys that start with `prefix`, one to a line, to free with andamp_string_free.
+char *andamp_settings_keys(AndampSettings *settings, const char *prefix);
+
+/// Forgets every key that starts with `prefix`.
+void andamp_settings_clear(AndampSettings *settings, const char *prefix);
+
+/// Writes the settings to their file when they changed; false when the file cannot be written.
+bool andamp_settings_save(AndampSettings *settings);
+
 #endif

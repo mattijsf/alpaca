@@ -61,6 +61,42 @@ pub const EQ_PRESETS: [(&str, i32, [i32; 10]); 17] = [
     ("Techno", 32, [44, 41, 32, 22, 23, 32, 44, 47, 47, 46]),
 ];
 
+/// The file name endings of the audio files a folder is searched for.
+const AUDIO_TYPES: [&str; 13] = [
+    "mp3", "m4a", "m4b", "mp4", "aac", "flac", "ogg", "oga", "wav", "wave", "aif", "aiff", "caf",
+];
+/// The file name endings of a playlist file, and of a skin.
+const LIST_TYPES: [&str; 3] = ["m3u", "m3u8", "pls"];
+const SKIN_TYPES: [&str; 3] = ["wsz", "wal", "zip"];
+
+/// What a file or an address the listener opens is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LocationKind {
+    /// A song, a folder of songs or a radio stream: for the playlist.
+    Audio,
+    /// A skin: to wear.
+    Skin,
+    /// A playlist file: its songs are for the playlist.
+    List,
+}
+
+/// What `location` is, by its name.
+pub fn location_kind(location: &Path) -> LocationKind {
+    let ending = location
+        .extension()
+        .map(|e| e.to_string_lossy().to_lowercase())
+        .unwrap_or_default();
+    if decode::is_url(location) {
+        LocationKind::Audio
+    } else if SKIN_TYPES.contains(&ending.as_str()) {
+        LocationKind::Skin
+    } else if LIST_TYPES.contains(&ending.as_str()) {
+        LocationKind::List
+    } else {
+        LocationKind::Audio
+    }
+}
+
 /// The volume a player starts at, of 255.
 const FIRST_VOLUME: i32 = 200;
 
@@ -198,6 +234,53 @@ impl Player {
     pub fn add(&mut self, path: &Path) -> Result<usize, String> {
         self.playlist.push(Entry::read(path)?);
         Ok(self.playlist.len() - 1)
+    }
+
+    /// Adds whatever `location` is to the end of the playlist: a song, a radio stream by its
+    /// address, the songs a playlist file names, or the songs of a folder and the folders
+    /// under it, by name. Gives how many entries joined.
+    pub fn add_location(&mut self, location: &Path) -> usize {
+        if decode::is_url(location) {
+            return usize::from(self.add(location).is_ok());
+        }
+        if location.is_dir() {
+            let mut inside: Vec<PathBuf> = std::fs::read_dir(location)
+                .map(|entries| entries.flatten().map(|e| e.path()).collect())
+                .unwrap_or_default();
+            inside.sort_by_key(|path| path.to_string_lossy().to_lowercase());
+            return inside
+                .iter()
+                .filter(|path| {
+                    let hidden = path.file_name().is_some_and(|n| n.to_string_lossy().starts_with('.'));
+                    let ending = path.extension().map(|e| e.to_string_lossy().to_lowercase());
+                    !hidden && (path.is_dir() || ending.is_some_and(|e| AUDIO_TYPES.contains(&e.as_str())))
+                })
+                .map(|path| self.add_location(path))
+                .sum();
+        }
+        match location_kind(location) {
+            LocationKind::List => self.add_list(location).unwrap_or(0),
+            _ => usize::from(self.add(location).is_ok()),
+        }
+    }
+
+    /// Answers one of Winamp's keys, by its name: `z` previous, `x` play, `c` or `space`
+    /// pause, `v` stop, `b` next, `up` and `down` for the volume, `left` and `right` for five
+    /// seconds back and on. False for any other key.
+    pub fn key(&mut self, key: &str) -> bool {
+        match key {
+            "z" => self.previous(),
+            "x" => self.play(),
+            "c" | "space" => self.pause(),
+            "v" => self.stop(),
+            "b" => self.next(),
+            "up" => self.set_volume(self.volume + 5),
+            "down" => self.set_volume(self.volume - 5),
+            "left" => self.seek_to(self.position_ms().saturating_sub(5000)),
+            "right" => self.seek_to(self.position_ms().saturating_add(5000)),
+            _ => return false,
+        }
+        true
     }
 
     /// Empties the playlist and stops.

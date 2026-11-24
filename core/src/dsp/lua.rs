@@ -82,6 +82,47 @@ pub struct Param {
     pub zero: String,
 }
 
+impl Param {
+    /// `value` as the listener reads it, by the rules of the plug-in reference: the `zero` text
+    /// at the minimum; a share of one as a whole number of hundredths; else the value times
+    /// its scale, with its unit.
+    pub fn readout(&self, value: f32) -> String {
+        if let Kind::Choice(options) = &self.kind {
+            return options
+                .iter()
+                .find(|o| o.1 == value)
+                .map(|o| o.0.clone())
+                .unwrap_or_default();
+        }
+        if self.kind == Kind::Toggle {
+            return if value >= 0.5 { "On" } else { "Off" }.to_string();
+        }
+        if !self.zero.is_empty() && value <= self.min {
+            return self.zero.clone();
+        }
+        if self.scale == 1.0 && (self.unit == "pc" || (self.unit.is_empty() && self.max <= 1.0)) {
+            return format!("{}", (value * 100.0).round() as i64);
+        }
+        let places = match self.decimals {
+            Some(places) => places as usize,
+            None => usize::from((self.max - self.min) * self.scale <= 50.0),
+        };
+        let symbol = match self.unit.as_str() {
+            "db" => " dB",
+            "hz" => " Hz",
+            "khz" => " kHz",
+            "ms" => " ms",
+            "s" => " s",
+            "pc" => " %",
+            "semitone12TET" => " st",
+            "degree" => "\u{b0}",
+            "bar" => " bars",
+            _ => "",
+        };
+        format!("{:.places$}{symbol}", value * self.scale)
+    }
+}
+
 /// Named settings a plug-in comes with: for each, the parameters it sets, by their place.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Preset {

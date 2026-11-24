@@ -195,3 +195,31 @@ fn the_rack_runs_what_is_on_and_fades_what_is_switched() {
     assert_eq!(rack.effects().len(), 1);
     assert_eq!(rack.effects()[0].values, [1.0]);
 }
+
+#[test]
+fn the_rack_is_left_and_put_back_and_a_control_reads_as_the_reference_says() {
+    use andamp_core::dsp::rack::Rack;
+    let mut rack = Rack::default();
+    let loaded = rack.add_folder(&folder("../app/Resources/plugins"));
+    assert_eq!(loaded.len(), 6);
+    assert!(loaded.iter().all(|(_, result)| result.is_ok()), "{loaded:?}");
+    let tone = rack.effects().iter().position(|e| e.plugin.info.id == "nl.mattix.andamp.tone").unwrap();
+    rack.set_on(tone, true);
+    rack.set_value(tone, 0, 4.0);
+    let left = rack.state();
+
+    let mut next = Rack::default();
+    next.add_folder(&folder("../app/Resources/plugins"));
+    next.restore(&left);
+    next.restore("an.effect.that.is.gone\t1\tx=1\nrubbish");
+    let effect = &next.effects()[tone];
+    assert!(effect.on);
+    assert_eq!(effect.values, [4.0, 0.0]);
+    assert_eq!(next.effects().iter().filter(|e| e.on).count(), 1);
+
+    // readouts: decibels with a decimal, a share of one as hundredths, the text for the minimum
+    assert_eq!(effect.plugin.params[0].readout(4.0), "4.0 dB");
+    let leveler = next.effects().iter().find(|e| e.plugin.info.id == "nl.mattix.andamp.leveler").unwrap();
+    assert_eq!(leveler.plugin.params[0].readout(0.5), "50 %");
+    assert_eq!(leveler.plugin.params[0].readout(0.0), "OFF");
+}

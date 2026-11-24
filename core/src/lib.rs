@@ -13,6 +13,7 @@ pub mod dsp;
 pub mod host;
 pub mod player;
 pub mod render;
+pub mod settings;
 pub mod skin;
 
 use std::cell::RefCell;
@@ -788,7 +789,7 @@ fn effects_json(player: &player::Player) -> String {
                     };
                     format!(
                         "{{\"id\":{},\"name\":{},\"kind\":\"{kind}\",\"min\":{},\"max\":{},\"default\":{},\"value\":{},\
-                         \"unit\":{},\"help\":{},\"scale\":{},\"decimals\":{},\"zero\":{},\"options\":[{}]}}",
+                         \"unit\":{},\"help\":{},\"scale\":{},\"decimals\":{},\"zero\":{},\"readout\":{},\"options\":[{}]}}",
                         json_text(&p.id),
                         json_text(&p.name),
                         json_number(p.min),
@@ -800,6 +801,7 @@ fn effects_json(player: &player::Player) -> String {
                         json_number(p.scale),
                         p.decimals.map_or(-1, |d| d as i32),
                         json_text(&p.zero),
+                        json_text(&p.readout(*value)),
                         options.join(",")
                     )
                 })
@@ -993,4 +995,220 @@ pub unsafe extern "C" fn andamp_player_take_wave(player: *mut AndampPlayer, out:
     let wave = with_player(player, Vec::new(), |p| p.take_wave(max));
     std::ptr::copy_nonoverlapping(wave.as_ptr(), out, wave.len());
     wave.len() as i32
+}
+
+/// A text handed to the caller, to free with [`andamp_string_free`].
+fn c_text(text: &str) -> *mut c_char {
+    CString::new(text.replace('\0', " ")).unwrap_or_default().into_raw()
+}
+
+/// What the file or address `location` is, by its name: 0 a song, a folder or a radio stream,
+/// 1 a skin, 2 a playlist file.
+///
+/// # Safety
+/// `location` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_location_kind(location: *const c_char) -> i32 {
+    match player::location_kind(Path::new(&string(location))) {
+        player::LocationKind::Audio => 0,
+        player::LocationKind::Skin => 1,
+        player::LocationKind::List => 2,
+    }
+}
+
+/// Adds whatever `location` is to the end of the playlist: a song, a radio stream by its
+/// address, the songs a playlist file names, or the songs of a folder and the folders under
+/// it. Gives how many entries joined.
+///
+/// # Safety
+/// `player` is null or a live player; `location` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_add_location(player: *mut AndampPlayer, location: *const c_char) -> i32 {
+    let location = string(location);
+    with_player(player, 0, |p| p.add_location(Path::new(&location)) as i32)
+}
+
+/// Answers one of Winamp's keys, by its name: "z" previous, "x" play, "c" or "space" pause,
+/// "v" stop, "b" next, "up" and "down" for the volume, "left" and "right" for five seconds
+/// back and on. False for any other key.
+///
+/// # Safety
+/// `player` is null or a live player; `key` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_key(player: *mut AndampPlayer, key: *const c_char) -> bool {
+    let key = string(key);
+    with_player(player, false, |p| p.key(&key))
+}
+
+/// Adds every effect plug-in (`.lua`) of the folder `dir` to the rack. Gives a line for each
+/// file, to free with [`andamp_string_free`]: its name, its place in the rack or -1, and why
+/// it was refused, with tabs between.
+///
+/// # Safety
+/// `player` is null or a live player; `dir` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_add_effects(player: *mut AndampPlayer, dir: *const c_char) -> *mut c_char {
+    let dir = string(dir);
+    let added = with_player(player, Vec::new(), |p| p.rack.add_folder(Path::new(&dir)));
+    let text: String = added
+        .iter()
+        .map(|(name, result)| match result {
+            Ok(index) => format!("{name}\t{index}\t\n"),
+            Err(reason) => format!("{name}\t-1\t{}\n", reason.replace(['\t', '\n'], " ")),
+        })
+        .collect();
+    c_text(&text)
+}
+
+/// Which effects are on and where their controls stand, as text for the next run, to free
+/// with [`andamp_string_free`] and hand to [`andamp_player_restore_effects`].
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_effects_state(player: *mut AndampPlayer) -> *mut c_char {
+    c_text(&with_player(player, String::new(), |p| p.rack.state()))
+}
+
+/// Puts the effects back as [`andamp_player_effects_state`] left them.
+///
+/// # Safety
+/// `player` is null or a live player; `state` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_restore_effects(player: *mut AndampPlayer, state: *const c_char) {
+    let state = string(state);
+    with_player(player, (), |p| p.rack.restore(&state));
+}
+
+/// Control `param` of effect `index` at `value` as the listener reads it ("50 %", "-3.0 dB"),
+/// to free with [`andamp_string_free`].
+///
+/// # Safety
+/// `player` is null or a live player.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_player_effect_readout(
+    player: *mut AndampPlayer,
+    index: i32,
+    param: i32,
+    value: f32,
+) -> *mut c_char {
+    let text = with_player(player, String::new(), |p| {
+        let spec = usize::try_from(index)
+            .ok()
+            .and_then(|i| p.rack.effects().get(i))
+            .and_then(|e| usize::try_from(param).ok().and_then(|i| e.plugin.params.get(i)));
+        spec.map(|s| s.readout(value)).unwrap_or_default()
+    });
+    c_text(&text)
+}
+
+/// The settings the app keeps between runs, behind the C interface.
+pub struct AndampSettings {
+    settings: std::cell::RefCell<settings::Settings>,
+}
+
+/// The folder the app keeps its settings and the listener's plug-ins in, to free with
+/// [`andamp_string_free`]: Application Support on a Mac, the roaming AppData on Windows, the
+/// XDG config folder elsewhere. Null when the system names no home.
+#[no_mangle]
+pub extern "C" fn andamp_config_dir() -> *mut c_char {
+    match settings::config_dir() {
+        Some(dir) => c_text(&dir.to_string_lossy()),
+        None => std::ptr::null_mut(),
+    }
+}
+
+/// Opens the settings in the folder `dir`, or with null settings that start empty and are
+/// never written, for a run that only looks. Free them with [`andamp_settings_free`].
+///
+/// # Safety
+/// `dir` is null or a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_settings_open(dir: *const c_char) -> *mut AndampSettings {
+    let settings = if dir.is_null() {
+        settings::Settings::none()
+    } else {
+        settings::Settings::open(Path::new(&string(dir)))
+    };
+    Box::into_raw(Box::new(AndampSettings {
+        settings: std::cell::RefCell::new(settings),
+    }))
+}
+
+/// Writes the settings when they changed, and frees them.
+///
+/// # Safety
+/// `settings` is null or settings not freed before.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_settings_free(settings: *mut AndampSettings) {
+    if !settings.is_null() {
+        let settings = Box::from_raw(settings);
+        let _ = settings.settings.borrow_mut().save();
+    }
+}
+
+/// The value of `key`, to free with [`andamp_string_free`]; null when it is not set.
+///
+/// # Safety
+/// `settings` is null or live settings; `key` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_settings_get(settings: *mut AndampSettings, key: *const c_char) -> *mut c_char {
+    let Some(handle) = settings.as_ref() else {
+        return std::ptr::null_mut();
+    };
+    match handle.settings.borrow().get(&string(key)) {
+        Some(value) => c_text(value),
+        None => std::ptr::null_mut(),
+    }
+}
+
+/// Sets `key` to `value`, or forgets it when `value` is null.
+///
+/// # Safety
+/// `settings` is null or live settings; `key` is a C string, `value` null or one.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_settings_set(
+    settings: *mut AndampSettings,
+    key: *const c_char,
+    value: *const c_char,
+) {
+    if let Some(handle) = settings.as_ref() {
+        let value = (!value.is_null()).then(|| string(value));
+        handle.settings.borrow_mut().set(&string(key), value.as_deref());
+    }
+}
+
+/// The keys that start with `prefix`, one to a line, to free with [`andamp_string_free`].
+///
+/// # Safety
+/// `settings` is null or live settings; `prefix` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_settings_keys(settings: *mut AndampSettings, prefix: *const c_char) -> *mut c_char {
+    let keys = settings
+        .as_ref()
+        .map(|handle| handle.settings.borrow().keys(&string(prefix)).join("\n"))
+        .unwrap_or_default();
+    c_text(&keys)
+}
+
+/// Forgets every key that starts with `prefix`.
+///
+/// # Safety
+/// `settings` is null or live settings; `prefix` is a C string.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_settings_clear(settings: *mut AndampSettings, prefix: *const c_char) {
+    if let Some(handle) = settings.as_ref() {
+        handle.settings.borrow_mut().clear(&string(prefix));
+    }
+}
+
+/// Writes the settings to their file when they changed; false when the file cannot be written.
+///
+/// # Safety
+/// `settings` is null or live settings.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_settings_save(settings: *mut AndampSettings) -> bool {
+    settings
+        .as_ref()
+        .is_some_and(|handle| handle.settings.borrow_mut().save().is_ok())
 }
