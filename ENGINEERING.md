@@ -110,7 +110,7 @@ shell ──▶ ffi ──▶ app ──┬──▶ skin ──▶ host, render
 | `core/tests/` | The tests, a file to an area: `app`, `windows`, `player`, `effects`, `settings`. |
 | `app/Sources/` | The Mac's shell: `main.swift` answers the app's requests and draws its menus; `SkinController.swift` steps the app and places the windows; `SkinWindow.swift` shows pixels; `Preferences.swift`, `Effects.swift`, `Visualizer.swift` and `NowPlaying.swift` are the Mac's own windows and media keys; `Checks.swift` is `--dump` and `--bench`. |
 | `vis/` | Builds libprojectM as a library beside the app. |
-| `tools/` | The gate and the cross-check. |
+| `tools/` | The gate, the cross-check, and `icon.sh`, which makes the Mac's icon from Andamp's own (`app/icon/andamp.svg`). |
 | `spikes/` | Experiments kept for their findings; outside the gate. |
 
 **The split rule.** A file that holds two concerns is split by concern, not by length: the

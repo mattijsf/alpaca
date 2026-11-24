@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The windows of the skin worn, their pixels and the mouse.
+//! The windows of the skin worn and their pixels.
 
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
@@ -125,59 +125,4 @@ pub unsafe extern "C" fn andamp_skin_stats(
             *out = value;
         }
     }
-}
-
-/// The mouse went down at `x`, `y` on the viewport (layout pixels); `touch` numbers the press.
-///
-/// # Safety
-/// `skin` is null or a live skin.
-#[no_mangle]
-pub unsafe extern "C" fn andamp_skin_pointer_down(
-    skin: *mut AndampSkin,
-    x: i32,
-    y: i32,
-    touch: i32,
-) {
-    with_skin(skin, (), |s| s.runtime.pointer_down(x, y, touch));
-}
-
-/// The mouse moved to `x`, `y` while down.
-///
-/// # Safety
-/// `skin` is null or a live skin.
-#[no_mangle]
-pub unsafe extern "C" fn andamp_skin_pointer_move(skin: *mut AndampSkin, x: i32, y: i32) {
-    with_skin(skin, (), |s| s.runtime.pointer_move(x, y));
-}
-
-/// The mouse went up at `x`, `y`.
-///
-/// # Safety
-/// `skin` is null or a live skin.
-#[no_mangle]
-pub unsafe extern "C" fn andamp_skin_pointer_up(skin: *mut AndampSkin, x: i32, y: i32) {
-    with_skin(skin, (), |s| s.runtime.pointer_up(x, y));
-}
-
-/// A double click at `x`, `y`; `touch` numbers its press.
-///
-/// # Safety
-/// `skin` is null or a live skin.
-#[no_mangle]
-pub unsafe extern "C" fn andamp_skin_double_click(
-    skin: *mut AndampSkin,
-    x: i32,
-    y: i32,
-    touch: i32,
-) {
-    with_skin(skin, (), |s| s.runtime.double_tap(x, y, touch));
-}
-
-/// A right click on what press `touch` landed on.
-///
-/// # Safety
-/// `skin` is null or a live skin.
-#[no_mangle]
-pub unsafe extern "C" fn andamp_skin_right_click(skin: *mut AndampSkin, touch: i32) {
-    with_skin(skin, (), |s| s.runtime.right_click(touch));
 }

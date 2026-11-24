@@ -35,11 +35,15 @@ targets:
       - path: Resources/plugins
         type: folder
         buildPhase: resources
+      # the app's icon, made from icon/andamp.svg by tools/icon.sh
+      - path: Resources/AppIcon.icns
+        buildPhase: resources
     info:
       # written by XcodeGen, not committed
       path: Info.plist
       properties:
         CFBundleDisplayName: Andamp
+        CFBundleIconFile: AppIcon
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.music

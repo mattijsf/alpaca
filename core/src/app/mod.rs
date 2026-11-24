@@ -17,6 +17,7 @@ mod effects;
 mod menu;
 mod options;
 mod playlist;
+mod pointer;
 mod prefs;
 mod request;
 mod visualizer;
@@ -90,6 +91,10 @@ pub struct App {
     list_top: i32,
     /// The song that was current when the playlist was last brought to it.
     followed: Option<usize>,
+    /// When the mouse went down, while it is down.
+    pressed_at: Option<std::time::Instant>,
+    /// A release the skin has not been told of yet: the press was too short to be seen.
+    release: Option<pointer::Release>,
 }
 
 impl App {
@@ -154,6 +159,8 @@ impl App {
             wheel_volume: 0.0,
             list_top: 0,
             followed: None,
+            pressed_at: None,
+            release: None,
             settings,
             options,
         };

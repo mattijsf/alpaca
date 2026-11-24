@@ -53,18 +53,6 @@ bool andamp_skin_window(AndampSkin *skin, int32_t index, AndampWindow *out);
 void andamp_skin_stats(AndampSkin *skin, uint64_t *steps, uint64_t *windows_drawn,
                        uint64_t *engine_nanos, uint64_t *draw_nanos);
 
-/// The mouse, in layout pixels on the viewport: down (`touch` numbers the press), moved while
-/// down, and up.
-void andamp_skin_pointer_down(AndampSkin *skin, int32_t x, int32_t y, int32_t touch);
-void andamp_skin_pointer_move(AndampSkin *skin, int32_t x, int32_t y);
-void andamp_skin_pointer_up(AndampSkin *skin, int32_t x, int32_t y);
-
-/// A double click; `touch` numbers its press.
-void andamp_skin_double_click(AndampSkin *skin, int32_t x, int32_t y, int32_t touch);
-
-/// A right click on what press `touch` landed on.
-void andamp_skin_right_click(AndampSkin *skin, int32_t touch);
-
 /// Shows a skin's popup menu: `menu` is its items as lines of text (C, the id, 1 when checked,
 /// 1 when disabled and the text, with tabs between, for a command; S for a separator; > and
 /// the text where a submenu starts, < where it ends). It gives the id of the command picked,
@@ -225,6 +213,25 @@ void andamp_app_picked(AndampApp *app, const char *what, const char *answer);
 /// skin is worn; songs, folders, playlist files and radio streams play. Before
 /// andamp_app_start it waits for the start.
 void andamp_app_open(AndampApp *app, const char *locations);
+
+/// The engine's id of the skin's main window, or 0 when there is none: the window a shell may
+/// group the others around.
+uint32_t andamp_app_main_window(AndampApp *app);
+
+/// The mouse, in layout pixels on the viewport: down (`touch` numbers the press), moved while
+/// down, and up. After a press too short to have been seen, as a tap on a trackpad, the skin
+/// shows the press for a moment first and acts then: andamp_app_next_due_ms counts down to it.
+void andamp_app_pointer_down(AndampApp *app, int32_t x, int32_t y, int32_t touch);
+void andamp_app_pointer_move(AndampApp *app, int32_t x, int32_t y);
+void andamp_app_pointer_up(AndampApp *app, int32_t x, int32_t y);
+
+/// The press `touch` at `x`, `y` was the second of a double click; call it after
+/// andamp_app_pointer_down for that press.
+void andamp_app_double_click(AndampApp *app, int32_t x, int32_t y, int32_t touch);
+
+/// A click of the other mouse button at `x`, `y`, the whole click: what is under it shows its
+/// menu. `touch` numbers it as a press.
+void andamp_app_right_click(AndampApp *app, int32_t x, int32_t y, int32_t touch);
 
 /// Answers a key pressed in window `window` of the skin (its id, as AndampWindow has it), by
 /// the key's name. In the playlist's window "up" and "down" move the selection a row, "pageup"

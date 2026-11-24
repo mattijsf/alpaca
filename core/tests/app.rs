@@ -667,6 +667,76 @@ fn the_wheel_scrolls_the_playlist_under_it_and_turns_the_volume_elsewhere() {
 }
 
 #[test]
+fn a_press_too_short_to_see_still_shows() {
+    let (mut app, _) = with_songs("tap", &["a.wav"]);
+    app.wear(&resources().join("skins/walkit-classic.wsz"));
+    app.step();
+    app.step();
+    let main = app.main_window().expect("a main window");
+    let pixels = |app: &mut App| {
+        let window = app
+            .skin()
+            .unwrap()
+            .windows()
+            .iter()
+            .find(|w| w.id == main)
+            .unwrap();
+        window.canvas.pixels.clone()
+    };
+    let (x, y) = main_corner(&mut app);
+    // Winamp's play button: 23 by 18 at 39, 88 of the main window
+    let (x, y) = (x + 45, y + 96);
+    let idle = pixels(&mut app);
+
+    // down and up at once, as a tap on a trackpad
+    app.pointer_down(x, y, 1);
+    app.pointer_up(x, y);
+    app.step();
+    let pressed = pixels(&mut app);
+    assert!(pressed != idle, "the button shows pressed");
+    assert_eq!(
+        app.player.borrow().status(),
+        walkit::player::Status::Stopped,
+        "and has not acted yet"
+    );
+    let due = app.next_due_ms();
+    assert!((0..=90).contains(&due), "the release is due in {due} ms");
+    // a drag after the mouse let go moves nothing
+    app.pointer_move(x + 200, y);
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    app.step();
+    assert_eq!(
+        app.player.borrow().status(),
+        walkit::player::Status::Playing
+    );
+    app.step();
+    assert!(pixels(&mut app) != pressed, "the button is up again");
+    app.command(command::STOP);
+
+    // a press held long enough acts when the mouse lets go
+    app.pointer_down(x, y, 2);
+    app.step();
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    app.pointer_up(x, y);
+    assert_eq!(
+        app.player.borrow().status(),
+        walkit::player::Status::Playing
+    );
+    app.command(command::STOP);
+
+    // a second press before the first was let go lets it go first
+    app.pointer_down(x, y, 3);
+    app.pointer_up(x, y);
+    app.pointer_down(x, y, 4);
+    assert_eq!(
+        app.player.borrow().status(),
+        walkit::player::Status::Playing
+    );
+    app.pointer_up(x, y);
+    app.command(command::STOP);
+}
+
+#[test]
 fn the_playlist_follows_the_song_that_plays() {
     let dir = scratch("follow");
     let mut app = start("", &dir);

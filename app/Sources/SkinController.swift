@@ -106,7 +106,10 @@ final class SkinController {
         timer = nil
         watchers.forEach(NotificationCenter.default.removeObserver)
         watchers.removeAll()
-        for window in windows.values { window.close() }
+        for window in windows.values {
+            window.parent?.removeChildWindow(window)
+            window.close()
+        }
         windows.removeAll()
         order.removeAll()
     }
@@ -158,51 +161,85 @@ final class SkinController {
     private func apply() {
         guard let skin else { return }
         defer { if firstShown == 0, !windows.isEmpty { firstShown = ProcessInfo.processInfo.systemUptime } }
-        let count = andamp_skin_window_count(skin)
-        var seen: [UInt32] = []
+        var infos: [AndampWindow] = []
         var info = AndampWindow()
+        for index in 0..<andamp_skin_window_count(skin) where andamp_skin_window(skin, index, &info) {
+            infos.append(info)
+        }
+        let seen = infos.map(\.id)
         let z = CGFloat(zoom)
-        for index in 0..<count where andamp_skin_window(skin, index, &info) {
-            seen.append(info.id)
-            let window =
-                windows[info.id]
-                ?? {
-                    let made = SkinWindow(skinId: info.id, controller: self)
-                    made.level = onTop ? .floating : .normal
-                    made.alphaValue = opacity
-                    windows[info.id] = made
-                    watchers.append(
-                        NotificationCenter.default.addObserver(
-                            forName: NSWindow.didChangeOcclusionStateNotification, object: made, queue: .main
-                        ) { [weak self] _ in self?.sightChanged() })
-                    return made
-                }()
-            // the engine counts from the top left of the area, the screen from its bottom left
-            let frame = NSRect(
+        // the engine counts from the top left of the area, the screen from its bottom left
+        var wanted: [UInt32: NSRect] = [:]
+        for info in infos {
+            wanted[info.id] = NSRect(
                 x: area.minX + CGFloat(info.x) * z,
                 y: area.maxY - CGFloat(info.y + info.h) * z,
                 width: CGFloat(info.w) * z, height: CGFloat(info.h) * z)
-            if window.frame != frame { window.setFrame(frame, display: false) }
-            if window.shownGeneration != info.generation, let pixels = info.pixels {
-                // the drawing right after the one shown differs from it only where it says
-                let next = window.shownGeneration != 0 && window.shownGeneration + 1 == info.generation
-                let changed = CGRect(
-                    x: Int(info.changed_x), y: Int(info.changed_y), width: Int(info.changed_w),
-                    height: Int(info.changed_h))
-                window.show(
-                    pixels: pixels, width: Int(info.w), height: Int(info.h), changed: next ? changed : nil)
-                window.shownGeneration = info.generation
-            }
+            if windows[info.id] == nil { windows[info.id] = makeWindow(info.id) }
         }
         for (id, window) in windows where !seen.contains(id) {
+            // a window that goes takes none of the others with it
+            for child in window.childWindows ?? [] { window.removeChildWindow(child) }
+            window.parent?.removeChildWindow(window)
             window.close()
             windows[id] = nil
+        }
+        place(wanted)
+        for info in infos {
+            guard let window = windows[info.id], window.shownGeneration != info.generation,
+                let pixels = info.pixels
+            else { continue }
+            // the drawing right after the one shown differs from it only where it says
+            let next = window.shownGeneration != 0 && window.shownGeneration + 1 == info.generation
+            let changed = CGRect(
+                x: Int(info.changed_x), y: Int(info.changed_y), width: Int(info.changed_w),
+                height: Int(info.changed_h))
+            window.show(pixels: pixels, width: Int(info.w), height: Int(info.h), changed: next ? changed : nil)
+            window.shownGeneration = info.generation
         }
         // bottom to top, as the engine has them
         if seen != order {
             order = seen
             for id in seen { windows[id]?.orderFront(nil) }
             if let top = seen.last, NSApp.isActive { windows[top]?.makeKey() }
+        }
+    }
+
+    private func makeWindow(_ id: UInt32) -> SkinWindow {
+        let made = SkinWindow(skinId: id, controller: self)
+        made.level = onTop ? .floating : .normal
+        made.alphaValue = opacity
+        watchers.append(
+            NotificationCenter.default.addObserver(
+                forName: NSWindow.didChangeOcclusionStateNotification, object: made, queue: .main
+            ) { [weak self] _ in self?.sightChanged() })
+        return made
+    }
+
+    /// Puts every window where the engine has it, and keeps the skin's windows one group
+    /// around the main one: the Mac then shows the player as one in Mission Control and
+    /// brings its windows forward together.
+    ///
+    /// The Mac moves a group's other windows along when its first one moves. A window the
+    /// engine does not move along, one that is not docked to the main window, is let go of
+    /// before the move and taken back after it, so it stays where it is.
+    private func place(_ wanted: [UInt32: NSRect]) {
+        let main = andamp_app_main_window(app)
+        let lead = windows[main]
+        if let lead, let to = wanted[main], to.origin != lead.frame.origin {
+            let (dx, dy) = (to.minX - lead.frame.minX, to.minY - lead.frame.minY)
+            for case let child as SkinWindow in lead.childWindows ?? [] {
+                guard let goes = wanted[child.skinId] else { continue }
+                let along = NSPoint(x: child.frame.minX + dx, y: child.frame.minY + dy)
+                if goes.origin != along { lead.removeChildWindow(child) }
+            }
+        }
+        // the main window first: what moved along with it is then where it belongs already
+        if let lead, let to = wanted[main], lead.frame != to { lead.setFrame(to, display: false) }
+        for (id, to) in wanted where id != main {
+            guard let window = windows[id] else { continue }
+            if window.frame != to { window.setFrame(to, display: false) }
+            if let lead, window.parent !== lead { lead.addChildWindow(window, ordered: .above) }
         }
     }
 
@@ -312,37 +349,37 @@ final class SkinController {
     }
 
     func mouseDown(_ event: NSEvent) {
-        guard let skin, !inMenu else { return }
+        guard skin != nil, !inMenu else { return }
         let (x, y) = point()
         touch += 1
         pressed = true
-        andamp_skin_pointer_down(skin, x, y, touch)
-        if event.clickCount == 2 { andamp_skin_double_click(skin, x, y, touch) }
+        andamp_app_pointer_down(app, x, y, touch)
+        if event.clickCount == 2 { andamp_app_double_click(app, x, y, touch) }
         pump()
     }
 
     func mouseDragged(_ event: NSEvent) {
-        guard let skin, pressed, !inMenu else { return }
+        guard skin != nil, pressed, !inMenu else { return }
         let (x, y) = point()
-        andamp_skin_pointer_move(skin, x, y)
+        andamp_app_pointer_move(app, x, y)
         pump()
     }
 
+    /// The library holds a release back when the press was too short to be seen, and the
+    /// timer set by `schedule` then lets it go.
     func mouseUp(_ event: NSEvent) {
-        guard let skin, pressed, !inMenu else { return }
+        guard skin != nil, pressed, !inMenu else { return }
         pressed = false
         let (x, y) = point()
-        andamp_skin_pointer_up(skin, x, y)
+        andamp_app_pointer_up(app, x, y)
         pump()
     }
 
     func rightMouseDown(_ event: NSEvent) {
-        guard let skin, !inMenu else { return }
+        guard skin != nil, !inMenu else { return }
         let (x, y) = point()
         touch += 1
-        andamp_skin_pointer_down(skin, x, y, touch)
-        andamp_skin_right_click(skin, touch)
-        andamp_skin_pointer_up(skin, x, y)
+        andamp_app_right_click(app, x, y, touch)
         pump()
     }
 
@@ -367,10 +404,10 @@ final class SkinController {
 
     /// A click at `x`, `y` on the viewport, in layout pixels, as if the mouse made it.
     func click(x: Int32, y: Int32) {
-        guard let skin else { return }
+        guard skin != nil else { return }
         touch += 1
-        andamp_skin_pointer_down(skin, x, y, touch)
-        andamp_skin_pointer_up(skin, x, y)
+        andamp_app_pointer_down(app, x, y, touch)
+        andamp_app_pointer_up(app, x, y)
         pump()
     }
 

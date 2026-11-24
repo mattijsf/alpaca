@@ -266,6 +266,66 @@ pub unsafe extern "C" fn andamp_app_open(app: *mut AndampApp, locations: *const 
     with_app(app, (), |a| a.open(&locations));
 }
 
+/// The engine's id of the skin's main window, or 0 when there is none: the window a shell
+/// may group the others around.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_main_window(app: *mut AndampApp) -> u32 {
+    with_app(app, 0, |a| a.main_window().unwrap_or(0))
+}
+
+/// The mouse went down at `x`, `y` on the viewport, in layout pixels; `touch` numbers the
+/// press.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_pointer_down(app: *mut AndampApp, x: i32, y: i32, touch: i32) {
+    with_app(app, (), |a| a.pointer_down(x, y, touch));
+}
+
+/// The mouse moved to `x`, `y` while down.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_pointer_move(app: *mut AndampApp, x: i32, y: i32) {
+    with_app(app, (), |a| a.pointer_move(x, y));
+}
+
+/// The mouse let go at `x`, `y`. After a press too short to have been seen, as a tap on a
+/// trackpad, the skin shows the press for a moment first and acts then:
+/// [`andamp_app_next_due_ms`] counts down to it.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_pointer_up(app: *mut AndampApp, x: i32, y: i32) {
+    with_app(app, (), |a| a.pointer_up(x, y));
+}
+
+/// The press `touch` at `x`, `y` was the second of a double click; call it after
+/// [`andamp_app_pointer_down`] for that press.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_double_click(app: *mut AndampApp, x: i32, y: i32, touch: i32) {
+    with_app(app, (), |a| a.double_click(x, y, touch));
+}
+
+/// A click of the other mouse button at `x`, `y`, the whole click: what is under it shows
+/// its menu. `touch` numbers it as a press.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_right_click(app: *mut AndampApp, x: i32, y: i32, touch: i32) {
+    with_app(app, (), |a| a.right_click(x, y, touch));
+}
+
 /// Answers a key pressed in window `window` of the skin (its id, as
 /// [`AndampWindow`](super::AndampWindow) has it), by the key's name. In the playlist's window "up" and "down" move the selection a row,
 /// "pageup" and "pagedown" a screen, "home" and "end" to the list's ends. Everywhere: "delete"

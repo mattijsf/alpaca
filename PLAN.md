@@ -175,7 +175,10 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   arrows, page up and down, home and end move the selection, and the list follows it. The
   wheel and the trackpad scroll a classic playlist under them and turn the volume over the
   volume slider, and do nothing elsewhere. Command-` goes through the app's windows. A classic playlist follows the
-  song that plays: when another song becomes current the list brings it into view.
+  song that plays: when another song becomes current the list brings it into view. A press
+  too short to see, as a tap on a trackpad, still shows the button pressed for a moment. On
+  the Mac the skin's windows are one group around the main one, which Mission Control shows
+  as one, and the app has Andamp's icon.
 - [ ] The Mac's shell does not yet tell the app when the screen changes
   (`andamp_app_set_screen`): the windows keep the screen of the start.
 - [ ] A shell for Windows: not started. PORTING.md has what is known.
@@ -200,6 +203,9 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   and assumes rows of 16 pixels at most (`app/playlist.rs`), so after a drag of the list's
   scroll bar the next arrow key brings the list back to the selection. A call
   `show_classic_playlist_row` in walkit would replace the counting.
+- The engine gives the focus to the window pressed last and has no call to give it to
+  another: when Command-` makes another of the skin's windows the one the keys go to, the
+  title bars do not show it.
 - A modern skin's playlist has no call for the wheel, and nothing says which object is under
   a point: a modern skin's list does not scroll by the wheel, and its volume slider is found
   by the id `volume`.

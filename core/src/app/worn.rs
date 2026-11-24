@@ -15,6 +15,11 @@ impl App {
         self.skin.as_deref_mut()
     }
 
+    /// The engine's id of the skin's main window; `None` when no skin is worn or it has none.
+    pub fn main_window(&self) -> Option<u32> {
+        self.skin.as_ref()?.runtime.main_window().map(|id| id.0)
+    }
+
     /// The file name of the skin worn.
     pub fn skin_name(&self) -> String {
         self.worn
@@ -213,6 +218,7 @@ impl App {
             self.playlist_due = 0;
             self.put_back_playlist();
         }
+        self.let_go_when_due();
         let flags = self.skin.as_mut().map_or(0, |skin| skin.step());
         if self.playlist_due == 2 {
             self.playlist_due = 1;
@@ -233,13 +239,18 @@ impl App {
     }
 
     /// Milliseconds until the app next has something to do by itself, and so until the next
-    /// [`App::step`]: 0 for now, -1 for never. It is the skin's own clock, and now while the
-    /// playlist waits to be put back.
+    /// [`App::step`]: 0 for now, -1 for never. It is the skin's own clock, now while the
+    /// playlist waits to be put back, and the moment a release held back is told.
     pub fn next_due_ms(&mut self) -> i64 {
         if self.playlist_due > 0 {
             return 0;
         }
-        self.skin.as_mut().map_or(-1, |skin| skin.next_due_ms())
+        let skin = self.skin.as_mut().map_or(-1, |skin| skin.next_due_ms());
+        // a release held back is told when its press has shown long enough
+        match self.release_due_ms() {
+            Some(release) if skin < 0 || release < skin => release,
+            _ => skin,
+        }
     }
 
     /// Answers something a button of the skin asked of the app: `action` is what the engine
