@@ -166,6 +166,9 @@ impl Skin {
         let mut presentation = runtime.presentation();
         presentation.free_windows = true;
         presentation.viewport = viewport;
+        // a mouse points at one pixel: a press means what is under it, as in Winamp, and not
+        // the control a finger would have meant a few pixels beside it
+        presentation.touch_slop = 0;
         runtime.set_presentation(&presentation);
         runtime.tick();
         Ok(Skin {

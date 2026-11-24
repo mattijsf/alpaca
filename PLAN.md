@@ -265,6 +265,13 @@ stand-in fonts.
   size is now kept with them (`at.<skin>.zoom`), and the windows other than the main one
   come back as far from it in the skin's own pixels as they were. Places kept before this
   have no size with them and are read as kept at the plain size.
+- 2026-11-24, later still: the owner saw the cursor change at a slightly other place in
+  Winamp. Read from how Winamp 5.666's frame works: the divider is taken and shows its
+  cursor on its 8 pixels and nowhere beside them; dragged, its edge goes under the pointer,
+  pixel by pixel; under its minimum a pane counted from the right shuts to nothing. walkit
+  now does the same, and the app tells the engine a mouse drives it (a touch slop of 0), so
+  a press means what is under it for every control. Not seen in the VM, which did not
+  answer; one over the other, a pane still stops at its minimum.
 - 2026-11-24, last of all: a folder of the listener's own skins (`Skins` in the app's
   folder, beside the settings). What is in it is offered in the Skins menu and in the
   Preferences window under the skins that come with the app; Preferences has a button that

@@ -747,6 +747,9 @@ fn the_cursor_says_what_a_press_would_size() {
     assert_eq!(app.cursor_at(list.left + 60, list.top + 40), Cursor::Arrow);
     assert_eq!(app.cursor_at(main.left + 60, main.top + 40), Cursor::Arrow);
     assert_eq!(app.cursor_at(5, 5), Cursor::Arrow, "off the skin");
+    // a mouse means the pixel it is on: nothing beside a control or a divider is the
+    // control's
+    assert_eq!(app.skin().unwrap().runtime.presentation().touch_slop, 0);
 }
 
 #[test]
