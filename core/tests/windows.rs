@@ -4,8 +4,10 @@
 //! and that a drag moves a window and what is docked to it.
 
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
-use andamp_core::skin::{read_fonts, Skin, DRAWN, MOVED};
+use andamp_core::fonts::Fonts;
+use andamp_core::skin::{Skin, DRAWN, MOVED};
 use walkit::player::{FakePlayer, Player};
 
 fn resources() -> PathBuf {
@@ -14,7 +16,7 @@ fn resources() -> PathBuf {
 
 fn open(name: &str, playing: bool) -> Skin {
     let bytes = std::fs::read(resources().join("skins").join(name)).expect("the built-in skin");
-    let fonts = read_fonts(&resources().join("fonts"));
+    let fonts = Rc::new(Fonts::new(&resources().join("fonts")));
     Skin::open(
         bytes,
         name,

@@ -95,5 +95,7 @@ second shell builds its own.
   ALSA's headers (`libasound2-dev`).
 - **Media keys**: MPRIS over D-Bus.
 - **Milkdrop**: libprojectM with GLX or EGL.
-- **Fonts**: the stand-in fonts come with the app, as on the Mac; `host.rs` lists where a
-  system keeps Liberation Sans and DejaVu Sans for when they do not.
+- **Fonts**: the core reads Arial and Tahoma where Microsoft's core fonts are installed
+  (`fonts.rs` lists the folders; Linux has no Tahoma of its own) and draws the stand-ins that
+  come with the app, as on the Mac, for what it does not find; `host.rs` lists where a system
+  keeps Liberation Sans and DejaVu Sans for when even those are missing.

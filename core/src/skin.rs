@@ -19,6 +19,7 @@ use walkit::host::{Clock, SavedSettings, SkinSetup, WindowId};
 use walkit::player::Player;
 use walkit::SkinRuntime;
 
+use crate::fonts::Fonts;
 use crate::host::{Assets, Desk, Host, HostAction, MenuHandler};
 use crate::render::{damage, draw_window, Canvas, ShapeCache};
 
@@ -107,7 +108,7 @@ impl Skin {
         file_name: &str,
         base: Option<MemoryFiles>,
         wasabi: Option<MemoryFiles>,
-        fonts: &MemoryFiles,
+        fonts: &Rc<Fonts>,
         beside: Option<&Path>,
         viewport: (i32, i32),
         kept: Option<&Kept>,
@@ -125,7 +126,7 @@ impl Skin {
             opened: RefCell::new(Vec::new()),
         });
         // the engine and the host each read the files, so the host decodes wasabi-base/...
-        // pictures and the stand-in fonts from under the skin too; the bytes are shared
+        // pictures and Arial and Tahoma from under the skin too; the bytes are shared
         let layered = || -> Box<dyn SkinFiles> {
             let skin: Box<dyn SkinFiles> = match &under {
                 Some(base) => Box::new(LayeredFiles::new(
@@ -553,11 +554,11 @@ fn read_tree(dir: &Path) -> MemoryFiles {
     files
 }
 
-/// A skin's files with the stand-in fonts where the engine looks for them, at `fonts/`, and
+/// A skin's files with the fonts where the engine looks for them, at `fonts/` ([`Fonts`]), and
 /// the skins beside it at `../<name>/`. A file of the skin's own by the same path comes first.
 struct WithFonts {
     skin: Box<dyn SkinFiles>,
-    fonts: MemoryFiles,
+    fonts: Rc<Fonts>,
     siblings: Rc<Siblings>,
 }
 
@@ -624,25 +625,4 @@ pub fn unzip(bytes: Vec<u8>) -> Result<MemoryFiles, String> {
     }
     let folder = files::skin_folder(names.iter().map(String::as_str)).unwrap_or_default();
     Ok(all.in_folder(&folder))
-}
-
-/// The `.ttf` files in `dir`, as `fonts/<name>`: where the engine looks for the free fonts
-/// that stand in for Arial and Tahoma.
-pub fn read_fonts(dir: &Path) -> MemoryFiles {
-    let mut fonts = MemoryFiles::new();
-    let Ok(entries) = std::fs::read_dir(dir) else {
-        return fonts;
-    };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path
-            .extension()
-            .is_some_and(|e| e.eq_ignore_ascii_case("ttf"))
-        {
-            if let (Some(name), Ok(bytes)) = (path.file_name(), std::fs::read(&path)) {
-                fonts.insert(&format!("fonts/{}", name.to_string_lossy()), bytes);
-            }
-        }
-    }
-    fonts
 }

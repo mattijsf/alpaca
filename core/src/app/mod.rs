@@ -34,6 +34,7 @@ use std::rc::Rc;
 
 use walkit::player::Status;
 
+use crate::fonts::Fonts;
 use crate::player::{location_kind, LocationKind, Player};
 use crate::settings::{self, Settings};
 use crate::skin::Skin;
@@ -60,6 +61,9 @@ pub struct App {
     skin: Option<Box<Skin>>,
     /// The folder of what comes with the app: `skins`, `wasabi`, `fonts` and `plugins`.
     resources: PathBuf,
+    /// The fonts under every skin: Arial and Tahoma from the system, else the stand-ins in
+    /// `resources`; read once, for every skin worn.
+    fonts: Rc<Fonts>,
     /// The app's own folder, where the listener's plug-ins are.
     config: Option<PathBuf>,
     /// The part of the screen the windows move on, in points.
@@ -139,6 +143,7 @@ impl App {
             presets: Presets::default(),
             skin: None,
             resources: resources.to_path_buf(),
+            fonts: Rc::new(Fonts::new(&resources.join("fonts"))),
             config,
             screen: (screen.0.max(1), screen.1.max(1)),
             zoom,

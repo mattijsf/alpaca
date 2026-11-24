@@ -6,11 +6,13 @@
 
 use std::collections::BTreeMap;
 use std::path::Path;
+use std::rc::Rc;
 use std::time::Instant;
 
+use andamp_core::fonts::Fonts;
 use andamp_core::host::Assets;
 use andamp_core::render::{draw_window, Canvas, ShapeCache};
-use andamp_core::skin::{read_fonts, Skin};
+use andamp_core::skin::Skin;
 use walkit::draw::DrawCmd;
 use walkit::player::{FakePlayer, Player};
 
@@ -28,7 +30,7 @@ fn main() {
         &name,
         None,
         None,
-        &read_fonts(&resources.join("fonts")),
+        &Rc::new(Fonts::new(&resources.join("fonts"))),
         None,
         (1728, 1000),
         None,

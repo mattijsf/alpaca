@@ -163,7 +163,7 @@ impl App {
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default();
         // under a classic skin lies AndAmp Dark, which gives the pictures a skin leaves out;
-        // under a modern one Andamp's element set; under both the stand-in fonts
+        // under a modern one Andamp's element set; under both Arial and Tahoma
         let base = self
             .options
             .base
@@ -174,8 +174,7 @@ impl App {
             Some(zip) => std::fs::read(zip).ok().map(skin::unzip).transpose()?,
             None => Some(skin::read_folder(&self.resources.join("wasabi"))),
         };
-        let fonts = skin::read_fonts(&self.resources.join("fonts"));
-        let fonts = &fonts;
+        let fonts = self.fonts.clone();
         let player = self.player.clone();
         // the skin worn goes: what it kept is written down first, also for when the skin
         // opened is the same one again
@@ -188,7 +187,7 @@ impl App {
             &name,
             base,
             wasabi,
-            fonts,
+            &fonts,
             file.parent(),
             self.viewport(),
             Some(&kept),

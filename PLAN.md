@@ -233,7 +233,7 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 What comes with the app: AndAmp Dark (the skin shown first, and the one under every classic
 skin), Light and Spot, from Andamp's own `skin/dist`; walkit's two example skins; Andamp's
 own element set under modern skins (`app/Resources/wasabi`, from Andamp's `defaultset`); the
-stand-in fonts.
+stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fonts.rs`).
 
 ### Log
 
@@ -301,6 +301,24 @@ stand-in fonts.
   for both before. Checked in the core with walkit's modern example skin and the classic
   one; not on Big Bento, whose playlist is in its main window, where the arrow keys still
   turn the volume.
+- 2026-11-24, after the playlist's rules: a skin's text is drawn in the real Arial and Tahoma, as walkit-cli
+  draws it when given them (`--fonts`), which is how its text comes to match Winamp's. Before,
+  Andamp's text was already walkit-cli's without them, pixel for pixel: the same engine
+  drawing, the same free stand-ins (Liberation Sans for Arial, DejaVu Sans Condensed for
+  Tahoma) under the same names. The stand-ins have Arial's widths but not its letters. macOS
+  has both real fonts (`/System/Library/Fonts/Supplemental`, Monotype's hinted cuts with the
+  `gasp` ranges Windows uses), Windows has them, Linux has Arial with Microsoft's core fonts:
+  the core reads them from there when a skin first draws text, keeps them for every skin
+  after, and draws the stand-ins where they are missing (`core/src/fonts.rs`). Nothing of
+  them is in the repository. Compared with walkit-cli (its main branch, 0.1.4 and on) given
+  the Mac's fonts, as Winamp 5.666: the playlist's rows of base-2.91, AndAmp Dark and
+  walkit-classic are the same to the pixel, and so is the title text of Winamp3x, Winamp
+  Modern and walkit-modern; Big Bento's tabs are in Tahoma as walkit-cli draws them; MMD3
+  brings its own fonts and does not change. What still differs is the player's state, not text: the selected row, the
+  time, the bitrate, the visualizer. Cost: the same, within what the bench can tell on a
+  screen that was partly covered (Winamp Modern playing 5.5 to 8.1% of a core before, 7.4%
+  after; walkit-modern 2.1 to 5.4% before, 4.6% after; idle no steps in either; the first
+  window 150 to 200 ms in both).
 - 2026-11-24, last of all: a folder of the listener's own skins (`Skins` in the app's
   folder, beside the settings). What is in it is offered in the Skins menu and in the
   Preferences window under the skins that come with the app; Preferences has a button that

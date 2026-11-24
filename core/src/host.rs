@@ -3,8 +3,9 @@
 //! The host: the skin's pictures, decoded with the `image` crate, and its text, measured and
 //! drawn by the engine's
 //! `truetype` module, as Windows draws it. The engine reads them through [`Host`]; the renderer reads the same
-//! [`Assets`], so each picture and font is decoded once. The free fonts that stand in for
-//! Arial and Tahoma lie under the skin's files as `fonts/LiberationSans.ttf` and the like.
+//! [`Assets`], so each picture and font is decoded once. Arial and Tahoma lie under the skin's
+//! files as `fonts/LiberationSans.ttf` and the like: the system's own where it has them, else
+//! the free fonts that stand in for them ([`crate::fonts`]).
 
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -16,8 +17,8 @@ use walkit::gdi::FontFace;
 use walkit::host::{ActionFrom, MenuItem, SkinHost, SkinMenu};
 use walkit::truetype::{em, Font, Style};
 
-/// The font for text that names none, and the one a missing font falls back to: the stand-in
-/// for Arial, read from the skin's files, else a font of the system.
+/// The font for text that names none, and the one a missing font falls back to: Arial or its
+/// stand-in, read from the skin's files, else a font of the system.
 const DEFAULT_FONT: &str = "fonts/LiberationSans.ttf";
 /// Fonts of the system to fall back to when the app brought none, the first that is there.
 #[cfg(target_os = "macos")]
