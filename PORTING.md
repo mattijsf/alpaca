@@ -8,8 +8,9 @@ what is known about Windows and Linux before anyone has run it there.
 
 `core/` is everything that does not touch a window: the skin engine's host, the renderer, the
 player, decoding, internet radio, the equalizer, the effects and their Lua plug-ins, the
-settings file, what a file the listener opens is, Winamp's keys. It has no line that knows its
-system outside two places:
+settings file, and the app itself (`app.rs`): the command line, the menu and what each of its
+items does, what the skin's buttons ask for, the Visualizer's presets, what a start puts back
+and what a quit keeps. It has no line that knows its system outside two places:
 
 - `core/src/player/device/`: the audio device. `coreaudio.rs` is the Mac's output unit;
   `portable.rs` is the `cpal` crate (WASAPI on Windows, ALSA on Linux) with a converter for a
@@ -30,30 +31,35 @@ above compile every line for those systems and stop there.
 ## What a shell does
 
 A shell is the part written for one system: `app/` is the Mac's, in Swift. One written in
-Rust can use the core as a crate (`andamp_core::skin::Skin`, `player::Player`,
-`settings::Settings`); one in another language uses the C interface
-(`core/include/andamp_core.h`), which is what the Mac's does.
+Rust can use the core as a crate (`andamp_core::app::App`); one in another language uses the
+C interface (`core/include/andamp_core.h`, the `andamp_app_` calls), which is what the Mac's
+does.
+
+The shell makes the app from its command line, the folder of what comes with it and the size
+of the screen, and starts it. From then on it does three things: it steps the app and shows
+the windows, it hands over the mouse, the keys and the picks from the menu, and it answers
+what the app asks of it.
 
 | A shell's job | On the Mac | What the core gives it |
 | --- | --- | --- |
 | One window for each of the skin's, with no frame, placed where the core says | `SkinWindow.swift`, `SkinController.apply` | each window's place, size and stacking order after every step |
 | Showing a window's pixels, scaled by whole numbers | `SurfaceView` | BGRA with the color multiplied by the alpha, and the part that changed |
 | The mouse, in places on the screen | `SkinController`'s mouse calls | `pointer_down`, `pointer_move`, `pointer_up`, `double_click`, `right_click` |
-| Waking up when the skin next changes | `SkinController.schedule` | `next_due_ms`; nothing to do while no window is in sight |
-| The keys | `SkinController.keyDown` | `andamp_player_key` with the key's name |
-| Menus: the skin's popups, the app's own | `showSkinMenu`, `main.swift` | a skin's menu as lines of text; the pick goes back as a number |
-| What the skin's buttons ask for: close, minimize, double size, a file to open | `SkinController.act` | `take_actions`, a line for each |
-| Picking files and folders | `main.swift` | `andamp_location_kind`, `andamp_player_add_location` |
+| Waking up when there is next something to do | `SkinController.schedule` | `andamp_app_next_due_ms`; nothing to do while no window is in sight |
+| The keys | `SkinController.keyDown`, `Visualizer.key` | `andamp_player_key` and `andamp_app_vis_key` with the key's name |
+| Drawing menus: the bar, the popups, a skin's own | `NSMenu.from(lines:)` | every menu as lines of text (`andamp_app_menu`), with the checks and the keys; the pick goes back as a number (`andamp_app_command`) |
+| Doing what the app asks | `AppDelegate.answer` | `andamp_app_take_requests`: quit, hide, about, show a menu at a place, show the Effects or Visualizer window, load a preset, say what went wrong |
+| Letting the listener pick files, folders, a stream's address | `AppDelegate.ask` | the request `ask` with what to pick; the answer goes to `andamp_app_picked` |
+| What the system opens, and what is dropped on a window | `application(_:open:)`, `SurfaceView` | `andamp_app_open` |
+| The look: size, on top, opacity | `SkinController.answer` | the request `look`, then `andamp_app_zoom`, `_on_top`, `_opacity` |
 | The system's media keys and "now playing" | `NowPlaying.swift` | the player's status, position and the current entry |
-| The Effects window | `Effects.swift` | the rack as JSON; setters for switches, controls and presets |
-| The Visualizer window | `Visualizer.swift` | the samples heard since the last frame; libprojectM draws |
-| Keeping things between runs | `Settings.swift` | the settings file, read and written by the core |
+| The Effects window | `Effects.swift` | the rack as JSON; setters for switches, controls and presets; the listener's own plug-ins kept by `andamp_app_add_plugin` |
+| The Visualizer window | `Visualizer.swift` | the samples heard since the last frame, and which preset to show (`preset` requests); libprojectM draws |
+| Saving when the app goes to the background or ends | `AppDelegate` | `andamp_app_save` |
 
-Still in the Mac's shell and worth moving into the core before a second shell is written,
-because every shell would write it again: which menu items the app has and what each does,
-what to do with each of the skin's actions, the Visualizer's list of presets and its keys, and
-the order in which a start puts things back. They are a few hundred lines of `main.swift`,
-`SkinController.swift` and `Visualizer.swift` that decide and do not draw.
+What is left in the Mac's shell opens windows, panels and timers, and draws; it decides
+nothing. The Effects window's controls are built in Swift from the rack's description, and a
+second shell builds its own.
 
 ## Windows
 

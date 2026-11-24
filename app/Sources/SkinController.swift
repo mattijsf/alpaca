@@ -2,25 +2,26 @@
 
 import AppKit
 
-/// A loaded skin and its windows on the desktop, and the app's player behind it.
+/// The app's windows on the desktop: one for each window of the skin worn.
 ///
-/// The engine has the screen as its viewport, in layout pixels: a layout pixel is `zoom`
+/// The library has the app (`andamp_app_`): its player, the skin, the menu, what each command
+/// does. The engine has the screen as its viewport, in layout pixels: a layout pixel is `zoom`
 /// points. After every step the controller puts one `SkinWindow` where the engine has each of
 /// its windows and hands over the pixels of those that changed. It sleeps until the engine
-/// says the skin next changes by itself.
+/// says the skin next changes by itself. What the library asks that only the Mac can do, it
+/// hands to `onRequests`.
 final class SkinController {
-    private var skin: OpaquePointer?
+    /// The app in the library.
+    let app: OpaquePointer
+    /// The app's player, which every skin shows and drives.
+    var player: OpaquePointer { andamp_app_player(app) }
+    /// The skin worn; the library's, and another one after a request `skin`.
+    private var skin: OpaquePointer? { andamp_app_skin(app) }
     private var windows: [UInt32: SkinWindow] = [:]
     /// The engine's windows from the bottom up, as last shown.
     private var order: [UInt32] = []
-    /// Points per layout pixel.
-    private(set) var zoom: Int
-    /// Whether the windows stay above other apps' windows.
-    private(set) var onTop = false
-    /// How much of the windows shows over what is behind them: 1 for all of it.
-    private(set) var opacity: CGFloat = 1
     /// The part of the screen the windows move on, in points.
-    private var area: NSRect
+    private let area: NSRect
     private var timer: Timer?
     /// What watches the windows going out of sight and coming back.
     private var watchers: [NSObjectProtocol] = []
@@ -29,132 +30,78 @@ final class SkinController {
     /// Set while one of the skin's menus is open: the engine waits for the answer inside a
     /// mouse call, and must not be called again until it has it.
     private var inMenu = false
-    /// The name of the skin shown.
-    private(set) var name = ""
-    /// The app's player, which every skin shows and drives.
-    let player: OpaquePointer
-    /// Called when the skin's eject button asks for files to play.
-    var onOpenFiles: (() -> Void)?
-    /// Called when a button of the skin asks for the app's menu, with the place for it on the screen.
-    var onMenu: ((NSPoint) -> Void)?
-    /// Called with files dropped on a window.
-    var onDrop: (([URL]) -> Void)?
+    /// Set when every window is to be shown again whatever the engine says changed.
+    private var stale = false
+    /// Called with what the library asks of the app, a line for each, after the turn of the
+    /// run loop they came in: a panel must not open inside a mouse event.
+    var onRequests: (([String]) -> Void)?
     /// Called after every step of the skin.
     var onStep: (() -> Void)?
-    /// Called when a button of the skin asks for the visualizer window.
-    var onVisualizer: (() -> Void)?
-    /// Called with what the playlist window asks of the app: "add_file", "add_dir",
-    /// "list_load", "list_save".
-    var onPlaylist: ((String) -> Void)?
 
-    init(zoom: Int = 1) {
-        player = andamp_player_new()
-        self.zoom = max(1, zoom)
+    /// Points per layout pixel.
+    var zoom: Int { Int(andamp_app_zoom(app)) }
+    /// Whether the windows stay above other apps' windows.
+    private var onTop: Bool { andamp_app_on_top(app) }
+    /// How much of the windows shows over what is behind them: 1 for all of it.
+    private var opacity: CGFloat { CGFloat(andamp_app_opacity(app)) / 100 }
+
+    /// The file name of the skin worn.
+    var name: String {
+        guard let name = andamp_app_skin_name(app) else { return "" }
+        defer { andamp_string_free(name) }
+        return String(cString: name)
+    }
+
+    /// Makes the app from the command line, with what is in the bundle's resources.
+    init() {
         area = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
-    }
-
-    deinit {
-        close()
-        andamp_player_free(player)
-    }
-
-    /// The viewport in layout pixels.
-    private var viewport: (Int32, Int32) {
-        (Int32(area.width) / Int32(zoom), Int32(area.height) / Int32(zoom))
-    }
-
-    /// A place on the viewport, in layout pixels, as a place on the screen.
-    private func screenPoint(_ x: Int, _ y: Int) -> NSPoint {
-        NSPoint(x: area.minX + CGFloat(x * zoom), y: area.maxY - CGFloat(y * zoom))
-    }
-
-    /// What lies under a skin: a classic skin under every classic skin, which gives the
-    /// pictures a skin leaves out; under a modern skin a zip of a wasabi folder or, without
-    /// one, a folder of such files; and the folder of the fonts that stand in for Arial and Tahoma.
-    struct Under {
-        var base: URL?
-        var wasabi: URL?
-        var wasabiFolder: URL?
-        var fonts: URL?
-    }
-
-    /// Opens the skin archive at `file` in place of the one shown, with its windows at `places`
-    /// (each window's top left corner on the screen, by the engine's id) where those are given.
-    /// Throws what the engine says when it cannot.
-    func open(file: URL, under: Under, places: [UInt32: NSPoint] = [:]) throws {
-        let began = ProcessInfo.processInfo.systemUptime
-        defer { openTook = ProcessInfo.processInfo.systemUptime - began }
-        let bytes = try Data(contentsOf: file)
-        let base = under.base.flatMap { try? Data(contentsOf: $0) } ?? Data()
-        let wasabi = under.wasabi.flatMap { try? Data(contentsOf: $0) } ?? Data()
-        var error: UnsafeMutablePointer<CChar>?
-        let (w, h) = viewport
-        func pointer(_ raw: UnsafeRawBufferPointer) -> UnsafePointer<UInt8>? {
-            raw.isEmpty ? nil : raw.bindMemory(to: UInt8.self).baseAddress
-        }
-        let opened = bytes.withUnsafeBytes { skin in
-            base.withUnsafeBytes { base in
-                wasabi.withUnsafeBytes { wasabi in
-                    andamp_skin_open(
-                        pointer(skin), skin.count, file.lastPathComponent, pointer(base), base.count,
-                        pointer(wasabi), wasabi.count, under.wasabiFolder?.path, under.fonts?.path,
-                        file.deletingLastPathComponent().path, w, h, player, &error)
-                }
-            }
-        }
-        guard let opened else {
-            let message = error.map { String(cString: $0) } ?? "the skin did not open"
-            andamp_string_free(error)
-            throw NSError(domain: "Andamp", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
-        }
-        close()
-        skin = opened
-        name = file.lastPathComponent
-        andamp_skin_set_menu_handler(
-            opened,
+        let arguments = CommandLine.arguments.dropFirst().map { UnsafePointer(strdup($0)) }
+        defer { arguments.forEach { free(UnsafeMutablePointer(mutating: $0)) } }
+        guard
+            let made = andamp_app_new(
+                arguments, Int32(arguments.count), Bundle.main.resourcePath ?? "", Int32(area.width),
+                Int32(area.height))
+        else { fatalError("the library did not start") }
+        app = made
+        andamp_app_set_menu_handler(
+            app,
             { context, menu in
                 guard let context, let menu else { return 0 }
                 let controller = Unmanaged<SkinController>.fromOpaque(context).takeUnretainedValue()
                 return controller.showSkinMenu(String(cString: menu))
             }, Unmanaged.passUnretained(self).toOpaque())
-        tellSwitches()
-        let main = andamp_skin_main_window(opened)
-        if let corner = places[main] ?? mainCorner {
-            // the main window goes where it was, and the others come along as they are docked;
-            // then every window that had a place of its own gets it back
-            let (x, y) = viewportPoint(corner)
-            andamp_skin_move_windows(opened, x, y)
-            for (id, corner) in places where id != main {
-                let (x, y) = viewportPoint(corner)
-                andamp_skin_place_window(opened, id, x, y)
-            }
-        } else {
-            // the windows open in the screen's top left corner: a little in from it
-            andamp_skin_move_windows(opened, 120 / Int32(zoom), 80 / Int32(zoom))
-        }
-        mainCorner = nil
-        pump()
     }
 
-    /// Where the main window of the skin just closed was, for the next skin to open at.
-    private var mainCorner: NSPoint?
-
-    /// A place on the screen as a place on the viewport, in layout pixels, kept on the screen.
-    private func viewportPoint(_ p: NSPoint) -> (Int32, Int32) {
-        let (w, h) = viewport
-        let x = Int32(((p.x - area.minX) / CGFloat(zoom)).rounded())
-        let y = Int32(((area.maxY - p.y) / CGFloat(zoom)).rounded())
-        return (max(0, min(w - 40, x)), max(0, min(h - 20, y)))
+    deinit {
+        dropWindows()
+        andamp_app_free(app)
     }
 
-    /// Every window's top left corner on the screen, by the engine's id.
-    var places: [UInt32: NSPoint] {
-        windows.mapValues { NSPoint(x: $0.frame.minX, y: $0.frame.maxY) }
+    /// Wears the first skin, shows it, and then puts the playlist back.
+    func start() {
+        let began = ProcessInfo.processInfo.systemUptime
+        andamp_app_start(app)
+        pump(force: true)
+        // the library reads the songs at its second step: after the skin is on the screen,
+        // in sight or not
+        DispatchQueue.main.async { [weak self] in self?.pump(force: true) }
+        startTook = ProcessInfo.processInfo.systemUptime - began
     }
 
-    /// Closes the skin and its windows.
-    func close() {
-        if let skin { mainCorner = places[andamp_skin_main_window(skin)] }
+    /// What the command line gave for an option the shell answers: nil when it was not given.
+    func option(_ name: String) -> String? {
+        guard let value = andamp_app_option(app, name) else { return nil }
+        defer { andamp_string_free(value) }
+        return String(cString: value)
+    }
+
+    /// A place in points from the top left corner of the area, as a place on the screen.
+    func screenPoint(_ x: Int, _ y: Int) -> NSPoint {
+        NSPoint(x: area.minX + CGFloat(x), y: area.maxY - CGFloat(y))
+    }
+
+    /// Closes the windows; the skin they showed is gone.
+    private func dropWindows() {
         timer?.invalidate()
         timer = nil
         watchers.forEach(NotificationCenter.default.removeObserver)
@@ -162,103 +109,47 @@ final class SkinController {
         for window in windows.values { window.close() }
         windows.removeAll()
         order.removeAll()
-        if let skin { andamp_skin_free(skin) }
-        skin = nil
-    }
-
-    /// Whether the visualizer window is open, which a skin's button for it shows.
-    var visualizerOpen = false {
-        didSet {
-            tellSwitches()
-            pump(force: true)
-        }
-    }
-
-    /// Tells the skin which of the app's switches are on, so its buttons show them.
-    private func tellSwitches() {
-        guard let skin else { return }
-        andamp_skin_set_switch(skin, "doublesize", zoom > 1)
-        andamp_skin_set_switch(skin, "ontop", onTop)
-        andamp_skin_set_switch(skin, "vis", visualizerOpen)
-    }
-
-    /// Sets how many points a layout pixel is: 2 is Winamp's double size.
-    func setZoom(_ zoom: Int) {
-        guard zoom != self.zoom, zoom >= 1, let skin else { return }
-        // the main window's corner stays where it is
-        let corner = windows[order.last ?? 0].map { NSPoint(x: $0.frame.minX, y: $0.frame.maxY) }
-        self.zoom = zoom
-        let (w, h) = viewport
-        andamp_skin_set_viewport(skin, w, h)
-        tellSwitches()
-        for window in windows.values { window.shownGeneration = 0 }
-        order.removeAll()
-        pump(force: true)
-        if let corner, let now = windows[order.last ?? 0] {
-            let dx = (corner.x - now.frame.minX) / CGFloat(zoom)
-            let dy = (now.frame.maxY - corner.y) / CGFloat(zoom)
-            andamp_skin_move_windows(skin, Int32(dx.rounded()), Int32(dy.rounded()))
-            pump(force: true)
-        }
-    }
-
-    /// Lets what is behind the windows show through them: 1 for not at all.
-    func setOpacity(_ opacity: CGFloat) {
-        self.opacity = max(0.2, min(1, opacity))
-        for window in windows.values { window.alphaValue = self.opacity }
-    }
-
-    /// Keeps the windows above other apps' windows, or not.
-    func setOnTop(_ onTop: Bool) {
-        self.onTop = onTop
-        for window in windows.values { window.level = onTop ? .floating : .normal }
-        tellSwitches()
-        pump(force: true)
     }
 
     /// Runs the engine and shows what changed, then sleeps until the skin next changes.
     func pump(force: Bool = false) {
-        guard let skin, !inMenu else { return }
-        let changed = andamp_skin_step(skin)
-        if changed != 0 || force { apply() }
+        guard !inMenu else { return }
+        let changed = andamp_app_step(app)
+        answer()
+        if changed != 0 || force || stale { apply() }
+        stale = false
         schedule()
-        if andamp_player_take_requests(player) & UInt32(ANDAMP_REQUEST_OPEN_FILES) != 0 {
-            // after this turn of the run loop: the panel must not open inside a mouse event
-            DispatchQueue.main.async { [weak self] in self?.onOpenFiles?() }
-        }
         onStep?()
-        if let actions = andamp_skin_take_actions(skin) {
-            let lines = String(cString: actions).split(separator: "\n").map(String.init)
-            andamp_string_free(actions)
-            DispatchQueue.main.async { [weak self] in lines.forEach { self?.act($0) } }
-        }
     }
 
-    /// Answers something a button of the skin asked of the app: `line` is the action, its
-    /// param and the place it came from, with tabs between.
-    private func act(_ line: String) {
-        let parts = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
-        let at: NSPoint? =
-            parts.count >= 4
-            ? Int(parts[2]).flatMap { x in Int(parts[3]).map { y in screenPoint(x, y) } } : nil
-        switch parts.first ?? "" {
-        case "CLOSE": NSApp.terminate(nil)
-        case "MINIMIZE": NSApp.hide(nil)
-        case "DOUBLESIZE": setZoom(zoom == 1 ? 2 : 1)
-        case "ALWAYS_ON_TOP": setOnTop(!onTop)
-        case "MENU", "SYSMENU", "CONTROLMENU": onMenu?(at ?? NSEvent.mouseLocation)
-        case "ABOUT": NSApp.orderFrontStandardAboutPanel(nil)
-        case "TOGGLE" where parts.count >= 2 && parts[1] == "vis": onVisualizer?()
-        case "SHOW" where parts.count >= 2 && parts[1] == "vis": onVisualizer?()
-        case "EQ_PRESETS": showEqPresets(at: at ?? NSEvent.mouseLocation)
-        case "PE_ADD": onPlaylist?("add_file")
-        case "PLAYLIST" where parts.count >= 2: onPlaylist?(parts[1])
-        default: break
+    /// Takes what the library asked for: what concerns the windows is done here, the rest is
+    /// handed on.
+    private func answer() {
+        guard let text = andamp_app_take_requests(app) else { return }
+        let lines = String(cString: text).split(separator: "\n").map(String.init)
+        andamp_string_free(text)
+        var rest: [String] = []
+        for line in lines {
+            switch line {
+            case "skin":
+                dropWindows()
+                stale = true
+            case "look":
+                for window in windows.values {
+                    window.level = onTop ? .floating : .normal
+                    window.alphaValue = opacity
+                    window.shownGeneration = 0
+                }
+                order.removeAll()
+                stale = true
+            default: rest.append(line)
+            }
         }
+        if !rest.isEmpty { DispatchQueue.main.async { [weak self] in self?.onRequests?(rest) } }
     }
 
-    /// How long the last skin took to open, in seconds.
-    private(set) var openTook: TimeInterval = 0
+    /// How long the start took, in seconds: the first skin, the playlist and the first drawing.
+    private(set) var startTook: TimeInterval = 0
 
     /// When the first window showed its pixels, as seconds since the Mac started; 0 before.
     private(set) var firstShown: TimeInterval = 0
@@ -344,7 +235,7 @@ final class SkinController {
             timer = next
             return
         }
-        let due = andamp_skin_next_due_ms(skin)
+        let due = andamp_app_next_due_ms(app)
         guard due >= 0 else { return }
         // "now" means the next frame of the screen
         let wait = max(Double(due) / 1000, 1.0 / 120)
@@ -355,33 +246,13 @@ final class SkinController {
         timer = next
     }
 
-    /// The equalizer's presets as a menu, for the equalizer window's Presets button.
-    private func showEqPresets(at point: NSPoint) {
-        guard let names = andamp_eq_presets() else { return }
-        defer { andamp_string_free(names) }
-        let pick = MenuPick()
-        pick.picked = -2
-        let menu = NSMenu()
-        func add(_ title: String, _ tag: Int) {
-            let item = NSMenuItem(title: title, action: #selector(MenuPick.pick(_:)), keyEquivalent: "")
-            item.target = pick
-            item.tag = tag
-            menu.addItem(item)
-        }
-        add("Flat", -1)
-        menu.addItem(.separator())
-        for (index, name) in String(cString: names).split(separator: "\n").enumerated() { add(String(name), index) }
-        menu.popUp(positioning: nil, at: point, in: nil)
-        guard pick.picked >= -1 else { return }
-        andamp_player_apply_eq_preset(player, Int32(pick.picked))
-        pump(force: true)
-    }
-
     /// The mouse wheel anywhere on the skin turns the volume, as in Winamp.
     func scrollWheel(_ event: NSEvent) {
         let turn = event.hasPreciseScrollingDeltas ? event.scrollingDeltaY / 4 : event.scrollingDeltaY * 4
         guard abs(turn) >= 0.5 else { return }
-        setVolume(Int(andamp_player_volume(player)) + Int(turn.rounded()))
+        let volume = Int(andamp_player_volume(player)) + Int(turn.rounded())
+        andamp_player_set_volume(player, Int32(max(0, min(255, volume))))
+        pump(force: true)
     }
 
     // MARK: the skin's menus
@@ -390,33 +261,8 @@ final class SkinController {
     /// `text` is the menu as the library spells it out, a line for each item.
     private func showSkinMenu(_ text: String) -> Int32 {
         let pick = MenuPick()
-        var stack = [NSMenu()]
-        for line in text.split(separator: "\n") {
-            let parts = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
-            guard let menu = stack.last else { break }
-            switch parts.first {
-            case "C" where parts.count >= 5:
-                let item = NSMenuItem(title: parts[4], action: #selector(MenuPick.pick(_:)), keyEquivalent: "")
-                item.target = pick
-                item.tag = Int(parts[1]) ?? 0
-                item.state = parts[2] == "1" ? .on : .off
-                if parts[3] == "1" {
-                    item.action = nil
-                    item.target = nil
-                }
-                menu.addItem(item)
-            case "S": menu.addItem(.separator())
-            case ">" where parts.count >= 2:
-                let item = NSMenuItem(title: parts[1], action: nil, keyEquivalent: "")
-                let sub = NSMenu(title: parts[1])
-                item.submenu = sub
-                menu.addItem(item)
-                stack.append(sub)
-            case "<": if stack.count > 1 { stack.removeLast() }
-            default: break
-            }
-        }
-        guard let menu = stack.first, menu.numberOfItems > 0 else { return 0 }
+        let menu = NSMenu.from(lines: text, target: pick, action: #selector(MenuPick.pick(_:)))
+        guard menu.numberOfItems > 0 else { return 0 }
         // the engine waits inside a mouse call: nothing may call it until the menu is gone
         inMenu = true
         menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
@@ -424,57 +270,33 @@ final class SkinController {
         return Int32(pick.picked)
     }
 
-    // MARK: the player
+    // MARK: the app
 
     /// A song as the library takes it: a file by its path, a radio stream by its address.
     static func location(_ song: URL) -> String { song.isFileURL ? song.path : song.absoluteString }
 
-    /// Adds songs, folders of songs, playlist files and radio streams to the playlist; how many
-    /// entries joined.
-    @discardableResult
-    func add(files: [URL]) -> Int {
-        let added = files.reduce(0) { $0 + Int(andamp_player_add_location(player, Self.location($1))) }
-        pump(force: true)
-        return added
-    }
-
-    /// Empties the playlist, adds `files` and plays the first.
-    func play(files: [URL]) {
-        andamp_player_clear(player)
-        if add(files: files) > 0 { andamp_player_play_index(player, 0) }
+    /// Files dropped on a window or opened from Finder: the library wears a skin and plays
+    /// the rest.
+    func open(_ files: [URL]) {
+        andamp_app_open(app, files.map(Self.location).joined(separator: "\n"))
         pump(force: true)
     }
 
-    /// Writes the playlist to `file`.
-    func save(list file: URL) {
-        andamp_player_save_list(player, file.path)
+    /// Does one of the app's commands, by its number.
+    func command(_ id: Int32) {
+        andamp_app_command(app, id)
+        pump(force: true)
     }
 
-    /// The transport: `ANDAMP_PLAY` and the like.
-    func command(_ command: Int32) {
-        andamp_player_command(player, command)
+    /// What the listener picked when the library asked for `what`.
+    func picked(_ what: String, _ answer: [String]) {
+        andamp_app_picked(app, what, answer.joined(separator: "\n"))
         pump(force: true)
     }
 
     /// Moves the song to `ms` milliseconds.
     func seek(toMs ms: Int32) {
         andamp_player_seek_to(player, ms)
-        pump(force: true)
-    }
-
-    /// The files of the playlist, in order.
-    var songs: [URL] {
-        (0..<andamp_player_count(player)).compactMap { index in
-            var path: UnsafeMutablePointer<CChar>?
-            guard andamp_player_entry(player, index, nil, nil, nil, &path) >= 0, let path else { return nil }
-            defer { andamp_string_free(path) }
-            let location = String(cString: path)
-            return location.contains("://") ? URL(string: location) : URL(fileURLWithPath: location)
-        }
-    }
-
-    func setVolume(_ volume: Int) {
-        andamp_player_set_volume(player, Int32(max(0, min(255, volume))))
         pump(force: true)
     }
 
@@ -569,4 +391,45 @@ final class SkinController {
 private final class MenuPick: NSObject {
     var picked = 0
     @objc func pick(_ item: NSMenuItem) { picked = item.tag }
+}
+
+extension NSMenu {
+    /// A menu from the lines the library spells one out in: `C`, the number, 1 when checked, 1
+    /// when disabled, the text and the key, with tabs between, for a command; `S` for a
+    /// separator; `>` and the text where a submenu starts, `<` where it ends. An item carries
+    /// its number as its tag and sends `action` to `target`. A key is a letter with the
+    /// command key, and Shift when it says `shift+`.
+    static func from(lines text: String, target: AnyObject, action: Selector) -> NSMenu {
+        var stack = [NSMenu()]
+        for line in text.split(separator: "\n") {
+            let parts = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+            guard let menu = stack.last else { break }
+            switch parts.first {
+            case "C" where parts.count >= 5:
+                let item = NSMenuItem(title: parts[4], action: action, keyEquivalent: "")
+                item.target = target
+                item.tag = Int(parts[1]) ?? 0
+                item.state = parts[2] == "1" ? .on : .off
+                if parts[3] == "1" {
+                    item.action = nil
+                    item.target = nil
+                }
+                if parts.count >= 6, let key = parts[5].split(separator: "+").last {
+                    item.keyEquivalent = String(key)
+                    item.keyEquivalentModifierMask = parts[5].hasPrefix("shift+") ? [.command, .shift] : [.command]
+                }
+                menu.addItem(item)
+            case "S": menu.addItem(.separator())
+            case ">" where parts.count >= 2:
+                let item = NSMenuItem(title: parts[1], action: nil, keyEquivalent: "")
+                let sub = NSMenu(title: parts[1])
+                item.submenu = sub
+                menu.addItem(item)
+                stack.append(sub)
+            case "<": if stack.count > 1 { stack.removeLast() }
+            default: break
+            }
+        }
+        return stack[0]
+    }
 }

@@ -50,9 +50,10 @@ $APP --bench 10 song.flac          # what ten seconds of playing cost
 ## How it is built
 
 `core/` is Rust: the skin engine's host, a renderer that draws each window into its own
-buffer of pixels, the player (decoding, the output, the equalizer) and the effect engine,
-behind a C interface. `app/` is Swift and AppKit: the windows, the menus, files, and the Mac's
-media keys. PLAN.md has more.
+buffer of pixels, the player (decoding, the output, the equalizer), the effect engine and
+the app itself (its menu, its commands, what it keeps between runs), behind a C interface.
+`app/` is Swift and AppKit: it shows the windows, draws the menu the core describes, opens
+the file pickers the core asks for, and has the Mac's media keys. PLAN.md has more.
 
 The core is written to be the same on Windows and Linux, and compiles for both;
 [PORTING.md](PORTING.md) says what a shell for another system has to do.

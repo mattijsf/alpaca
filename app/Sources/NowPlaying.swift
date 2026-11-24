@@ -22,16 +22,16 @@ final class NowPlaying {
                 return .success
             }
         }
-        on(center.playCommand) { controller.command(ANDAMP_PLAY) }
+        on(center.playCommand) { controller.command(ANDAMP_COMMAND_PLAY) }
         on(center.pauseCommand) {
-            if andamp_player_status(controller.player) == 1 { controller.command(ANDAMP_PAUSE) }
+            if andamp_player_status(controller.player) == 1 { controller.command(ANDAMP_COMMAND_PAUSE) }
         }
         on(center.togglePlayPauseCommand) {
-            controller.command(andamp_player_status(controller.player) == 0 ? ANDAMP_PLAY : ANDAMP_PAUSE)
+            controller.command(andamp_player_status(controller.player) == 0 ? ANDAMP_COMMAND_PLAY : ANDAMP_COMMAND_PAUSE)
         }
-        on(center.stopCommand) { controller.command(ANDAMP_STOP) }
-        on(center.nextTrackCommand) { controller.command(ANDAMP_NEXT) }
-        on(center.previousTrackCommand) { controller.command(ANDAMP_PREVIOUS) }
+        on(center.stopCommand) { controller.command(ANDAMP_COMMAND_STOP) }
+        on(center.nextTrackCommand) { controller.command(ANDAMP_COMMAND_NEXT) }
+        on(center.previousTrackCommand) { controller.command(ANDAMP_COMMAND_PREVIOUS) }
         center.changePlaybackPositionCommand.isEnabled = true
         center.changePlaybackPositionCommand.addTarget { event in
             guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }

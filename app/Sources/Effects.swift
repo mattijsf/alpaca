@@ -51,30 +51,23 @@ struct Rack: Decodable {
 /// The effects: the plug-ins that come with the app and the listener's own, and the window
 /// that shows the rack with a switch for each effect and its controls.
 ///
-/// A plug-in is a Lua file in the format of Andamp on Android. The ones that come with the app
-/// are in its resources; the listener's own are kept in Application Support. They are loaded
-/// the first time they are needed: when the window opens, or at the start when one was left on.
+/// A plug-in is a Lua file in the format of Andamp on Android. The library loads them, the
+/// ones that come with the app and the listener's own, the first time they are needed: when
+/// the window opens, or at the start when one was left on. This is the window.
 final class Effects: NSObject, NSWindowDelegate {
-    private let player: OpaquePointer
-    private let settings: Settings
-    private var loaded = false
+    private let app: OpaquePointer
+    private var player: OpaquePointer { andamp_app_player(app) }
     private var window: NSWindow?
     private let list = NSStackView()
     /// What the controls call; kept for as long as the controls are.
     private var handlers: [Handler] = []
     /// The readouts beside the sliders, by effect and control.
     private var readouts: [String: NSTextField] = [:]
-    /// The ids of the plug-ins the listener added, which can be removed again.
-    private var own: Set<String> = []
 
-    init(player: OpaquePointer, settings: Settings) {
-        self.player = player
-        self.settings = settings
+    init(app: OpaquePointer) {
+        self.app = app
         super.init()
     }
-
-    /// Where the listener's own plug-ins are kept: in the app's folder, beside its settings.
-    private var folder: URL? { settings.folder?.appendingPathComponent("Plugins", isDirectory: true) }
 
     /// The rack as it stands.
     var rack: Rack {
@@ -84,51 +77,12 @@ final class Effects: NSObject, NSWindowDelegate {
         return (try? JSONDecoder().decode(Rack.self, from: data)) ?? Rack(effects: [])
     }
 
-    /// Loads the plug-ins at the start when the listener left one on, so it is heard at once.
-    func loadIfLeftOn() {
-        // a line of the kept state is an effect's id, 1 for on, and its controls
-        let left = (settings.effects ?? "").split(separator: "\n")
-        if left.contains(where: { $0.split(separator: "\t").dropFirst().first == "1" }) { load() }
-    }
-
-    /// Loads every plug-in once, and puts each back as the listener left it.
-    func load() {
-        guard !loaded else { return }
-        loaded = true
-        let bundled = Bundle.main.url(forResource: "plugins", withExtension: nil)
-        for (folder, mine) in [(bundled, false), (folder, true)] {
-            guard let folder, let result = andamp_player_add_effects(player, folder.path) else { continue }
-            defer { andamp_string_free(result) }
-            // a line for each file: its name, its place in the rack or -1, and why it was refused
-            for line in String(cString: result).split(separator: "\n") {
-                let parts = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
-                guard parts.count >= 3, let index = Int(parts[1]) else { continue }
-                if index < 0 {
-                    FileHandle.standardError.write(Data("andamp: \(parts[0]): \(parts[2])\n".utf8))
-                } else if mine, rack.effects.indices.contains(index) {
-                    own.insert(rack.effects[index].id)
-                }
-            }
-        }
-        if let left = settings.effects { andamp_player_restore_effects(player, left) }
-    }
-
-    /// Switches on the effect with `id`, for the command line.
-    func switchOn(id: String) {
-        load()
-        if let index = rack.effects.firstIndex(where: { $0.id == id || $0.name == id }) {
-            andamp_player_set_effect_on(player, Int32(index), true)
-        } else {
-            FileHandle.standardError.write(Data("andamp: no effect \(id)\n".utf8))
-        }
-    }
+    /// Loads every plug-in once: the library knows which come with the app, which are the
+    /// listener's own, and how each was left.
+    private func load() { andamp_app_load_effects(app) }
 
     /// Keeps which effects are on and where their controls stand.
-    func save() {
-        guard loaded, let state = andamp_player_effects_state(player) else { return }
-        settings.effects = String(cString: state)
-        andamp_string_free(state)
-    }
+    private func save() { andamp_app_save(app) }
 
     // MARK: the window
 
@@ -249,12 +203,12 @@ final class Effects: NSObject, NSWindowDelegate {
         for preset in effect.presets { menu.addItem(withTitle: preset.name) }
         menu.menu?.addItem(.separator())
         menu.addItem(withTitle: "Reset to Defaults")
-        if own.contains(effect.id) { menu.addItem(withTitle: "Remove Plug-in") }
+        if andamp_app_effect_own(self.app, Int32(index)) { menu.addItem(withTitle: "Remove Plug-in") }
         on(menu) { [weak self] sender in
             guard let self, let picked = (sender as? NSPopUpButton)?.indexOfSelectedItem else { return }
             let title = (sender as? NSPopUpButton)?.titleOfSelectedItem
             if title == "Remove Plug-in" {
-                self.remove(index, effect)
+                andamp_app_remove_plugin(self.app, Int32(index))
             } else if title == "Reset to Defaults" {
                 andamp_player_apply_preset(self.player, Int32(index), -1)
             } else if picked >= 1, picked <= effect.presets.count {
@@ -339,17 +293,13 @@ final class Effects: NSObject, NSWindowDelegate {
     // MARK: the listener's own plug-ins
 
     /// Lets the listener pick a plug-in file; it is taken when it loads, and refused with the
-    /// reason when it does not.
+    /// reason when it does not. The library keeps a copy of it in the app's folder.
     func addPlugin() {
-        load()
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [UTType(filenameExtension: "lua")].compactMap { $0 }
-        guard panel.runModal() == .OK, let file = panel.url,
-            let source = try? String(contentsOf: file, encoding: .utf8)
-        else { return }
+        guard panel.runModal() == .OK, let file = panel.url else { return }
         var error: UnsafeMutablePointer<CChar>?
-        let index = andamp_player_add_effect(player, source, &error)
-        guard index >= 0 else {
+        guard andamp_app_add_plugin(app, file.path, &error) >= 0 else {
             let alert = NSAlert()
             alert.messageText = "\(file.lastPathComponent) is not a plug-in Andamp can run"
             alert.informativeText = error.map { String(cString: $0) } ?? ""
@@ -357,23 +307,7 @@ final class Effects: NSObject, NSWindowDelegate {
             alert.runModal()
             return
         }
-        // kept under its id, so adding a newer version takes the older one's place
-        let id = rack.effects[Int(index)].id
-        own.insert(id)
-        if let folder {
-            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            let kept = folder.appendingPathComponent(id + ".lua")
-            try? FileManager.default.removeItem(at: kept)
-            try? FileManager.default.copyItem(at: file, to: kept)
-        }
-        save()
         if window != nil { rebuild() }
-    }
-
-    private func remove(_ index: Int, _ effect: Rack.Effect) {
-        andamp_player_remove_effect(player, Int32(index))
-        own.remove(effect.id)
-        if let folder { try? FileManager.default.removeItem(at: folder.appendingPathComponent(effect.id + ".lua")) }
     }
 }
 

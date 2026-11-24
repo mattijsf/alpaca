@@ -298,4 +298,157 @@ void andamp_settings_clear(AndampSettings *settings, const char *prefix);
 /// Writes the settings to their file when they changed; false when the file cannot be written.
 bool andamp_settings_save(AndampSettings *settings);
 
+// The app: what every shell would otherwise write again. It owns the player, the settings and
+// the skin worn; it knows the menu, what each command does, what the skin's buttons ask for,
+// what a start puts back and what is kept for the next run. A shell built on it needs
+// andamp_skin_open, andamp_player_new and the andamp_settings_ calls no more.
+
+/// The app.
+typedef struct AndampApp AndampApp;
+
+/// Makes the app from the `count` arguments of the command line at `args` (without the
+/// program's name), with what comes with it in the folder `resources` (`skins`, `wasabi`,
+/// `fonts`, `plugins`), on a screen of `screen_w` x `screen_h` points: the part the windows
+/// move on. It reads the settings of the last run. Nothing shows until andamp_app_start.
+/// Free it with andamp_app_free.
+AndampApp *andamp_app_new(const char *const *args, int32_t count, const char *resources,
+                          int32_t screen_w, int32_t screen_h);
+
+/// Frees the app, with its skin and its player.
+void andamp_app_free(AndampApp *app);
+
+/// Wears the first skin. The playlist comes back, or what the command line names plays, at
+/// the second andamp_app_step after it, so the skin shows before the songs are read.
+void andamp_app_start(AndampApp *app);
+
+/// The app's player, for the andamp_player_ calls. It lives as long as the app and is not to
+/// be freed.
+AndampPlayer *andamp_app_player(AndampApp *app);
+
+/// The skin worn, for the andamp_skin_ calls, or null when none is. It is the app's: not to be
+/// freed, and gone when another skin is worn, which the request `skin` says.
+AndampSkin *andamp_app_skin(AndampApp *app);
+
+/// The file name of the skin worn, to free with andamp_string_free.
+char *andamp_app_skin_name(AndampApp *app);
+
+/// Runs the skin and answers what its buttons asked for, in place of andamp_skin_step, with
+/// the same answer.
+uint32_t andamp_app_step(AndampApp *app);
+
+/// Milliseconds until the app next has something to do by itself, and so until the next
+/// andamp_app_step: 0 for now, -1 for never. In place of andamp_skin_next_due_ms.
+int64_t andamp_app_next_due_ms(AndampApp *app);
+
+/// What the app asked of the shell since the last call, or null for nothing: a line for each
+/// request, its parts with tabs between. Free it with andamp_string_free.
+///
+/// - `quit`, `hide`, `about`
+/// - `ask` and what to let the listener pick: `open_songs`, `add_songs`, `add_folders`,
+///   `load_list`, `save_list`, `skin`, `presets`, or `url` for the address of a radio stream.
+///   The answer goes to andamp_app_picked.
+/// - `popup`, the number of one of the app's menus (andamp_app_menu) and, when there is one,
+///   the place for it in points from the screen's top left corner; without a place it opens
+///   at the mouse. The pick goes to andamp_app_command.
+/// - `skin`: another skin is worn, and the windows of the one before are gone.
+/// - `look`: the size, the opacity or staying on top changed.
+/// - `menu`: the menu bar changed.
+/// - `effects`: show the Effects window.
+/// - `vis` and 1 to open the Visualizer window, 0 to close it; andamp_app_vis_shown says when
+///   it is done.
+/// - `preset`, 1 for blending into it, the window's title and the preset's file.
+/// - `error` and a message for the listener.
+char *andamp_app_take_requests(AndampApp *app);
+
+/// The app's menus, by number.
+#define ANDAMP_MENU_BAR 0
+#define ANDAMP_MENU_POPUP 1
+#define ANDAMP_MENU_EQ_PRESETS 2
+
+/// One of the app's menus as lines of text, to free with andamp_string_free. A line is as a
+/// skin's menu gives it (AndampMenuHandler), with the command's key after the text: a letter,
+/// with `shift+` before it when Shift is held, to go with the system's command key.
+char *andamp_app_menu(AndampApp *app, int32_t menu);
+
+/// The commands a shell asks for by itself; the rest come as the numbers of menu items.
+#define ANDAMP_COMMAND_PREVIOUS 10
+#define ANDAMP_COMMAND_PLAY 11
+#define ANDAMP_COMMAND_PAUSE 12
+#define ANDAMP_COMMAND_STOP 13
+#define ANDAMP_COMMAND_NEXT 14
+#define ANDAMP_COMMAND_QUIT 26
+
+/// Does the command with the number `id`, which an item of andamp_app_menu carries.
+void andamp_app_command(AndampApp *app, int32_t id);
+
+/// What the listener picked when a request `ask` asked for `what`: a line for each file or
+/// folder, or the text they typed. Nothing picked needs no call.
+void andamp_app_picked(AndampApp *app, const char *what, const char *answer);
+
+/// What the system asks the app to open, or what was dropped on a window, a line for each: a
+/// skin is worn; songs, folders, playlist files and radio streams play. Before
+/// andamp_app_start it waits for the start.
+void andamp_app_open(AndampApp *app, const char *locations);
+
+/// Sets how the skin's own popup menus are shown, for the skin worn and every one after it;
+/// `context` is handed back to `handler`, which stays callable for as long as the app lives.
+void andamp_app_set_menu_handler(AndampApp *app, AndampMenuHandler handler, void *context);
+
+/// Points to a layout pixel of the skin: 2 is Winamp's double size.
+int32_t andamp_app_zoom(AndampApp *app);
+
+/// Whether the windows stay above other apps' windows.
+bool andamp_app_on_top(AndampApp *app);
+
+/// How much of the windows shows over what is behind them, in percent: 20 to 100.
+int32_t andamp_app_opacity(AndampApp *app);
+
+/// The part of the screen the windows move on changed, to `w` x `h` points.
+void andamp_app_set_screen(AndampApp *app, int32_t w, int32_t h);
+
+/// The shell opened the Visualizer window (`open`) or it closed. When it opens, the app asks
+/// for the first preset with a request `preset`.
+void andamp_app_vis_shown(AndampApp *app, bool open);
+
+/// A key in the Visualizer window, by its name: `right` the next preset, `left` the one
+/// before, `r` one at random, `space` holds the one shown or lets it go. False for any other.
+bool andamp_app_vis_key(AndampApp *app, const char *key);
+
+/// Seconds a preset stays: the shell calls andamp_app_vis_tick that often while the
+/// Visualizer window can be seen.
+int32_t andamp_app_vis_stay(void);
+
+/// A preset's stay is over: the next one blends in, unless the listener holds the one shown.
+void andamp_app_vis_tick(AndampApp *app);
+
+/// Loads every effect plug-in once, those that come with the app and the listener's own, and
+/// puts each back as it was left: before the rack is shown.
+void andamp_app_load_effects(AndampApp *app);
+
+/// Takes the plug-in file at `file` into the rack and keeps a copy in the app's folder. Gives
+/// its place in the rack, or -1 and, when `error` is not null, why in `*error`, to free with
+/// andamp_string_free.
+int32_t andamp_app_add_plugin(AndampApp *app, const char *file, char **error);
+
+/// Whether effect `index` of the rack is a plug-in the listener added, which
+/// andamp_app_remove_plugin can take out again.
+bool andamp_app_effect_own(AndampApp *app, int32_t index);
+
+/// Takes a plug-in the listener added out of the rack and out of the app's folder.
+void andamp_app_remove_plugin(AndampApp *app, int32_t index);
+
+/// Keeps what the next run starts from: the skin and where its windows are, the size, the
+/// playlist, the volume, the equalizer, the effects. The shell calls it when the app goes to
+/// the background and when it ends.
+void andamp_app_save(AndampApp *app);
+
+/// What the command line gave for one of the options the shell answers itself, to free with
+/// andamp_string_free, or null when it was not given: `dump`, `bench`, `quit-after`,
+/// `then-skin`, `presets` with their value, `hidden`, `show-vis`, `show-effects` with `1`, and
+/// `click` with a line for each.
+char *andamp_app_option(AndampApp *app, const char *name);
+
+/// What the app would keep for the next run, in a line, to free with andamp_string_free.
+char *andamp_app_summary(AndampApp *app);
+
 #endif

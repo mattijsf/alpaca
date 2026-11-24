@@ -174,27 +174,20 @@ final class MilkdropView: NSOpenGLView {
 
 /// The Visualizer window: Milkdrop presets drawn to what plays.
 ///
-/// Presets are `.milk` files in a folder the listener picks; without one the engine shows its
-/// own idle picture. A preset stays for half a minute, then the next one blends in. The right
-/// and left arrows go on and back, R picks one at random, and the space bar keeps the one shown.
+/// Which presets there are, which one shows, how long it stays and what the window's keys do
+/// is the library's, the same on every system. This is the window, its view and its timers.
+/// The right and left arrows go on and back, R picks a preset at random, and the space bar
+/// keeps the one shown.
 final class Visualizer: NSObject, NSWindowDelegate {
-    private let player: OpaquePointer
-    private let settings: Settings
+    private let app: OpaquePointer
     private var window: NSWindow?
     private var view: MilkdropView?
-    private var presets: [String] = []
-    private var index = 0
     private var changer: Timer?
-    private var locked = false
-    /// Called when the window opens or closes.
-    var onChange: ((Bool) -> Void)?
+    /// Called after the library was told something, for what it asks in answer.
+    var onChange: (() -> Void)?
 
-    /// Seconds a preset stays.
-    private static let stay: TimeInterval = 30
-
-    init(player: OpaquePointer, settings: Settings) {
-        self.player = player
-        self.settings = settings
+    init(app: OpaquePointer) {
+        self.app = app
         super.init()
     }
 
@@ -203,9 +196,9 @@ final class Visualizer: NSObject, NSWindowDelegate {
 
     var isShown: Bool { window?.isVisible == true }
 
-    func toggle() { if isShown { window?.close() } else { show() } }
+    func close() { window?.close() }
 
-    func show(presets folder: URL? = nil) {
+    func show() {
         guard let engine = ProjectM.shared else {
             let alert = NSAlert()
             alert.messageText = "The Milkdrop engine is not beside the app"
@@ -214,7 +207,7 @@ final class Visualizer: NSObject, NSWindowDelegate {
             return
         }
         if window == nil {
-            guard let view = MilkdropView(engine: engine, player: player) else { return }
+            guard let view = MilkdropView(engine: engine, player: andamp_app_player(app)) else { return }
             let made = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 640, height: 400),
                 styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
@@ -229,64 +222,40 @@ final class Visualizer: NSObject, NSWindowDelegate {
             self.view = view
             window = made
         }
-        if let folder = folder ?? settings.presets { read(folder) }
         window?.makeKeyAndOrderFront(nil)
         window?.makeFirstResponder(view)
         run()
-        onChange?(true)
+        // the library answers with the first preset of the listener's folder
+        andamp_app_vis_shown(app, true)
+        onChange?()
     }
 
-    /// Reads the presets in `folder` and the folders under it, and shows the first.
-    private func read(_ folder: URL) {
-        let found = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: nil)
-        presets = (found?.allObjects as? [URL] ?? [])
-            .filter { $0.pathExtension.lowercased() == "milk" }
-            .map(\.path)
-            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
-        index = 0
-        go(to: 0, blend: false)
-    }
-
-    /// Lets the listener pick the folder of presets, and keeps it for the next run.
-    @objc func choosePresets() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.message = "A folder of Milkdrop presets (.milk files)"
-        guard panel.runModal() == .OK, let folder = panel.url else { return }
-        settings.presets = folder
-        read(folder)
-    }
-
-    private func go(to next: Int, blend: Bool) {
-        guard !presets.isEmpty else { return }
-        index = ((next % presets.count) + presets.count) % presets.count
-        view?.load(preset: presets[index], blend: blend)
-        window?.title = "Visualizer: " + ((presets[index] as NSString).lastPathComponent as NSString).deletingPathExtension
+    /// Shows the preset the library asked for, with its name on the window.
+    func load(preset file: String, title: String, blend: Bool) {
+        view?.load(preset: file, blend: blend)
+        window?.title = title
     }
 
     private func key(_ event: NSEvent) -> Bool {
-        switch event.keyCode {
-        case 124: go(to: index + 1, blend: true)  // right
-        case 123: go(to: index - 1, blend: true)  // left
-        case 49: locked.toggle()  // space
-        default:
-            guard event.charactersIgnoringModifiers?.lowercased() == "r", !presets.isEmpty else { return false }
-            go(to: Int.random(in: 0..<presets.count), blend: true)
-        }
+        let named: [UInt16: String] = [124: "right", 123: "left", 49: "space"]
+        guard let key = named[event.keyCode] ?? event.charactersIgnoringModifiers?.lowercased(),
+            andamp_app_vis_key(app, key)
+        else { return false }
+        onChange?()
         return true
     }
 
-    /// Draws while the window can be seen, and changes presets as time passes.
+    /// Draws while the window can be seen, and tells the library when a preset's stay is over.
     private func run() {
         let seen = window?.isVisible == true && window?.occlusionState.contains(.visible) == true
         view?.run(seen)
         changer?.invalidate()
         changer = nil
         guard seen else { return }
-        let next = Timer(timeInterval: Self.stay, repeats: true) { [weak self] _ in
-            guard let self, !self.locked else { return }
-            self.go(to: self.index + 1, blend: true)
+        let next = Timer(timeInterval: TimeInterval(andamp_app_vis_stay()), repeats: true) { [weak self] _ in
+            guard let self else { return }
+            andamp_app_vis_tick(self.app)
+            self.onChange?()
         }
         RunLoop.main.add(next, forMode: .common)
         changer = next
@@ -298,7 +267,8 @@ final class Visualizer: NSObject, NSWindowDelegate {
         view?.run(false)
         changer?.invalidate()
         changer = nil
-        onChange?(false)
+        andamp_app_vis_shown(app, false)
+        onChange?()
     }
 
     /// Draws `frames` frames at once and gives the last as a picture, for `--dump`.

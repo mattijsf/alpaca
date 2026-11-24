@@ -40,7 +40,11 @@ core/   Rust, the same on every system: a crate, and a static library with a C i
           player/device/  the audio device, the one part written for each system
           dsp/         effects: the Lua plug-in loader, the graph engine, the rack
           settings.rs  what is kept between runs, in one file
-app/    the Mac's shell, in Swift and AppKit: the windows, menus, file pickers, media keys
+          vis.rs       the Visualizer's presets: which shows, how long, what its keys do
+          app.rs       the app itself: the command line, the menu and its commands, what
+                       the skin's buttons ask for, what a start puts back and a quit keeps
+app/    the Mac's shell, in Swift and AppKit: it shows the windows, draws the menu the core
+        describes, opens the file pickers the core asks for, and has the media keys
           project.yml  the Xcode project is made from it with XcodeGen
 vis/    builds libprojectM, the Milkdrop engine, as a library beside the app
 ```
@@ -102,7 +106,7 @@ that changes nothing but the visualizer. Of the start, 30 to 60 ms is the skin o
 
 ```sh
 core/build.sh                       # the Rust library, release
-(cd core && cargo test)             # the engine side: windows, drags, the player
+(cd core && cargo test --release)   # the app, windows, drags, the player, the effects
 (cd app && xcodegen generate)       # after project.yml changes
 xcodebuild -project app/Andamp.xcodeproj -scheme Andamp -configuration Release \
   -derivedDataPath build build
@@ -180,12 +184,23 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   loading, state and readouts moved from Swift into the core.
 - [ ] `.github/workflows/ci.yml` builds and tests on the three systems; it has never run,
   as the repository has no remote.
-- [ ] Still in the Mac's shell, to move before a second shell is written: the app's menu and
+- [x] The app itself is in the core (`app.rs`, `vis.rs`): the command line, the menu and
   what its items do, what each of the skin's actions leads to, the Visualizer's presets and
-  keys, the order of a start (PORTING.md lists them).
+  keys, the order of a start, what is kept for the next run, the listener's own plug-ins. A
+  shell draws the menu from lines of text and answers a short list of requests (quit, hide,
+  let the listener pick a file, show a menu at a place). The Mac's shell lost about 600
+  lines; what is left in Swift opens windows, panels and timers.
 - [ ] A shell for Windows: not started. PORTING.md has what is known.
 - [ ] The portable device's sample rate converter draws straight lines between samples; a
   better one can take its place behind the same two calls.
+
+### Known about the engine
+
+- With debug assertions on (`cargo test` without `--release`), walkit 0.10.4's own check
+  that a window drawn in parts equals the window drawn whole fails in two tests of
+  `tests/windows.rs`, with the classic example skin while a song plays. The release build has
+  no such check and its tests compare the pixels, which are equal. Not looked into from here.
+- A window's new place (`place_window`) shows in `window_rect` after the next tick.
 
 ### What to do next, in this order
 
@@ -225,6 +240,10 @@ stand-in fonts.
 - 2026-11-24, morning: prepared for Windows and Linux: the audio device behind one small
   interface with a portable version, the core cross-checked for both systems, and what every
   shell would write again moved out of Swift.
+- 2026-11-24, later: the app itself moved into the core, behind `andamp_app_`: the Mac's
+  shell asks the core what the menu is and does what the core requests. Start-up, cost and
+  what a restart brings back were measured again and are as before. The songs of a start
+  are now read after the skin's first drawing, also when the command line names them.
 - 2026-11-24, night, later: damage-only drawing, Bento through its sibling skin, internet
   radio, the equalizer's presets, and Milkdrop through libprojectM in a window of its own.
 - 2026-11-24, night: steps 4 and 5 in their first form: settings, media keys, Finder, the

@@ -167,7 +167,7 @@ final class SurfaceView: NSView {
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         let dropped = files(sender)
         guard !dropped.isEmpty else { return false }
-        controller.onDrop?(dropped)
+        controller.open(dropped)
         return true
     }
 }

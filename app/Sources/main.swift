@@ -4,452 +4,182 @@ import AppKit
 import ImageIO
 import UniformTypeIdentifiers
 
-/// The app: its menus, the skin it shows, and what the command line asks for.
+/// The Mac's shell around the app in the library: its menu bar, its panels and what the Mac
+/// alone can do. What the app is (the command line, the menu's items, what each does, what a
+/// start puts back) is the library's, the same on every system.
+///
+/// The command line is the library's (`core/src/app.rs`). The options for checking and
+/// measuring are answered here:
 ///
 /// ```
-/// Andamp [skin.wsz|skin.wal] [song ...] [--modern] [--zoom n] [--volume 0..255]
-///        [--effect <id>]       switches on the effect with that id or name; may be given more
-///                              than once
-///        [--show-vis]          opens the Visualizer window; --dump writes it as visualizer.png
-///        [--presets <folder>]  the Milkdrop presets it shows
-///        [--show-effects]      opens the Effects window; --dump writes it as effects.png
-///        [--base skin.wsz]     a classic skin laid under classic skins, in place of AndAmp Dark
-///        [--wasabi base.zip]   a zip of a wasabi folder laid under modern skins, in place of
-///                              Andamp's own element set
 ///        [--click x,y]         clicks there on the screen, in layout pixels from its top left
 ///                              corner, a second after the start; may be given more than once
 ///        [--quit-after <seconds>]  prints what it would keep for the next run, and quits as
 ///                              the menu's Quit does
-///        [--dump <folder>]     writes every window as a PNG after two seconds, and quits
+///        [--dump <folder>]     writes every window as a PNG after two seconds, and quits;
+///                              with --show-vis and --show-effects those windows too
 ///        [--bench <seconds>]   prints what that many seconds cost, and quits
-///        [--then-skin <file>]  wears that skin a second after the start, as the Skins menu does
+///        [--then-skin <file>]  wears that skin a second after the start, as a drop does
 ///        [--hidden]            hides the app once it is up, as the Hide command does
-///
-/// Songs named on the command line play at once.
 /// ```
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let controller: SkinController
-    private var options = Options()
-    private let settings: Settings
+    private let controller = SkinController()
     private var nowPlaying: NowPlaying?
-    private lazy var effects = Effects(player: controller.player, settings: settings)
+    private lazy var effects = Effects(app: controller.app)
     private lazy var visualizer: Visualizer = {
-        let made = Visualizer(player: controller.player, settings: settings)
-        made.onChange = { [weak self] open in self?.controller.visualizerOpen = open }
+        let made = Visualizer(app: controller.app)
+        made.onChange = { [weak self] in self?.controller.pump(force: true) }
         return made
     }()
-    /// The skin file worn.
-    private var worn: URL?
 
-    struct Options {
-        var skin: URL?
-        var songs: [URL] = []
-        var volume: Int?
-        var modern = false
-        var zoom: Int?
-        var base: URL?
-        var wasabi: URL?
-        var effects: [String] = []
-        var showEffects = false
-        var showVis = false
-        var presets: URL?
-        var dump: URL?
-        var bench: Double?
-        var quitAfter: Double?
-        var hidden = false
-        var thenSkin: URL?
-        var clicks: [(Int32, Int32)] = []
-
-        init() {
-            var args = CommandLine.arguments.dropFirst()
-            while let arg = args.popFirst() {
-                switch arg {
-                case "--modern": modern = true
-                case "--zoom": zoom = args.popFirst().flatMap { Int($0) }
-                case "--volume": volume = args.popFirst().flatMap { Int($0) }
-                case "--dump": dump = args.popFirst().map { URL(fileURLWithPath: $0) }
-                case "--show-effects": showEffects = true
-                case "--show-vis": showVis = true
-                case "--presets": presets = args.popFirst().map { URL(fileURLWithPath: $0) }
-                case "--effect": if let id = args.popFirst() { effects.append(id) }
-                case "--base": base = args.popFirst().map { URL(fileURLWithPath: $0) }
-                case "--wasabi": wasabi = args.popFirst().map { URL(fileURLWithPath: $0) }
-                case "--click":
-                    let at = (args.popFirst() ?? "").split(separator: ",").compactMap { Int32($0) }
-                    if at.count == 2 { clicks.append((at[0], at[1])) }
-                case "--bench": bench = args.popFirst().flatMap { Double($0) }
-                case "--hidden": hidden = true
-                case "--then-skin": thenSkin = args.popFirst().map { URL(fileURLWithPath: $0) }
-                case "--quit-after": quitAfter = args.popFirst().flatMap { Double($0) }
-                // the arguments Xcode and macOS add, such as -NSDocumentRevisionsDebugMode YES
-                case _ where arg.hasPrefix("-") && !arg.hasPrefix("--"): args = args.dropFirst()
-                case _ where arg.hasPrefix("http://") || arg.hasPrefix("https://"):
-                    if let stream = URL(string: arg) { songs.append(stream) }
-                default:
-                    let file = URL(fileURLWithPath: arg)
-                    if andamp_location_kind(arg) == 1 {
-                        skin = file
-                    } else {
-                        songs.append(file)
-                    }
-                }
-            }
-        }
-    }
-
-    override init() {
-        // a run that only looks or measures starts from nothing and leaves nothing
-        settings = Settings(kept: options.dump == nil && options.bench == nil && options.clicks.isEmpty)
-        controller = SkinController(zoom: options.zoom ?? settings.zoom)
-        super.init()
-    }
-
-    /// The file name endings of a skin.
-    static let skinTypes = ["wsz", "wal", "zip"]
-
-    /// A skin that comes with the app, by its file name.
-    private func builtin(_ name: String) -> URL? {
-        Bundle.main.url(forResource: "skins", withExtension: nil)?.appendingPathComponent(name)
-    }
-
-    /// The skin shown when none is asked for, which also lies under every classic skin.
-    private static let defaultSkin = "AndAmp Dark.wsz"
-    private static let modernSkin = "walkit-modern.wal"
-
-    /// What lies under every skin: AndAmp Dark, Andamp's element set and the stand-in fonts,
-    /// unless the command line names others.
-    private var under: SkinController.Under {
-        SkinController.Under(
-            base: options.base ?? builtin(Self.defaultSkin),
-            wasabi: options.wasabi,
-            wasabiFolder: Bundle.main.url(forResource: "wasabi", withExtension: nil),
-            fonts: Bundle.main.url(forResource: "fonts", withExtension: nil))
-    }
+    /// A run that only looks or measures: a skin that does not open ends it.
+    private var looking: Bool { controller.option("dump") != nil || controller.option("bench") != nil }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        controller.onRequests = { [weak self] lines in self?.answer(lines) }
+        controller.start()
         NSApp.mainMenu = makeMenu()
-        controller.onOpenFiles = { [weak self] in self?.openFiles() }
-        controller.onMenu = { [weak self] at in self?.popUpMenu(at: at) }
-        controller.onDrop = { [weak self] files in self?.dropped(files) }
-        controller.onPlaylist = { [weak self] choice in self?.playlist(choice) }
-        if let volume = options.volume ?? settings.volume { controller.setVolume(volume) }
-        if settings.onTop { controller.setOnTop(true) }
-        controller.setOpacity(CGFloat(settings.opacity))
-        if let state = settings.player { andamp_player_restore(controller.player, state) }
-        effects.loadIfLeftOn()
-        options.effects.forEach(effects.switchOn(id:))
-        controller.onVisualizer = { [weak self] in self?.visualizer.toggle() }
-        if options.showVis {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.visualizer.show(presets: self.options.presets) }
-        }
-        if options.showEffects { DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.effects.show() } }
-        let builtIn = builtin(options.modern ? Self.modernSkin : Self.defaultSkin)
-        if let skin = options.skin ?? (options.modern ? nil : settings.skin) ?? builtIn { open(skin) }
-        if !options.songs.isEmpty {
-            // songs, folders of songs and playlist files, as if dropped on a window
-            dropped(options.songs)
-        } else if !opened.isEmpty {
-            // files Finder opened the app with
-            dropped(opened)
-        } else {
-            // the playlist as it was, at the song it was at, not playing
-            controller.add(files: settings.songs)
-            andamp_player_select(controller.player, Int32(settings.song))
-            controller.pump(force: true)
-        }
-        launched = true
         nowPlaying = NowPlaying(controller: controller)
         controller.onStep = { [weak self] in self?.nowPlaying?.update() }
         NSApp.activate(ignoringOtherApps: true)
-        for (n, at) in options.clicks.enumerated() {
+
+        let clicks = (controller.option("click") ?? "").split(separator: "\n")
+        for (n, click) in clicks.enumerated() {
+            let at = click.split(separator: ",").compactMap { Int32($0) }
+            guard at.count == 2 else { continue }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1 + Double(n) * 0.2) {
-                self.controller.click(x: at.0, y: at.1)
+                self.controller.click(x: at[0], y: at[1])
             }
         }
-        if let folder = options.dump {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.dump(to: folder) }
+        if let folder = controller.option("dump") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.dump(to: URL(fileURLWithPath: folder)) }
         }
-        if let seconds = options.bench { bench(seconds) }
-        if let skin = options.thenSkin {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.open(skin) }
+        if let seconds = controller.option("bench").flatMap(Double.init) { bench(seconds) }
+        if let skin = controller.option("then-skin") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                self.controller.open([URL(fileURLWithPath: skin)])
+            }
         }
-        if options.hidden { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { NSApp.hide(nil) } }
-        if let seconds = options.quitAfter {
+        if controller.option("hidden") != nil {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { NSApp.hide(nil) }
+        }
+        if let seconds = controller.option("quit-after").flatMap(Double.init) {
             DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
-                let corner = self.controller.places.values.map { "\(Int($0.x)),\(Int($0.y))" }.sorted()
-                print(
-                    "skin \(self.controller.name) zoom \(self.controller.zoom) on top \(self.controller.onTop)"
-                        + " volume \(andamp_player_volume(self.controller.player))"
-                        + " songs \(self.controller.songs.count) at \(andamp_player_index(self.controller.player))"
-                        + " status \(andamp_player_status(self.controller.player))"
-                        + " position \(andamp_player_position_ms(self.controller.player)) ms windows \(corner)")
+                if let summary = andamp_app_summary(self.controller.app) {
+                    print(String(cString: summary))
+                    andamp_string_free(summary)
+                }
                 NSApp.terminate(nil)
             }
         }
     }
 
-    /// Files Finder asked for before the app was up.
-    private var opened: [URL] = []
-    private var launched = false
+    /// Files Finder asks for: before the start the library keeps them for it.
+    func application(_ application: NSApplication, open urls: [URL]) { controller.open(urls) }
 
-    func application(_ application: NSApplication, open urls: [URL]) {
-        if launched { dropped(urls) } else { opened += urls }
-    }
-
-    func applicationWillTerminate(_ notification: Notification) { save() }
+    func applicationWillTerminate(_ notification: Notification) { andamp_app_save(controller.app) }
 
     func applicationDidHide(_ notification: Notification) { controller.sightChanged() }
 
     func applicationDidUnhide(_ notification: Notification) { controller.sightChanged() }
 
-    func applicationDidResignActive(_ notification: Notification) { save() }
+    func applicationDidResignActive(_ notification: Notification) { andamp_app_save(controller.app) }
 
-    /// Keeps what the next run starts from.
-    private func save() {
-        settings.skin = worn
-        settings.zoom = controller.zoom
-        settings.onTop = controller.onTop
-        settings.opacity = Double(controller.opacity)
-        settings.volume = Int(andamp_player_volume(controller.player))
-        settings.songs = controller.songs
-        settings.song = Int(andamp_player_index(controller.player))
-        settings.setPlaces(controller.places, skin: controller.name)
-        if let state = andamp_player_state(controller.player) {
-            settings.player = String(cString: state)
-            andamp_string_free(state)
-        }
-        effects.save()
-        settings.save()
-    }
+    // MARK: what the library asks for
 
-    private func open(_ skin: URL) {
-        do {
-            // the places of the skin worn are kept before it goes
-            if worn != nil { settings.setPlaces(controller.places, skin: controller.name) }
-            try controller.open(
-                file: skin, under: under, places: settings.places(skin: skin.lastPathComponent))
-            worn = skin
-            if launched { NSApp.mainMenu = makeMenu() }
-        } catch {
-            if options.dump != nil || options.bench != nil {
-                FileHandle.standardError.write(Data("andamp: \(error.localizedDescription)\n".utf8))
-                exit(1)
+    /// Answers the library's requests, a line for each with tabs between its parts
+    /// (`andamp_app_take_requests`).
+    private func answer(_ lines: [String]) {
+        for line in lines {
+            let parts = line.split(separator: "\t", maxSplits: 3, omittingEmptySubsequences: false).map(String.init)
+            let second = parts.count > 1 ? parts[1] : ""
+            switch parts[0] {
+            case "quit": NSApp.terminate(nil)
+            case "hide": NSApp.hide(nil)
+            case "about": NSApp.orderFrontStandardAboutPanel(nil)
+            case "ask": ask(second)
+            case "popup":
+                let place = parts.count >= 4 ? Int(parts[2]).flatMap { x in Int(parts[3]).map { (x, $0) } } : nil
+                popUp(menu: Int32(second) ?? ANDAMP_MENU_POPUP, at: place.map { controller.screenPoint($0.0, $0.1) })
+            case "menu": NSApp.mainMenu = makeMenu()
+            case "effects": effects.show()
+            case "vis": if second == "1" { visualizer.show() } else { visualizer.close() }
+            case "preset" where parts.count >= 4:
+                visualizer.load(preset: parts[3], title: parts[2], blend: second == "1")
+            case "error":
+                if looking {
+                    FileHandle.standardError.write(Data("andamp: \(second)\n".utf8))
+                    exit(1)
+                }
+                let alert = NSAlert()
+                alert.messageText = second
+                alert.runModal()
+            default: break
             }
-            NSAlert(error: error).runModal()
         }
+        controller.pump(force: true)
     }
 
-    /// Files dropped on a window or opened from Finder: a skin is worn; songs, folders of
-    /// songs, playlist files and radio streams take the playlist's place and play.
-    private func dropped(_ files: [URL]) {
-        let isSkin = { (file: URL) in andamp_location_kind(SkinController.location(file)) == 1 }
-        if let skin = files.first(where: isSkin) { open(skin) }
-        let rest = files.filter { !isSkin($0) }
-        guard !rest.isEmpty else { return }
-        controller.play(files: rest)
-    }
-
-    /// What the playlist window's buttons ask of the app.
-    private func playlist(_ choice: String) {
-        switch choice {
-        case "add_file": addFiles()
-        case "add_url": addLocation()
-        case "add_dir":
-            let panel = NSOpenPanel()
-            panel.canChooseDirectories = true
-            panel.canChooseFiles = false
-            panel.allowsMultipleSelection = true
-            if panel.runModal() == .OK { controller.add(files: panel.urls) }
-        case "list_load":
-            let panel = NSOpenPanel()
-            panel.allowedContentTypes = ["m3u", "m3u8", "pls"].compactMap { UTType(filenameExtension: $0) }
-            if panel.runModal() == .OK, let file = panel.url { controller.play(files: [file]) }
-        case "list_save":
-            let panel = NSSavePanel()
-            panel.allowedContentTypes = [UTType(filenameExtension: "m3u8")].compactMap { $0 }
-            panel.nameFieldStringValue = "Playlist.m3u8"
-            if panel.runModal() == .OK, let file = panel.url { controller.save(list: file) }
-        default: break
+    /// Lets the listener pick what the library asked for, and hands back the answer.
+    private func ask(_ what: String) {
+        func types(_ endings: [String]) -> [UTType] { endings.compactMap { UTType(filenameExtension: $0) } }
+        let open = NSOpenPanel()
+        switch what {
+        case "open_songs", "add_songs":
+            open.allowedContentTypes = [.audio]
+            open.allowsMultipleSelection = true
+            open.canChooseDirectories = true
+        case "add_folders":
+            open.canChooseDirectories = true
+            open.canChooseFiles = false
+            open.allowsMultipleSelection = true
+        case "load_list": open.allowedContentTypes = types(["m3u", "m3u8", "pls"])
+        case "skin": open.allowedContentTypes = types(["wsz", "wal", "zip"])
+        case "presets":
+            open.canChooseDirectories = true
+            open.canChooseFiles = false
+            open.message = "A folder of Milkdrop presets (.milk files)"
+        case "save_list":
+            let save = NSSavePanel()
+            save.allowedContentTypes = types(["m3u8"])
+            save.nameFieldStringValue = "Playlist.m3u8"
+            if save.runModal() == .OK, let file = save.url { controller.picked(what, [file.path]) }
+            return
+        case "url":
+            let alert = NSAlert()
+            alert.messageText = "Add a radio stream"
+            alert.informativeText = "The address of the stream, starting with http:// or https://"
+            let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 360, height: 24))
+            field.placeholderString = "https://"
+            alert.accessoryView = field
+            alert.addButton(withTitle: "Add")
+            alert.addButton(withTitle: "Cancel")
+            alert.window.initialFirstResponder = field
+            if alert.runModal() == .alertFirstButtonReturn { controller.picked(what, [field.stringValue]) }
+            return
+        default: return
         }
-    }
-
-    /// The app's menu as a popup, for the skin's menu button: what the menu bar has, in one list.
-    private func popUpMenu(at point: NSPoint) {
-        let menu = NSMenu()
-        func item(_ title: String, _ action: Selector, on: Bool = false) {
-            let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
-            item.target = action == #selector(NSApplication.terminate(_:)) ? NSApp : self
-            item.state = on ? .on : .off
-            menu.addItem(item)
-        }
-        item("Open Files…", #selector(openFiles))
-        item("Add Files…", #selector(addFiles))
-        item("Add Radio Stream…", #selector(addLocation))
-        menu.addItem(.separator())
-        item("Open Skin…", #selector(openSkin))
-        let skins = NSMenuItem(title: "Skins", action: nil, keyEquivalent: "")
-        skins.submenu = NSMenu(title: "Skins")
-        skinItems().forEach { skins.submenu?.addItem($0) }
-        menu.addItem(skins)
-        menu.addItem(.separator())
-        item("Double Size", #selector(toggleDoubleSize), on: controller.zoom > 1)
-        item("Always on Top", #selector(toggleOnTop), on: controller.onTop)
-        menu.addItem(opacityItem())
-        item("Effects…", #selector(showEffects))
-        menu.addItem(visualizerItem())
-        menu.addItem(.separator())
-        item("Quit Andamp", #selector(NSApplication.terminate(_:)))
-        menu.popUp(positioning: nil, at: point, in: nil)
+        if open.runModal() == .OK, !open.urls.isEmpty { controller.picked(what, open.urls.map(\.path)) }
     }
 
     // MARK: menus
 
-    private func makeMenu() -> NSMenu {
-        let main = NSMenu()
-        func add(_ title: String, _ items: [NSMenuItem]) {
-            let menu = NSMenu(title: title)
-            items.forEach(menu.addItem)
-            let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-            item.submenu = menu
-            main.addItem(item)
-        }
-        func item(_ title: String, _ action: Selector, _ key: String = "") -> NSMenuItem {
-            let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
-            item.target = action == #selector(NSApplication.terminate(_:)) ? NSApp : self
-            return item
-        }
-        add("Andamp", [item("Quit Andamp", #selector(NSApplication.terminate(_:)), "q")])
-        let openSkinItem = item("Open Skin…", #selector(openSkin), "o")
-        openSkinItem.keyEquivalentModifierMask = [.command, .shift]
-        add("File", [
-            item("Open Files…", #selector(openFiles), "o"),
-            item("Add Files…", #selector(addFiles), "l"),
-            item("Add Radio Stream…", #selector(addLocation), "u"),
-            .separator(),
-            openSkinItem,
-        ])
-        add("Play", [
-            item("Previous", #selector(previous), "z"),
-            item("Play", #selector(play), "x"),
-            item("Pause", #selector(pause), "c"),
-            item("Stop", #selector(stop), "v"),
-            item("Next", #selector(next), "b"),
-        ])
-        add("Skins", skinItems())
-        add("View", [
-            item("Double Size", #selector(toggleDoubleSize), "d"),
-            item("Always on Top", #selector(toggleOnTop), "a"),
-            opacityItem(),
-            .separator(),
-            item("Effects…", #selector(showEffects), "e"),
-            visualizerItem(),
-            item("Choose Milkdrop Presets…", #selector(choosePresets)),
-        ])
-        return main
+    /// The menu bar, from the library's lines: its top level is the bar's menus.
+    private func makeMenu() -> NSMenu { menu(ANDAMP_MENU_BAR) }
+
+    private func menu(_ number: Int32) -> NSMenu {
+        guard let text = andamp_app_menu(controller.app, number) else { return NSMenu() }
+        defer { andamp_string_free(text) }
+        return NSMenu.from(lines: String(cString: text), target: self, action: #selector(pick(_:)))
     }
 
-    /// Lets the listener pick songs; nil when they picked none.
-    private func pickSongs() -> [URL]? {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.audio]
-        panel.allowsMultipleSelection = true
-        panel.canChooseDirectories = true
-        return panel.runModal() == .OK && !panel.urls.isEmpty ? panel.urls : nil
+    /// One of the app's menus as a popup, at `point` on the screen or at the mouse.
+    private func popUp(menu number: Int32, at point: NSPoint?) {
+        menu(number).popUp(positioning: nil, at: point ?? NSEvent.mouseLocation, in: nil)
     }
 
-    /// Asks for the address of a radio stream and adds it to the playlist.
-    @objc private func addLocation() {
-        let alert = NSAlert()
-        alert.messageText = "Add a radio stream"
-        alert.informativeText = "The address of the stream, starting with http:// or https://"
-        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 360, height: 24))
-        field.placeholderString = "https://"
-        alert.accessoryView = field
-        alert.addButton(withTitle: "Add")
-        alert.addButton(withTitle: "Cancel")
-        alert.window.initialFirstResponder = field
-        guard alert.runModal() == .alertFirstButtonReturn,
-            let url = URL(string: field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)),
-            ["http", "https"].contains(url.scheme?.lowercased() ?? "")
-        else { return }
-        let wasEmpty = andamp_player_count(controller.player) == 0
-        if controller.add(files: [url]) > 0, wasEmpty { andamp_player_play_index(controller.player, 0) }
-        controller.pump(force: true)
-    }
-
-    @objc private func openFiles() { pickSongs().map(controller.play(files:)) }
-    @objc private func addFiles() { pickSongs().map { _ = controller.add(files: $0) } }
-    // Winamp's keys, with the command key: Z X C V B
-    @objc private func previous() { controller.command(ANDAMP_PREVIOUS) }
-    @objc private func play() { controller.command(ANDAMP_PLAY) }
-    @objc private func pause() { controller.command(ANDAMP_PAUSE) }
-    @objc private func stop() { controller.command(ANDAMP_STOP) }
-    @objc private func next() { controller.command(ANDAMP_NEXT) }
-
-    @objc private func openSkin() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = Self.skinTypes.compactMap { UTType(filenameExtension: $0) }
-        panel.allowsMultipleSelection = false
-        if panel.runModal() == .OK, let file = panel.url { open(file) }
-    }
-
-    /// The skins that come with the app, as menu items.
-    private func skinItems() -> [NSMenuItem] {
-        let folder = Bundle.main.url(forResource: "skins", withExtension: nil)
-        let files = (folder.flatMap { try? FileManager.default.contentsOfDirectory(atPath: $0.path) } ?? [])
-            .filter { Self.skinTypes.contains(($0 as NSString).pathExtension.lowercased()) }
-            .sorted()
-        return files.map { file in
-            let item = NSMenuItem(
-                title: (file as NSString).deletingPathExtension, action: #selector(showBuiltin(_:)),
-                keyEquivalent: "")
-            item.target = self
-            item.representedObject = file
-            item.state = file == controller.name ? .on : .off
-            return item
-        }
-    }
-
-    @objc private func showBuiltin(_ item: NSMenuItem) {
-        (item.representedObject as? String).flatMap(builtin).map(open)
-    }
-    @objc private func toggleDoubleSize() { controller.setZoom(controller.zoom == 1 ? 2 : 1) }
-    @objc private func toggleOnTop() { controller.setOnTop(!controller.onTop) }
-    @objc private func showEffects() { effects.show() }
-    @objc private func toggleVisualizer() { visualizer.toggle() }
-    @objc private func choosePresets() {
-        visualizer.choosePresets()
-        if !visualizer.isShown { visualizer.show() }
-    }
-
-    /// The Visualizer menu item: Winamp's key for it with the command key, Shift and K.
-    private func visualizerItem() -> NSMenuItem {
-        let item = NSMenuItem(title: "Visualizer", action: #selector(toggleVisualizer), keyEquivalent: "k")
-        item.keyEquivalentModifierMask = [.command, .shift]
-        item.target = self
-        item.state = visualizer.isShown ? .on : .off
-        return item
-    }
-
-    /// The Opacity menu: how much of the windows shows over what is behind them.
-    private func opacityItem() -> NSMenuItem {
-        let item = NSMenuItem(title: "Opacity", action: nil, keyEquivalent: "")
-        let menu = NSMenu(title: "Opacity")
-        for percent in stride(from: 100, through: 40, by: -10) {
-            let entry = NSMenuItem(title: "\(percent) %", action: #selector(pickOpacity(_:)), keyEquivalent: "")
-            entry.target = self
-            entry.tag = percent
-            entry.state = Int((controller.opacity * 100).rounded()) == percent ? .on : .off
-            menu.addItem(entry)
-        }
-        item.submenu = menu
-        return item
-    }
-
-    @objc private func pickOpacity(_ item: NSMenuItem) {
-        controller.setOpacity(CGFloat(item.tag) / 100)
-        NSApp.mainMenu = makeMenu()
-    }
+    /// A pick from one of the app's menus: the item carries the command's number.
+    @objc private func pick(_ item: NSMenuItem) { controller.command(Int32(item.tag)) }
 
     // MARK: --dump and --bench
 
@@ -468,10 +198,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 "window \(n) id \(window.id) frame \(Int(f.minX)),\(Int(f.minY)) \(Int(f.width))x\(Int(f.height))"
                     + " pixels \(window.image.width)x\(window.image.height)")
         }
-        if options.showVis, let png = visualizer.picture(after: 60)?.representation(using: .png, properties: [:]) {
+        if controller.option("show-vis") != nil,
+            let png = visualizer.picture(after: 60)?.representation(using: .png, properties: [:])
+        {
             try? png.write(to: folder.appendingPathComponent("visualizer.png"))
         }
-        if options.showEffects, let png = effects.picture()?.representation(using: .png, properties: [:]) {
+        if controller.option("show-effects") != nil,
+            let png = effects.picture()?.representation(using: .png, properties: [:])
+        {
             try? png.write(to: folder.appendingPathComponent("effects.png"))
         }
         try? lines.joined(separator: "\n").appending("\n")
@@ -519,7 +253,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                             + "%.1f steps/s, %.1f windows drawn/s; "
                             + "engine %.2f ms/s, drawing %.2f ms/s (%.0f us a window); peak memory %.0f MB; "
                             + "%d songs, %llu underruns; first window %.0f ms after the start, "
-                            + "of which the skin took %.0f ms to open",
+                            + "of which the skin, the playlist and the first drawing took %.0f ms",
                         self.controller.name, self.controller.zoom, seconds,
                         (after.1.user + after.1.system - before.1.user - before.1.system) / seconds * 100,
                         (after.1.user - before.1.user) / seconds * 100,
@@ -529,7 +263,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         drawn > 0 ? draw / Double(drawn) * 1e6 : 0, Double(usage.ru_maxrss) / 1_048_576,
                         Int(andamp_player_count(self.controller.player)),
                         andamp_player_underruns(self.controller.player), self.startup * 1000,
-                        self.controller.openTook * 1000))
+                        self.controller.startTook * 1000))
                 exit(0)
             }
         }

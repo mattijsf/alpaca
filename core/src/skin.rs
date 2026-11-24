@@ -76,6 +76,8 @@ pub struct Skin {
     selected: Vec<usize>,
     /// The app's player, when the skin shows it: asked to move on before every step.
     pub player: Option<Rc<RefCell<crate::player::Player>>>,
+    /// Set when the engine panicked behind the C interface: the skin does nothing more.
+    pub broken: bool,
 }
 
 impl Skin {
@@ -174,6 +176,7 @@ impl Skin {
             desk,
             selected: Vec::new(),
             player: None,
+            broken: false,
         })
     }
 
