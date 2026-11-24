@@ -110,6 +110,8 @@ impl App {
                 skin.place_window(*id, pixel(area.x - ox, zoom), pixel(area.y - oy, zoom));
             }
         }
+        // the engine has a window's new place after a step: the places are asked for next
+        skin.step();
     }
 
     /// Keeps every window where a screen shows it, and the viewport on the screen the main
@@ -147,10 +149,11 @@ impl App {
         Some((ox + rect.left * zoom, oy + rect.top * zoom))
     }
 
-    /// Writes down where the windows of the skin worn are, for when it is worn again: each
-    /// one's corner on the desktop in points; the screen the main window is on, so that a
-    /// screen gone or moved is seen as such; and the size they were kept at, since the
-    /// windows are that many points apart for each of the skin's pixels.
+    /// Writes down where the player is, for every skin: the main window's corner on the
+    /// desktop in points, and the screen it is on, so that a screen gone or moved is seen as
+    /// such. And how the skin worn sets its windows out around its main window, for when it is
+    /// worn again: each one's corner, and the size they were kept at, since the windows are
+    /// that many points apart for each of the skin's pixels.
     pub(super) fn keep_places(&mut self) {
         let places = self.places();
         if places.is_empty() {
@@ -158,17 +161,19 @@ impl App {
         }
         let prefix = format!("at.{}.", self.skin_name());
         self.settings.clear(&prefix);
-        for (id, (x, y)) in places {
+        for &(id, (x, y)) in &places {
             self.settings
                 .set(&format!("{prefix}{id}"), Some(&format!("{x},{y}")));
         }
         self.settings
             .set(&format!("{prefix}zoom"), Some(&self.zoom.to_string()));
-        let Area { x, y, w, h } = self.view;
-        self.settings.set(
-            &format!("{prefix}screen"),
-            Some(&format!("{x},{y},{w},{h}")),
-        );
+        let main = self.main_window();
+        if let Some((_, (x, y))) = places.iter().find(|(id, _)| Some(*id) == main) {
+            self.settings.set("corner", Some(&format!("{x},{y}")));
+            let Area { x, y, w, h } = self.view;
+            self.settings
+                .set("screen", Some(&format!("{x},{y},{w},{h}")));
+        }
     }
 
     /// Writes down what the skin worn keeps for itself: what its scripts wrote down (a
@@ -275,8 +280,10 @@ impl App {
             |_| Box::new(SkinPlayer(player)),
         )?;
         skin.player = Some(self.player.clone());
-        // its places are kept too
-        if self.skin.is_some() {
+        // its places are kept too, as the engine has them now: a window moved since the last
+        // step shows at its new place after the engine's next one
+        if let Some(old) = self.skin.as_mut() {
+            old.step();
             self.keep_places();
             self.keep_switches();
             self.main_corner = self.main_place();
@@ -295,43 +302,29 @@ impl App {
         Ok(())
     }
 
-    /// Puts the windows of the skin just worn, the one with the file name `name`, where they
-    /// were when it was last worn: the main window at its corner on the desktop, and the
-    /// others as far from it in the skin's own pixels as they were, whatever the size was
-    /// then; in points they would be twice as far apart, or half, after a change of the size.
-    /// A skin never worn opens with its main window where the last skin's was, or a little in
-    /// from the main screen's top left corner, and the others docked as the skin sets them
-    /// out. Then every window is kept where a screen shows it.
+    /// Puts the windows of the skin just worn, the one with the file name `name`: its main
+    /// window where the player was, whatever skin it was then, in this run or the last; the
+    /// others as far from it in the skin's own pixels as they were when this skin was last
+    /// worn, whatever the size was then (in points they would be twice as far apart, or half,
+    /// after a change of the size), else as the skin sets them out. The first start opens a
+    /// little in from the main screen's top left corner. Then every window is kept where a
+    /// screen shows it.
     fn put_back_places(&mut self, name: &str) {
         let prefix = format!("at.{name}.");
-        let screen = self
-            .settings
-            .get(&format!("{prefix}screen"))
-            .and_then(parse_area);
-        // places kept before the screens were known count from the main screen's top left
-        let main_screen = self.screens[0];
-        let (sx, sy) = if screen.is_some() {
-            (0, 0)
-        } else {
-            (main_screen.x, main_screen.y)
-        };
         let kept: Vec<(u32, (i32, i32))> = self
             .settings
             .keys(&prefix)
             .into_iter()
             .filter_map(|key| {
                 let id = key[prefix.len()..].parse().ok()?;
-                let (x, y) = self.settings.get(key)?.split_once(',')?;
-                Some((
-                    id,
-                    (x.parse::<i32>().ok()? + sx, y.parse::<i32>().ok()? + sy),
-                ))
+                Some((id, parse_point(self.settings.get(key)?)?))
             })
             .collect();
         let kept_zoom = number_of(&self.settings, &format!("{prefix}zoom"))
             .filter(|zoom| *zoom >= 1)
             .unwrap_or(1);
         let zoom = self.zoom;
+        let main_screen = self.screens[0];
         let (windows, main) = self.on_desktop();
         let Some(&(main_id, anchor)) = windows.get(main) else {
             return;
@@ -340,9 +333,11 @@ impl App {
             .iter()
             .find(|(id, _)| *id == main_id)
             .map(|(_, at)| *at);
-        let corner = kept_main
-            .or(self.main_corner.take())
-            .unwrap_or((main_screen.x + 120, main_screen.y + 80));
+        let (corner, before) = match self.main_corner.take() {
+            Some(corner) => (Some(corner), Vec::new()),
+            None => self.kept_corner(name, main_id),
+        };
+        let corner = corner.unwrap_or((main_screen.x + 120, main_screen.y + 80));
         let at: Vec<Area> = windows
             .iter()
             .map(|(id, area)| {
@@ -358,13 +353,35 @@ impl App {
                 Area::new(x, y, area.w, area.h)
             })
             .collect();
-        let before: Vec<Area> = screen.filter(|_| kept_main.is_some()).into_iter().collect();
         let at = screens::into_view(&at, main, &self.screens, &before);
         let view =
             screens::screen_of(at[main], &self.screens).map_or(main_screen, |i| self.screens[i]);
         self.put(&windows, &at, view);
         self.unsettled = false;
         self.before.clear();
+    }
+
+    /// Where the last run left the player: the main window's corner on the desktop, and the
+    /// screen it was on. Settings from before the place was one for every skin have it by
+    /// skin, under the skin `name` with the main window `main`; those from before the screens
+    /// were known count from the main screen's top left corner.
+    fn kept_corner(&self, name: &str, main: u32) -> (Option<(i32, i32)>, Vec<Area>) {
+        let screen = |key: &str| self.settings.get(key).and_then(parse_area);
+        if let Some(corner) = self.settings.get("corner").and_then(parse_point) {
+            return (Some(corner), screen("screen").into_iter().collect());
+        }
+        let prefix = format!("at.{name}.");
+        let kept = screen(&format!("{prefix}screen"));
+        let (sx, sy) = match kept {
+            Some(_) => (0, 0),
+            None => (self.screens[0].x, self.screens[0].y),
+        };
+        let corner = self
+            .settings
+            .get(&format!("{prefix}{main}"))
+            .and_then(parse_point)
+            .map(|(x, y)| (x + sx, y + sy));
+        (corner, kept.into_iter().collect())
     }
 
     /// Sets how the skin's own popup menus are shown, for this skin and every one after it.
@@ -403,10 +420,10 @@ impl App {
         }
         self.let_go_when_due();
         let mut flags = self.skin.as_mut().map_or(0, |skin| skin.step());
-        // after a drag, or when the screens changed: the windows are kept in view, and the
-        // step is done again where they were put elsewhere, so the shell has their places now
+        // after a drag, or when the screens changed: the windows are kept in view, stepped
+        // again where they were put elsewhere, so the shell has their places now
         if (flags & skin::MOVED != 0 || self.unsettled) && self.settle() {
-            flags |= self.skin.as_mut().map_or(0, |skin| skin.step()) | skin::MOVED;
+            flags |= skin::MOVED;
         }
         if self.playlist_due == 2 {
             self.playlist_due = 1;
@@ -514,6 +531,12 @@ impl App {
             _ => {}
         }
     }
+}
+
+/// A place kept as `x,y`.
+fn parse_point(text: &str) -> Option<(i32, i32)> {
+    let (x, y) = text.split_once(',')?;
+    Some((x.trim().parse().ok()?, y.trim().parse().ok()?))
 }
 
 /// A rectangle kept as `x,y,w,h`.

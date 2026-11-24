@@ -243,6 +243,12 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
 
 ### Log
 
+- 2026-11-24, right after: the owner asked for one place for the player, not one for each
+  skin. Another skin now opens with its main window at the corner of the one before, in the
+  same run and the next (`corner` and `screen` in the settings); what a skin keeps for
+  itself is only how its other windows sit around its main window. Places kept by skin
+  before are read once, for the skin worn at the start. Tested in the core
+  (`every_skin_opens_where_the_last_one_was`).
 - 2026-11-24, after the skins' state: the owner found the player did not come back on the
   screen it was left on. The Mac's shell took the screen with the keys at the start
   (`NSScreen.main`) as the only one, and places were kept from its top left: with the player

@@ -333,3 +333,43 @@ fn a_window_moved_alone_stays_on_its_own_screen() {
     let list = windows(&mut alone);
     assert!(list.iter().all(|w| inside(*w, MAIN)), "{list:?}");
 }
+
+#[test]
+fn every_skin_opens_where_the_last_one_was() {
+    // the player's place is one for every skin: another skin opens with its main window at
+    // the corner of the one before, in this run and the next
+    let dir = scratch("one-place");
+    let classic = resources().join("skins/walkit-classic.wsz");
+    let modern = resources().join("skins/walkit-modern.wal");
+    let mut app = start(&dir, &[MAIN, LEFT]);
+    drag_main(&mut app, -1000, 200);
+    let corner = (windows(&mut app)[0].x, windows(&mut app)[0].y);
+    assert!(app.wear(&modern));
+    app.step();
+    app.step();
+    let at = windows(&mut app)[0];
+    assert_eq!(
+        (at.x, at.y),
+        corner,
+        "the modern skin opens where the classic one was"
+    );
+    assert_eq!(app.origin(), (LEFT.x, LEFT.y));
+    // moved on, and the classic skin worn again comes there, not where it was itself
+    drag_main(&mut app, 300, -100);
+    let corner = (windows(&mut app)[0].x, windows(&mut app)[0].y);
+    assert!(app.wear(&classic));
+    app.step();
+    let at = windows(&mut app)[0];
+    assert_eq!((at.x, at.y), corner);
+    // the next run: the skin worn last, at the same corner, and another skin there too
+    app.save();
+    drop(app);
+    let mut again = start(&dir, &[MAIN, LEFT]);
+    assert_eq!(again.skin_name(), "walkit-classic.wsz");
+    let at = windows(&mut again)[0];
+    assert_eq!((at.x, at.y), corner);
+    assert!(again.wear(&modern));
+    again.step();
+    let at = windows(&mut again)[0];
+    assert_eq!((at.x, at.y), corner);
+}
