@@ -190,10 +190,12 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 ### Known about the engine
 
 - The engine is walkit's main branch as of 2026-11-24 (`[patch.crates-io]` in
-  `core/Cargo.toml`), ahead of release 0.10.4 by what the app uses: a row of a classic
-  playlist brought into view (`show_classic_playlist_row`), the list under a point scrolled
-  (`scroll_at`) and the focus given to a window (`focus_window`). The owner
-  expects more changes to walkit before its next release; with that release the pin goes.
+  `core/Cargo.toml`, a revision by its number), ahead of release 0.10.4 by what the app
+  uses: a row of a classic playlist brought into view (`show_classic_playlist_row`), the
+  list under a point scrolled (`scroll_at`), a frame's divider dragged, the cursor that
+  belongs at a point (`pointer_shape_at`) and the focus given to a window (`focus_window`).
+  The owner expects more changes to walkit before its next release; with that release the
+  pin goes.
 - The same revision has the fix for the engine's own check, under debug assertions, that a
   window drawn in parts equals the window drawn whole: 0.10.4 stopped two tests of
   `tests/windows.rs` at it. The check can still trip when the player's own time moves
