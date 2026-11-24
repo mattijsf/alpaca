@@ -206,8 +206,6 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 - The engine does not say how many rows a classic playlist shows or how high they are. A
   page of the list, for page up and page down, is counted with rows of 16 pixels at most
   (`app/playlist.rs`), so it is never more than a screen and can be a row or two less.
-- No call brings a row of a modern skin's playlist into view: a modern list scrolls by the
-  wheel, and does not follow the song that plays or the arrow keys.
 - Nothing says which control is under a point but for a list (`scroll_at`): a modern
   skin's volume slider is found by the id `volume`, and one a skin names otherwise does not
   turn by the wheel.
@@ -295,6 +293,14 @@ stand-in fonts.
   written when the skin goes and at a save, and handed to the engine before the skin
   loads. A divider's place is the engine's to keep: by the frame's id, as Winamp keeps it. Checked in the core:
   Big Bento's playlist pane and Winamp Modern's color theme come back after a restart.
+- 2026-11-24, the playlist's rules from Winamp's code: a modern skin's playlist in Winamp
+  5.666 is Winamp's own playlist window, embedded and drawn in the skin's colors, so both
+  kinds behave alike. A selection the keys move is brought into view as little as it must;
+  the song that plays, when it does not show, comes into the middle. walkit has a call for
+  each, for both kinds; the app used the first rule
+  for both before. Checked in the core with walkit's modern example skin and the classic
+  one; not on Big Bento, whose playlist is in its main window, where the arrow keys still
+  turn the volume.
 - 2026-11-24, last of all: a folder of the listener's own skins (`Skins` in the app's
   folder, beside the settings). What is in it is offered in the Skins menu and in the
   Preferences window under the skins that come with the app; Preferences has a button that

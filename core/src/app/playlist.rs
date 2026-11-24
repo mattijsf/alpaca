@@ -133,9 +133,9 @@ impl App {
         true
     }
 
-    /// Brings the current song into view in a classic playlist when another song became
-    /// current: the list follows what plays, as Winamp's does. The listener's own scrolling
-    /// in between stays as it is.
+    /// Brings the current song into the middle of the playlist, classic or modern, when
+    /// another song became current and it does not show: the list follows what plays, as
+    /// Winamp's does. The listener's own scrolling in between stays as it is.
     pub(super) fn follow_the_song(&mut self) {
         let current = {
             let player = self.player.borrow();
@@ -144,7 +144,10 @@ impl App {
         if current != self.followed {
             self.followed = current;
             if let Some(row) = current {
-                self.show_row(row);
+                if let Some(skin) = self.skin.as_mut() {
+                    skin.runtime.follow_playlist_song(row as i32);
+                    skin.refresh();
+                }
             }
         }
     }
@@ -159,11 +162,11 @@ impl App {
         ((height.unwrap_or(0) - LIST_FRAME) / TALLEST_ROW).max(1)
     }
 
-    /// Scrolls a classic playlist as little as brings `row` into view; where the listener
-    /// left the list, by the wheel or its scroll bar, is where it starts from.
+    /// Scrolls the playlist, classic or modern, as little as brings `row` into view; where
+    /// the listener left the list, by the wheel or its scroll bar, is where it starts from.
     fn show_row(&mut self, row: usize) {
         if let Some(skin) = self.skin.as_mut() {
-            skin.runtime.show_classic_playlist_row(row as i32);
+            skin.runtime.show_playlist_row(row as i32);
             skin.refresh();
         }
     }

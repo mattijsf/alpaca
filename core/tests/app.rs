@@ -1228,6 +1228,48 @@ fn the_playlist_follows_the_song_that_plays() {
 }
 
 #[test]
+fn a_modern_skins_playlist_follows_the_song_and_the_keys() {
+    let dir = scratch("modern-follow");
+    let mut app = start("", &dir);
+    let one = song(&dir, "a.wav");
+    app.picked(Ask::AddSongs, &vec![one; 30]);
+    app.wear(&resources().join("skins/walkit-modern.wal"));
+    app.step();
+    let (window, list) = {
+        let skin = app.skin().unwrap();
+        let list = skin.runtime.object_info("pl.list").expect("a playlist");
+        (list.window, skin.runtime.window_rect(list.window))
+    };
+    let at = app
+        .skin()
+        .unwrap()
+        .runtime
+        .object_info("pl.list")
+        .unwrap()
+        .rect;
+    // the row under a press at the list's top: the first row shown
+    let first_row = |app: &mut App| {
+        let skin = app.skin().unwrap();
+        let (x, y) = (list.left + at.left + 20, list.top + at.top + 5);
+        skin.runtime.pointer_down(x, y, 1);
+        skin.runtime.pointer_up(x, y);
+        app.step();
+        app.selection()[0]
+    };
+    assert_eq!(first_row(&mut app), 0);
+    // another song, far down: it comes into the middle of the nine rows shown
+    app.player.borrow_mut().select(20);
+    app.step();
+    assert_eq!(first_row(&mut app), 16);
+    // the arrow keys bring the selection into view as little as they must
+    app.select(&[16]);
+    assert!(app.key_in(window.0, "up"));
+    assert_eq!(app.selection(), [15]);
+    app.step();
+    assert_eq!(first_row(&mut app), 15);
+}
+
+#[test]
 fn the_arrow_keys_move_the_selection_in_the_playlists_window() {
     let dir = scratch("arrows");
     let mut app = start("", &dir);
