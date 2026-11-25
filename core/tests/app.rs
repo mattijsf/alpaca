@@ -1109,6 +1109,8 @@ fn the_mouse_over_the_skin_with_no_button_down_is_heard() {
     app.step();
     app.hover(x + 20, y + 20);
     assert!(app.skin().is_some());
+    // a tooltip waits 350 ms after the mouse came onto an object
+    assert_eq!(app.tooltip(), "");
 }
 
 #[test]

@@ -130,6 +130,15 @@ impl App {
         }
     }
 
+    /// The tooltip to show beside the mouse now, as Winamp shows it: 350 ms after the mouse came
+    /// onto an object with one, for 3 s. Empty for none.
+    pub fn tooltip(&mut self) -> String {
+        self.skin
+            .as_mut()
+            .and_then(|skin| skin.runtime.tooltip())
+            .unwrap_or_default()
+    }
+
     /// The mouse left the skin's windows.
     pub fn pointer_leave(&mut self) {
         if let Some(skin) = self.skin.as_mut() {

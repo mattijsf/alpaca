@@ -119,6 +119,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   - [x] The mouse wheel on a list, classic and modern.
   - [x] Hovering: the mouse over a modern skin with no button down is heard there
     (`onEnterArea`, `onLeaveArea`, `onMouseMove`), and a button shows its hover picture.
+  - [x] Tooltips with Winamp's timing (350 ms, shown for 3 s), drawn by the Mac above the
+    mouse. Not yet drawn with the skin's own `wasabi.tooltip.group`, as Winamp3x restyles it.
   - [x] While another app has the keys every window shows itself behind: classic title bars
     unlit, a modern skin's `inactivealpha` and inactive pictures.
 - [x] 5. Effects: Andamp's `.lua` plug-in format (`core/src/dsp`): the loader in a shut-in

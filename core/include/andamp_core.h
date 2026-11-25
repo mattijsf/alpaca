@@ -231,6 +231,9 @@ void andamp_app_pointer_up(AndampApp *app, int32_t x, int32_t y);
 /// hears it, and a modern skin's button shows its hover picture. And the mouse left the skin.
 void andamp_app_hover(AndampApp *app, int32_t x, int32_t y);
 void andamp_app_pointer_leave(AndampApp *app);
+/// The tooltip to show beside the mouse now, empty for none (free with andamp_string_free):
+/// 350 ms after the mouse came onto an object with one, for 3 s. Ask after each step.
+char *andamp_app_tooltip(AndampApp *app);
 
 /// The keys held with the next presses: `add` is the system's key for picking playlist rows one
 /// by one (Command on a Mac, Control elsewhere), `range` is Shift, for picking the rows from

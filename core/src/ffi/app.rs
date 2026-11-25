@@ -307,6 +307,16 @@ pub unsafe extern "C" fn andamp_app_hover(app: *mut AndampApp, x: i32, y: i32) {
     with_app(app, (), |a| a.hover(x, y));
 }
 
+/// The tooltip to show beside the mouse now, empty for none, to free with
+/// [`andamp_string_free`](super::andamp_string_free). Asked after each step.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_tooltip(app: *mut AndampApp) -> *mut c_char {
+    c_text(&with_app(app, String::new(), App::tooltip))
+}
+
 /// The mouse left the skin's windows.
 ///
 /// # Safety

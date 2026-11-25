@@ -25,6 +25,8 @@ final class SkinController {
     private var timer: Timer?
     /// What watches the screens coming, going and changing.
     private var screenWatcher: NSObjectProtocol?
+    /// The skin's tooltip beside the mouse.
+    private let tooltip = Tooltip()
     /// Told when the app gets the keyboard and when another app takes it.
     private var activeWatchers: [NSObjectProtocol] = []
     /// What watches the windows going out of sight and coming back.
@@ -172,8 +174,17 @@ final class SkinController {
         answer()
         if changed != 0 || force || stale { apply() }
         stale = false
+        showTooltip()
         schedule()
         onStep?()
+    }
+
+    /// The skin's tooltip for the object under the mouse, or none.
+    private func showTooltip() {
+        guard let text = andamp_app_tooltip(app) else { return }
+        let tip = String(cString: text)
+        andamp_string_free(text)
+        tooltip.show(tip.isEmpty || pressed ? nil : tip, at: NSEvent.mouseLocation)
     }
 
     /// Takes what the library asked for: what concerns the windows is done here, the rest is
