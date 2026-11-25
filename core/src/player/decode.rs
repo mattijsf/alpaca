@@ -237,7 +237,12 @@ fn probed(source: MediaSourceStream, hint: &Hint) -> Result<Opened, String> {
         .format(
             hint,
             source,
-            &FormatOptions::default(),
+            // the encoder's silence at the start and the end of an MP3 or AAC file is cut, so
+            // one song runs into the next with no gap
+            &FormatOptions {
+                enable_gapless: true,
+                ..FormatOptions::default()
+            },
             &MetadataOptions::default(),
         )
         .map_err(|e| e.to_string())?;

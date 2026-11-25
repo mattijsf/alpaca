@@ -103,7 +103,9 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 - [x] 2. Playback: MP3, AAC, ALAC, FLAC, Ogg Vorbis, WAV and AIFF files; the playlist; play,
   pause, stop, next, previous, seek, shuffle, repeat; volume and balance; Winamp's keys.
   - [ ] The playlist window's own buttons (add, remove, select, sort) do nothing yet.
-  - [ ] Gapless play from one song to the next; the song's sample rate changing reopens the output.
+  - [x] Gapless playback: the next song is decoded ahead once the current one is read to its
+    end and starts in the same audio block. MP3 and AAC encoder delay and padding are trimmed.
+    A next song at another sample rate still reopens the output, with a short gap.
 - [x] 3. Equalizer (ten bands, preamp) and the skin's spectrum and oscilloscope from what is heard.
 - [x] 4. The Mac around it: the skin, its size and places, the volume, the playlist and the
   effects are kept between runs; media keys and Now Playing; Finder opens songs, folders,

@@ -274,6 +274,8 @@ pub struct Source {
     pub stream: Arc<Stream>,
     /// The reading end of the ring the decoder fills.
     pub ring: rtrb::Consumer<f32>,
+    /// Whether it follows the one playing, with no gap, instead of replacing it now.
+    pub follows: bool,
 }
 
 /// What the audio thread keeps between blocks.
@@ -284,6 +286,8 @@ struct Voice {
     incoming: rtrb::Consumer<Source>,
     done: rtrb::Producer<Source>,
     current: Option<Source>,
+    /// The next song, decoded ahead: it takes over in the block where the current one ends.
+    queued: Option<Source>,
     eq: Equalizer,
     /// The effects, after the equalizer.
     rack: RackVoice,
@@ -294,37 +298,61 @@ impl Voice {
     /// Fills `out` (left and right in turn) with the next block.
     fn render(&mut self, out: &mut [f32]) {
         while let Ok(next) = self.incoming.pop() {
-            if let Some(old) = self.current.replace(next) {
-                // full only if the player stopped collecting: then the ring is freed here
+            // full only if the player stopped collecting: then the ring is freed here
+            if next.follows {
+                if let Some(old) = self.queued.replace(next) {
+                    let _ = self.done.push(old);
+                }
+                continue;
+            }
+            for old in [self.current.replace(next), self.queued.take()]
+                .into_iter()
+                .flatten()
+            {
                 let _ = self.done.push(old);
             }
             self.eq.clear();
         }
         let shared = &*self.shared;
-        let source = match &mut self.current {
-            Some(source) if shared.playing.load(Ordering::Relaxed) => source,
-            _ => {
-                out.fill(0.0);
-                shared.level_left.set(0.0);
-                shared.level_right.set(0.0);
-                return;
-            }
-        };
+        if self.current.is_none() || !shared.playing.load(Ordering::Relaxed) {
+            out.fill(0.0);
+            shared.level_left.set(0.0);
+            shared.level_right.set(0.0);
+            return;
+        }
         let wanted = out.len();
-        let (filled, rest) = source.ring.pop_partial_slice(out);
-        let got = filled.len() & !1;
-        rest.fill(0.0);
-        if got < wanted {
-            if source.stream.decoded_all.load(Ordering::Acquire) && source.ring.is_empty() {
-                source.stream.ended.store(true, Ordering::Release);
-            } else {
+        let mut got = 0;
+        while let Some(source) = &mut self.current {
+            let (filled, _) = source.ring.pop_partial_slice(&mut out[got..]);
+            let n = filled.len() & !1;
+            source
+                .stream
+                .frames_played
+                .fetch_add((n / 2) as u64, Ordering::Relaxed);
+            got += n;
+            if got >= wanted {
+                break;
+            }
+            if !(source.stream.decoded_all.load(Ordering::Acquire) && source.ring.is_empty()) {
                 shared.underruns.fetch_add(1, Ordering::Relaxed);
+                break;
+            }
+            source.stream.ended.store(true, Ordering::Release);
+            // the next song, decoded ahead, goes on in this same block
+            match self.queued.take() {
+                Some(next) if !next.stream.cancel.load(Ordering::Acquire) => {
+                    if let Some(old) = self.current.replace(next) {
+                        let _ = self.done.push(old);
+                    }
+                }
+                Some(dropped) => {
+                    let _ = self.done.push(dropped);
+                    break;
+                }
+                None => break,
             }
         }
-        source
-            .stream
-            .frames_played
-            .fetch_add((got / 2) as u64, Ordering::Relaxed);
+        out[got..].fill(0.0);
         let heard = &mut out[..got];
         if shared.eq_on.load(Ordering::Relaxed) {
             self.eq.follow(shared);
@@ -374,6 +402,7 @@ impl Output {
             incoming,
             done,
             current: None,
+            queued: None,
             eq: Equalizer::new(sample_rate),
             rack,
             tap_at: 0,
@@ -417,5 +446,85 @@ impl Output {
             self.device.stop();
             self.running = false;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
+    use std::sync::{Arc, Mutex};
+
+    use super::{Equalizer, RackVoice, Shared, Source, Stream, Voice};
+
+    /// A source whose decoder is done, holding `frames` frames of `value`.
+    fn source(frames: usize, value: f32, follows: bool) -> Source {
+        let (mut producer, ring) = rtrb::RingBuffer::new(frames * 2);
+        for _ in 0..frames * 2 {
+            producer.push(value).unwrap();
+        }
+        let stream = Arc::new(Stream {
+            frames_played: AtomicU64::new(0),
+            decoded_all: AtomicBool::new(true),
+            ended: AtomicBool::new(false),
+            cancel: AtomicBool::new(false),
+            sample_rate: AtomicU32::new(44_100),
+            news: Mutex::default(),
+        });
+        Source {
+            stream,
+            ring,
+            follows,
+        }
+    }
+
+    fn voice() -> (Voice, rtrb::Producer<Source>) {
+        let shared = Shared::new();
+        shared.playing.store(true, Ordering::Relaxed);
+        let (sources, incoming) = rtrb::RingBuffer::new(8);
+        let (done, _replaced) = rtrb::RingBuffer::new(8);
+        let voice = Voice {
+            shared,
+            incoming,
+            done,
+            current: None,
+            queued: None,
+            eq: Equalizer::new(44_100),
+            rack: RackVoice::empty(),
+            tap_at: 0,
+        };
+        (voice, sources)
+    }
+
+    #[test]
+    fn the_next_song_starts_in_the_same_block_the_current_one_ends() {
+        let (mut voice, mut sources) = voice();
+        let first = source(100, 0.25, false);
+        let second = source(1000, 0.5, true);
+        let (a, b) = (first.stream.clone(), second.stream.clone());
+        sources.push(first).unwrap();
+        sources.push(second).unwrap();
+        let mut out = vec![0.0; 512];
+        voice.render(&mut out);
+        assert!(out[..200].iter().all(|s| *s == 0.25));
+        assert!(
+            out[200..].iter().all(|s| *s == 0.5),
+            "no silence between the songs"
+        );
+        assert!(a.ended.load(Ordering::Relaxed));
+        assert_eq!(a.frames_played.load(Ordering::Relaxed), 100);
+        assert_eq!(b.frames_played.load(Ordering::Relaxed), 156);
+        assert_eq!(voice.shared.underruns.load(Ordering::Relaxed), 0);
+    }
+
+    #[test]
+    fn a_next_song_let_go_of_is_not_played() {
+        let (mut voice, mut sources) = voice();
+        let second = source(1000, 0.5, true);
+        second.stream.cancel.store(true, Ordering::Relaxed);
+        sources.push(source(100, 0.25, false)).unwrap();
+        sources.push(second).unwrap();
+        let mut out = vec![1.0; 512];
+        voice.render(&mut out);
+        assert!(out[200..].iter().all(|s| *s == 0.0));
     }
 }

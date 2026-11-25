@@ -163,6 +163,17 @@ struct Playing {
     waiting: Option<rtrb::Consumer<f32>>,
 }
 
+/// The song after the current one, picked and decoded ahead so that it follows with no gap.
+struct Next {
+    /// Its place in the playlist.
+    index: usize,
+    /// Its decoder; `None` when its sample rate differs from the output's, so the output is
+    /// opened again for it when the current song ends.
+    stream: Option<Arc<Stream>>,
+    /// Its ring while there is no output to queue it in.
+    unheard: Option<rtrb::Consumer<f32>>,
+}
+
 /// The player.
 pub struct Player {
     shared: Arc<Shared>,
@@ -171,6 +182,8 @@ pub struct Player {
     index: usize,
     status: Status,
     playing: Option<Playing>,
+    /// The song after it, once the current one is decoded to its end.
+    next: Option<Next>,
     /// Where the song stands while nothing is loaded for it: after a stop, or a seek while stopped.
     resume_ms: i32,
     volume: i32,
@@ -213,6 +226,7 @@ impl Player {
             index: 0,
             status: Status::Stopped,
             playing: None,
+            next: None,
             resume_ms: 0,
             volume: FIRST_VOLUME,
             pan: 0,
@@ -323,6 +337,7 @@ impl Player {
 
     /// Keeps the entries `keep` says to, by their place in the list.
     fn keep(&mut self, keep: impl Fn(usize) -> bool) {
+        self.forget_next();
         let current_stays = keep(self.index);
         if !current_stays {
             self.stop();
@@ -347,6 +362,7 @@ impl Player {
     /// Puts the playlist in the order `arrange` gives it; the current entry stays current, and
     /// the song playing goes on. `arrange` gets each entry with the place it had.
     fn rearrange(&mut self, arrange: impl FnOnce(&mut Vec<(usize, Entry)>)) {
+        self.forget_next();
         let mut list: Vec<(usize, Entry)> = std::mem::take(&mut self.playlist)
             .into_iter()
             .enumerate()
@@ -439,6 +455,7 @@ impl Player {
 
     /// Reads the files at `rows` again: their tags, length and title as they are now.
     pub fn reread(&mut self, rows: &[usize]) {
+        self.forget_next();
         for &row in rows {
             let Some(path) = self.playlist.get(row).map(|e| e.path.clone()) else {
                 continue;
@@ -456,6 +473,7 @@ impl Player {
 
     /// Picks the next song at random, or in the list's order.
     pub fn set_shuffle(&mut self, on: bool) {
+        self.forget_next();
         self.shuffle = on;
         self.shuffled.clear();
     }
@@ -467,6 +485,7 @@ impl Player {
 
     /// Starts the list over after its last song, or stops there.
     pub fn set_repeat(&mut self, on: bool) {
+        self.forget_next();
         self.repeat = on;
     }
 
@@ -610,6 +629,7 @@ impl Player {
             Some(output) => output.play(Source {
                 stream: playing.stream.clone(),
                 ring,
+                follows: false,
             }),
             None => playing.unheard = Some(ring),
         }
@@ -633,12 +653,90 @@ impl Player {
         };
     }
 
-    /// Lets go of the song loaded: its decoder stops.
+    /// Lets go of the song loaded: its decoder stops, and the next one's.
     fn unload(&mut self) {
         if let Some(p) = self.playing.take() {
             p.stream.cancel.store(true, Ordering::Release);
         }
+        self.forget_next();
         self.shared.tap.clear();
+    }
+
+    /// Lets go of the song picked to follow: the playlist or its order changed.
+    fn forget_next(&mut self) {
+        if let Some(stream) = self.next.take().and_then(|n| n.stream) {
+            stream.cancel.store(true, Ordering::Release);
+        }
+    }
+
+    /// Picks the song after the current one once the current one is decoded to its end, and
+    /// starts decoding it, so that the output goes on to it with no gap. A song at another
+    /// sample rate is only picked: the output is opened for it when it comes.
+    fn decode_ahead(&mut self) {
+        let Some(playing) = &self.playing else {
+            return;
+        };
+        let ready = self.status == Status::Playing
+            && self.next.is_none()
+            && playing.waiting.is_none()
+            && playing.stream.decoded_all.load(Ordering::Acquire)
+            && !playing.stream.ended.load(Ordering::Acquire)
+            && self.entry().is_some_and(|e| !decode::is_url(&e.path));
+        if !ready {
+            return;
+        }
+        let rate = playing.stream.sample_rate.load(Ordering::Acquire);
+        let Some(index) = self.following() else {
+            return;
+        };
+        let entry = &self.playlist[index];
+        let same_rate = !decode::is_url(&entry.path) && entry.info.sample_rate.max(8000) == rate;
+        if !same_rate {
+            self.next = Some(Next {
+                index,
+                stream: None,
+                unheard: None,
+            });
+            return;
+        }
+        let (stream, ring) = decode::spawn(entry.path.clone(), 0, rate);
+        let unheard = match &mut self.output {
+            Some(output) => {
+                output.play(Source {
+                    stream: stream.clone(),
+                    ring,
+                    follows: true,
+                });
+                None
+            }
+            None => Some(ring),
+        };
+        self.next = Some(Next {
+            index,
+            stream: Some(stream),
+            unheard,
+        });
+    }
+
+    /// The current song ended: the one picked ahead takes over, already playing when it was
+    /// decoded ahead; else it is loaded now.
+    fn go_on_to(&mut self, next: Next) {
+        if self.shuffle {
+            self.shuffled.push(self.index);
+        }
+        self.index = next.index;
+        self.resume_ms = 0;
+        match next.stream {
+            Some(stream) => {
+                self.playing = Some(Playing {
+                    stream,
+                    start_ms: 0,
+                    unheard: next.unheard,
+                    waiting: None,
+                });
+            }
+            None => self.load(0, true),
+        }
     }
 
     /// Plays the current entry: from its start, or on from where it was paused.
@@ -805,9 +903,12 @@ impl Player {
                 .as_ref()
                 .is_some_and(|p| p.stream.ended.load(Ordering::Acquire));
         if !ended {
+            self.decode_ahead();
             return;
         }
-        if let Some(next) = self.following() {
+        if let Some(next) = self.next.take() {
+            self.go_on_to(next);
+        } else if let Some(next) = self.following() {
             if self.shuffle {
                 self.shuffled.push(self.index);
             }
