@@ -3,7 +3,7 @@
 Andamp for the desktop is Winamp's player on macOS, and later Windows and Linux: classic and
 modern skins run by the walkit engine, each of a skin's windows a window of its own on the
 desktop, with a real player behind them. It is built in two parts. `core/` is a Rust crate
-that is the app, the same on every system. A shell is the part written for one system; `app/`
+that is the app, the same on every system. A shell is the part written for one system; `apps/mac/`
 is the Mac's, in Swift.
 
 Two things decide most questions here. Speed is the first measure: an idle player costs
@@ -19,10 +19,10 @@ what a shell for another system has to do.
 tools/gate.sh                         # the push gate: format, lints, docs, tests, header, Swift
 (cd core && cargo test --release)     # the tests alone
 (cd core && cargo fmt)                # format the Rust
-xcrun swift-format format -i -r app/Sources   # format the Swift
+xcrun swift-format format -i -r apps/mac/Sources   # format the Swift
 tools/cross-check.sh                  # the core type-checked for Windows and Linux (needs zig)
-(cd app && xcodegen generate)         # the Xcode project, after project.yml changes
-xcodebuild -project app/Andamp.xcodeproj -scheme Andamp -configuration Release \
+(cd apps/mac && xcodegen generate)         # the Xcode project, after project.yml changes
+xcodebuild -project apps/mac/Andamp.xcodeproj -scheme Andamp -configuration Release \
   -derivedDataPath build build        # the Mac's app; it builds the core itself (core/build.sh)
 build/Build/Products/Release/Andamp.app/Contents/MacOS/Andamp [skin] [songs...]
 ```
@@ -75,7 +75,7 @@ window test (PLAN.md, Known about the engine).
 
 ```
 shell ──▶ ffi ──▶ app ──┬──▶ skin ──▶ host, render ──▶ walkit (the engine, a crate)
-(app/)                  ├──▶ player ──▶ decode, output ──▶ device  (one per system)
+(apps/mac/)             ├──▶ player ──▶ decode, output ──▶ device  (one per system)
                         │       └──▶ dsp: lua ──▶ graph ──▶ rack
                         └──▶ settings, vis
 ```
@@ -116,14 +116,15 @@ shell ──▶ ffi ──▶ app ──┬──▶ skin ──▶ host, render
 | `core/src/vis.rs` | The Visualizer's presets: which shows, how long, what its keys do. |
 | `core/src/ffi/` | The C interface, by what it takes: `app.rs`, `player.rs`, `skin.rs`. `core/include/andamp_core.h` is written by hand, in step with it. |
 | `core/tests/` | The tests, a file to an area: `app`, `windows`, `screens`, `player`, `effects`, `settings`. |
-| `app/Sources/` | The Mac's shell: `main.swift` answers the app's requests and draws its menus; `SkinController.swift` steps the app and places the windows; `SkinWindow.swift` shows pixels; `SkinCursors.swift` shows the cursor the app names; `WindowCycle.swift` is Command-` through the app's windows; `Preferences.swift`, `Effects.swift`, `Visualizer.swift` and `NowPlaying.swift` are the Mac's own windows and media keys; `Checks.swift` is `--dump` and `--bench`. |
+| `core/resources/` | What comes with the app on every system: the built-in skins, the fonts, the wasabi element set and the effect plug-ins. Each shell bundles this folder and hands its path to the app; the tests read it in place. |
+| `apps/mac/Sources/` | The Mac's shell: `main.swift` answers the app's requests and draws its menus; `SkinController.swift` steps the app and places the windows; `SkinWindow.swift` shows pixels; `SkinCursors.swift` shows the cursor the app names; `WindowCycle.swift` is Command-` through the app's windows; `Preferences.swift`, `Effects.swift`, `Visualizer.swift` and `NowPlaying.swift` are the Mac's own windows and media keys; `Checks.swift` is `--dump` and `--bench`. |
 | `vis/` | Builds libprojectM as a library beside the app. |
-| `tools/` | The gate, the cross-check, and `icon.sh`, which makes the Mac's icon from Andamp's own (`app/icon/andamp.svg`). |
+| `tools/` | The gate, the cross-check, and `icon.sh`, which makes the Mac's icon from Andamp's own (`apps/mac/icon/andamp.svg`). |
 | `spikes/` | Experiments kept for their findings; outside the gate. |
 
 **The split rule.** A file that holds two concerns is split by concern, not by length: the
 `app` module is one `impl App` over several files. A second shell gets a folder beside
-`app/`. The core becomes a workspace only when a second crate needs it, such as a shell in
+`apps/mac/`. The core becomes a workspace only when a second crate needs it, such as a shell in
 Rust.
 
 ### Threads

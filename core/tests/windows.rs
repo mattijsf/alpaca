@@ -11,7 +11,7 @@ use andamp_core::skin::{Skin, DRAWN, MOVED};
 use walkit::player::{FakePlayer, Player};
 
 fn resources() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../app/Resources")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("resources")
 }
 
 fn open(name: &str, playing: bool) -> Skin {

@@ -30,7 +30,7 @@ above compile every line for those systems and stop there.
 
 ## What a shell does
 
-A shell is the part written for one system: `app/` is the Mac's, in Swift. One written in
+A shell is the part written for one system: `apps/mac/` is the Mac's, in Swift. One written in
 Rust can use the core as a crate (`andamp_core::app::App`); one in another language uses the
 C interface (`core/include/andamp_core.h`, the `andamp_app_` calls), which is what the Mac's
 does.

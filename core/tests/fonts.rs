@@ -12,7 +12,7 @@ use walkit::files::SkinFiles;
 use walkit::player::FakePlayer;
 
 fn own() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../app/Resources/fonts")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("resources/fonts")
 }
 
 /// A folder of its own under the system's temporary folder, emptied first.
@@ -28,7 +28,7 @@ fn classic_pixels(fonts: Fonts) -> Vec<Vec<u32>> {
     let name = "walkit-classic.wsz";
     let bytes = std::fs::read(
         Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../app/Resources/skins")
+            .join("resources/skins")
             .join(name),
     )
     .unwrap();

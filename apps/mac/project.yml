@@ -21,18 +21,18 @@ targets:
     platform: macOS
     sources:
       - path: Sources
-      - path: ../core/include/andamp_core.h
+      - path: ../../core/include/andamp_core.h
         buildPhase: none
-      - path: Resources/skins
+      - path: ../../core/resources/skins
         type: folder
         buildPhase: resources
-      - path: Resources/fonts
+      - path: ../../core/resources/fonts
         type: folder
         buildPhase: resources
-      - path: Resources/wasabi
+      - path: ../../core/resources/wasabi
         type: folder
         buildPhase: resources
-      - path: Resources/plugins
+      - path: ../../core/resources/plugins
         type: folder
         buildPhase: resources
       # the app's icon, made from icon/andamp.svg by tools/icon.sh
@@ -75,8 +75,8 @@ targets:
       base:
         PRODUCT_NAME: Andamp
         PRODUCT_BUNDLE_IDENTIFIER: nl.mattix.andamp.mac
-        SWIFT_OBJC_BRIDGING_HEADER: ../core/include/andamp_core.h
-        LIBRARY_SEARCH_PATHS: $(PROJECT_DIR)/../core/target/macos
+        SWIFT_OBJC_BRIDGING_HEADER: ../../core/include/andamp_core.h
+        LIBRARY_SEARCH_PATHS: $(PROJECT_DIR)/../../core/target/macos
         # the Rust library and the system frameworks its audio output calls
         OTHER_LDFLAGS: -landamp_core -framework AudioToolbox -framework AudioUnit -framework CoreAudio
         # the Visualizer window draws with OpenGL, which Apple has deprecated and still ships
@@ -87,7 +87,7 @@ targets:
       # app's Frameworks folder, which the app loads when the Visualizer window opens
       - name: Copy the Milkdrop engine
         script: |
-          lib="$PROJECT_DIR/../vis/lib/libprojectM-4.dylib"
+          lib="$PROJECT_DIR/../../vis/lib/libprojectM-4.dylib"
           if [ -f "$lib" ]; then
             mkdir -p "$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH"
             cp -f "$lib" "$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/"
@@ -96,7 +96,7 @@ targets:
         basedOnDependencyAnalysis: false
     preBuildScripts:
       - name: Build the andamp-core library
-        script: exec "$PROJECT_DIR/../core/build.sh"
+        script: exec "$PROJECT_DIR/../../core/build.sh"
         basedOnDependencyAnalysis: false
         outputFiles:
-          - $(PROJECT_DIR)/../core/target/macos/libandamp_core.a
+          - $(PROJECT_DIR)/../../core/target/macos/libandamp_core.a

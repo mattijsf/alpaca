@@ -26,7 +26,7 @@ const LEFT: Area = Area {
 };
 
 fn resources() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../app/Resources")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("resources")
 }
 
 fn scratch(name: &str) -> PathBuf {

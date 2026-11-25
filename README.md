@@ -35,8 +35,8 @@ It needs Xcode, Rust (rustup's `cargo` in `~/.cargo/bin`) and
 [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
 ```sh
-(cd app && xcodegen generate)
-xcodebuild -project app/Andamp.xcodeproj -scheme Andamp -configuration Release \
+(cd apps/mac && xcodegen generate)
+xcodebuild -project apps/mac/Andamp.xcodeproj -scheme Andamp -configuration Release \
   -derivedDataPath build build
 open build/Build/Products/Release/Andamp.app
 ```
@@ -56,7 +56,7 @@ $APP --bench 10 song.flac          # what ten seconds of playing cost
 `core/` is Rust: the skin engine's host, a renderer that draws each window into its own
 buffer of pixels, the player (decoding, the output, the equalizer), the effect engine and
 the app itself (its menu, its commands, what it keeps between runs), behind a C interface.
-`app/` is Swift and AppKit: it shows the windows, draws the menu the core describes, opens
+`apps/mac/` is Swift and AppKit: it shows the windows, draws the menu the core describes, opens
 the file pickers the core asks for, and has the Mac's media keys.
 [ENGINEERING.md](ENGINEERING.md) has the architecture, its rules and the commands;
 [PLAN.md](PLAN.md) the order of work and where it stands.
@@ -67,4 +67,4 @@ The core is written to be the same on Windows and Linux, and compiles for both;
 ## License
 
 GNU General Public License, version 3 or later; see [LICENSE](LICENSE). The fonts in
-`app/Resources/fonts` have their own licenses beside them.
+`core/resources/fonts` have their own licenses beside them.

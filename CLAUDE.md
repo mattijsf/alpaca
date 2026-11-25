@@ -6,7 +6,7 @@ says where things stand; update Status and its log with every step you finish.
 
 - The player comes first; music sources from other apps come last. Speed is the first measure.
 - The player is for macOS, Windows and Linux ([PORTING.md](PORTING.md)). Whatever a second
-  shell would have to write again goes in `core/`, with a test; a shell (`app/` is the Mac's)
+  shell would have to write again goes in `core/`, with a test; a shell (`apps/mac/` is the Mac's)
   draws, opens panels and answers the app's requests, and decides nothing.
 - The engine is the `walkit` crate from crates.io; between its releases `core/Cargo.toml` may
   pin a revision of its main branch (`[patch.crates-io]`). Do not change the engine from

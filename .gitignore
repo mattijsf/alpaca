@@ -1,5 +1,5 @@
 /build/
-/app/Andamp.xcodeproj/
+/apps/mac/Andamp.xcodeproj/
 /core/target/
 .DS_Store
-/app/Info.plist
+/apps/mac/Info.plist

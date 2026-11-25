@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Draws the Mac's app icon from Andamp's icon (app/icon/andamp.svg) as a 1024 pixel PNG: the
+// Draws the Mac's app icon from Andamp's icon (apps/mac/icon/andamp.svg) as a 1024 pixel PNG: the
 // rounded square of a Mac icon, 824 pixels wide with its soft shadow, filled with the middle
 // 72 of the drawing's 108 units, which is the part an Android launcher shows.
 //

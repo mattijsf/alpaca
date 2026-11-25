@@ -27,7 +27,7 @@ tools/check-header.sh
 
 # the Mac's shell: Apple's swift-format, which comes with Xcode
 if command -v xcrun >/dev/null 2>&1 && xcrun --find swift-format >/dev/null 2>&1; then
-    xcrun swift-format lint --strict -r app/Sources
+    xcrun swift-format lint --strict -r apps/mac/Sources
 fi
 
 # the core still compiles for Windows and Linux, where zig is there to be their C compiler

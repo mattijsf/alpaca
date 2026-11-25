@@ -12,7 +12,7 @@ use andamp_core::player::Player;
 use andamp_core::vis::{by_name, Key, Presets};
 
 fn resources() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../app/Resources")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("resources")
 }
 
 fn scratch(name: &str) -> PathBuf {

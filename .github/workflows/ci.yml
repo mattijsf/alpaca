@@ -43,7 +43,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
       - run: brew install xcodegen
       - run: xcodegen generate
-        working-directory: app
+        working-directory: apps/mac
       - run: >
-          xcodebuild -project app/Andamp.xcodeproj -scheme Andamp -configuration Release
+          xcodebuild -project apps/mac/Andamp.xcodeproj -scheme Andamp -configuration Release
           -derivedDataPath build build

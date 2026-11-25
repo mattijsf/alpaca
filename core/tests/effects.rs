@@ -42,7 +42,7 @@ fn gain_db(engine: &mut Engine, hz: f32, seconds: f32) -> f32 {
 #[test]
 fn the_plug_ins_that_come_with_the_app_load_and_build() {
     let mut found = 0;
-    for dir in [folder("../app/Resources/plugins"), folder("tests/plugins")] {
+    for dir in [folder("resources/plugins"), folder("tests/plugins")] {
         for entry in std::fs::read_dir(dir).unwrap().flatten() {
             let path = entry.path();
             if path.extension().is_some_and(|e| e == "lua") {
@@ -271,7 +271,7 @@ fn the_rack_runs_what_is_on_and_fades_what_is_switched() {
 fn the_rack_is_left_and_put_back_and_a_control_reads_as_the_reference_says() {
     use andamp_core::dsp::rack::Rack;
     let mut rack = Rack::default();
-    let loaded = rack.add_folder(&folder("../app/Resources/plugins"));
+    let loaded = rack.add_folder(&folder("resources/plugins"));
     assert_eq!(loaded.len(), 6);
     assert!(
         loaded.iter().all(|(_, result)| result.is_ok()),
@@ -287,7 +287,7 @@ fn the_rack_is_left_and_put_back_and_a_control_reads_as_the_reference_says() {
     let left = rack.state();
 
     let mut next = Rack::default();
-    next.add_folder(&folder("../app/Resources/plugins"));
+    next.add_folder(&folder("resources/plugins"));
     next.restore(&left);
     next.restore("an.effect.that.is.gone\t1\tx=1\nrubbish");
     let effect = &next.effects()[tone];

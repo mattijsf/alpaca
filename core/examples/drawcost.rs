@@ -18,7 +18,7 @@ use walkit::player::{FakePlayer, Player};
 
 fn main() {
     let skin_path = std::env::args().nth(1).expect("a skin file");
-    let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../app/Resources");
+    let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("resources");
     let bytes = std::fs::read(&skin_path).expect("the skin");
     let name = Path::new(&skin_path)
         .file_name()

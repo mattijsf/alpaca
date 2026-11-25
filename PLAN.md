@@ -243,7 +243,7 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 
 What comes with the app: AndAmp Dark (the skin shown first, and the one under every classic
 skin), Light and Spot, from Andamp's own `skin/dist`; walkit's two example skins; Andamp's
-own element set under modern skins (`app/Resources/wasabi`, from Andamp's `defaultset`); the
+own element set under modern skins (`core/resources/wasabi`, from Andamp's `defaultset`); the
 stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fonts.rs`).
 
 ### Log
@@ -378,7 +378,7 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
   ExtensionKit; the example app's cost is where and how large it draws, not the engine.
 - 2026-11-23, night: steps 1 to 3 in their first form. `core/` is the engine's host, a
   renderer that draws one window at one pixel per layout pixel, and the audio (Symphonia,
-  the default output unit, a ring between them). `app/` is the AppKit shell. Tests in
+  the default output unit, a ring between them). `apps/mac/` is the AppKit shell. Tests in
   `core/tests` cover windows, drags, the skin's buttons, the player, the equalizer and the
   spectrum; none makes a sound. Checked by `--dump` with AndAmp Dark, walkit's two skins,
   two classic skins and four modern ones from the local test corpus.
