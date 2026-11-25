@@ -155,8 +155,10 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 
 - [x] One repository for every app, named Alpaca (formerly Andamp): the core in `core/`, what
   every app brings in `core/resources/`, the Mac's app in `apps/mac/`, the Android app in
-  `apps/android/` with its whole history (its commits rewritten under that folder, its `v*`
-  tags kept), `apps/web/` kept for a shell on the core in WebAssembly (PORTING.md, The web).
+  `apps/android/`, `apps/web/` kept for a shell on the core in WebAssembly (PORTING.md, The
+  web). The repository is the Android one (`mattijsf/andamp`, to be renamed `alpaca`) with
+  its commits, tags, releases and pull requests as they were: one commit moves the app into
+  `apps/android/` (`git log --follow` goes past it), and the Mac's history is merged in.
 - [x] Renamed everywhere but where a name is a contract: the Mac's bundle id is
   `nl.mattix.alpaca.mac` and its folder `Application Support/Alpaca`; a first start moves the
   `Andamp` folder there, and the skin worn, places kept by the built-in skins' old names
@@ -171,10 +173,11 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   Mac, `./gradlew gate` for pushes that touch `apps/android/`; the Android commit-type check
   only for commits that touch it. Workflows: `desktop-ci.yml`, `android-ci.yml`,
   `android-apk.yml`, `release-please.yml` for the Android app (package `apps/android`).
-- [ ] Not done, the owner's to decide: where the repository lives on GitHub and under what
-  name, and whether the Android repository's releases and tags move with it. The rewritten
-  history has new commit ids, so `last-release-sha` in `release-please-config.json` names
-  the rewritten `v0.17.0`; take it out after the first release from here.
+- [ ] The owner's to do: release what Android has had since `v0.17.0` from the old layout
+  first, since release-please now looks only at commits under `apps/android/`; then rename
+  the GitHub repository `andamp` to `alpaca` (GitHub sends the old addresses on) and push.
+  `andamp-monorepo`, an older attempt with the brand, the site and the sources, is not part
+  of this.
 - [ ] The CI workflows were moved and pointed at their folders, not run.
 - [ ] The local folder is still called `andamp-mac`.
 
@@ -277,8 +280,9 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
 
 - 2026-11-25, the rename and one repository: Andamp is Alpaca, and this repository holds
   every app. `app/` became `apps/mac/`; the skins, fonts, wasabi and plug-ins every app
-  brings went to `core/resources/`; the Android app came in under `apps/android/` with its
-  history, renamed there in its own commits (its gate and `assembleDebug` pass). What a Mac
+  brings went to `core/resources/`; the Android repository became this one, its app moved
+  to `apps/android/` and renamed there in its own commits (its gate and `assembleDebug`
+  pass), with the Mac's history merged in. What a Mac
   user kept as Andamp comes along on the first start. The core does not build for
   WebAssembly yet: `ring` under `ureq`'s TLS is the first crate that stops it.
 
