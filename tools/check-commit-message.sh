@@ -6,7 +6,7 @@
 #        check-commit-message.sh --subject "<first line>"
 set -euo pipefail
 
-types='feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert'
+types='feat|change|fix|docs|style|refactor|perf|test|build|ci|chore|revert'
 
 if [ "${1:-}" = "--subject" ]; then
     subject=${2:-}
