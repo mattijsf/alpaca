@@ -173,9 +173,13 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   Mac, `./gradlew gate` for pushes that touch `apps/android/`; the Android commit-type check
   only for commits that touch it. Workflows: `desktop-ci.yml`, `android-ci.yml`,
   `android-apk.yml`, `release-please.yml` for the Android app (package `apps/android`).
-- [ ] The owner's to do: release what Android has had since `v0.17.0` from the old layout
-  first, since release-please now looks only at commits under `apps/android/`; then rename
-  the GitHub repository `andamp` to `alpaca` (GitHub sends the old addresses on) and push.
+- [x] What Android has had since `v0.17.0` (the walkit renderer, #180–#209) was not
+  released from the old layout. Release-please now reads only commits under
+  `apps/android/`, so the move commit lists those changes again in its body, one `feat:` or
+  `fix:` entry each, for the first release from here.
+- [ ] The owner's to do: rename the GitHub repository `andamp` to `alpaca` (GitHub sends the
+  old addresses on) and push; merge with a merge commit, never squash. Release PR #181 on
+  the old layout is then stale: close it.
   `andamp-monorepo`, an older attempt with the brand, the site and the sources, is not part
   of this.
 - [ ] The CI workflows were moved and pointed at their folders, not run.
