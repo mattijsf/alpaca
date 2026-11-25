@@ -1,8 +1,8 @@
 # Writing a DSP plug-in
 
-An effect in Andamp is a `.lua` file. The listener adds it in
+An effect in Alpaca is a `.lua` file. The listener adds it in
 **Preferences → Plug-ins → Add plug-in** through the system file picker, or by
-opening or sharing the file to Andamp from another app, and it appears in the
+opening or sharing the file to Alpaca from another app, and it appears in the
 effect rack under **Preferences → Effects** beside the built-in effects, with
 its own controls. The author has nothing to build, sign or publish to a store.
 
@@ -19,7 +19,7 @@ plugin {
   id      = "nl.mattix.andamp.example.gain",
   name    = "Gain",
   version = "1.0.0",
-  author  = "Andamp examples",
+  author  = "Alpaca examples",
   about   = "Turns everything up or down. Nothing else.",
 }
 
@@ -117,13 +117,13 @@ In [`docs/examples`](https://github.com/mattijsf/andamp/tree/main/docs/examples)
 | [`refused/runaway.lua`](examples/refused/runaway.lua) | loops forever at load. Must hit the 3 s deadline rather than freeze the app |
 
 The two under `refused/` exercise the rejection paths, and are worth running
-against a build before trusting its error reporting. The plug-ins Andamp ships
+against a build before trusting its error reporting. The plug-ins Alpaca ships
 are written the same way, in `backend/media3/src/main/resources/plugins/`.
 
 ## Distribution
 
 Host the `.lua` file yourself. The listener picks it out of their downloads, or
-opens or shares it to Andamp from another app. There is nothing to sign or
+opens or shares it to Alpaca from another app. There is nothing to sign or
 register. Keep the `id` stable across versions — settings are filed under it, so
 a changed `id` is a different plug-in and loses the listener's tuning. Raise the
 `version` with each release: adding a file whose `id` is already installed asks

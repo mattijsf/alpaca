@@ -1,11 +1,11 @@
-# Writing a music source for Andamp
+# Writing a music source for Alpaca
 
-Andamp plays the files on the phone. Anything else, such as a streaming service or a
-server on the listener's network, is a **source**: a separate Android app that Andamp
+Alpaca plays the files on the phone. Anything else, such as a streaming service or a
+server on the listener's network, is a **source**: a separate Android app that Alpaca
 binds and drives over AIDL. The code calls a source a pack (`PackDescriptor`,
 `PackServiceBase`). This page describes what a source has to implement.
 
-- Andamp finds sources by querying Android for apps that answer a bind action. There is
+- Alpaca finds sources by querying Android for apps that answer a bind action. There is
   no registration, no list of approved authors and no key to request.
 - Every installed app that answers the action is its own source, with its own row in
   Preferences and its own entry in Media Library. A queue can mix rows from several
@@ -19,11 +19,11 @@ binds and drives over AIDL. The code calls a source a pack (`PackDescriptor`,
 | Part | Required | Purpose |
 |---|---|---|
 | A bound service answering `nl.mattix.andamp.source.BIND` | yes | The contract: playback, the library, the account and the audio |
-| An activity answering `nl.mattix.andamp.source.SETTINGS` | no | Your own settings screen, opened from Andamp's Preferences. The place to sign in, if the source has an account |
-| An `update.json` on the web | no | Lets Andamp tell the listener that a newer version exists |
+| An activity answering `nl.mattix.andamp.source.SETTINGS` | no | Your own settings screen, opened from Alpaca's Preferences. The place to sign in, if the source has an account |
+| An `update.json` on the web | no | Lets Alpaca tell the listener that a newer version exists |
 
 Both components must be `exported`, because another app binds and starts them. They run in
-your app's process. Andamp loads none of your code.
+your app's process. Alpaca loads none of your code.
 
 ```xml
 <service
@@ -50,7 +50,7 @@ A source that reaches a network declares `android.permission.INTERNET` in its ow
 manifest. `source-common` depends on `nl.mattix.andamp:network`, whose manifest adds
 `ACCESS_NETWORK_STATE`, so a source built on `source-common` ends up with both. A source
 needs no foreground service and no notification permission; see
-[What Andamp does](#what-andamp-does).
+[What Alpaca does](#what-alpaca-does).
 
 ### The launcher icon
 
@@ -68,7 +68,7 @@ the listener hid it, and the choice is kept in the source's own preferences.
 
 ### The mark in lists
 
-Where the listener has more than one source, Andamp marks each row of the library and, if they
+Where the listener has more than one source, Alpaca marks each row of the library and, if they
 ask, of the playlist with the source it comes from. A source can give its mark in two forms,
 both named in meta-data on its service, so neither is part of the contract version:
 
@@ -89,12 +89,12 @@ both named in meta-data on its service, so neither is part of the contract versi
         android:resource="@drawable/ic_launcher_monochrome" />
     <meta-data
         android:name="nl.mattix.andamp.source.MARK_PIXELS"
-        android:resource="@array/andamp_mark_pixels" />
+        android:resource="@array/alpaca_mark_pixels" />
 </service>
 ```
 
 ```xml
-<string-array name="andamp_mark_pixels">
+<string-array name="alpaca_mark_pixels">
     <item>.###.</item>
     <item>#...#</item>
     <item>#.#.#</item>
@@ -106,11 +106,11 @@ both named in meta-data on its service, so neither is part of the contract versi
 The skin's letters are five pixels tall. Art of five rows sits level with them; a logo that
 needs more room to be recognized can take up to nine, and stands out two pixels above and below.
 
-Both are optional. Without the drawable, Andamp takes the monochrome layer of the launcher
+Both are optional. Without the drawable, Alpaca takes the monochrome layer of the launcher
 icon (Android 13 and up), or else the shape of its foreground layer. Without the pixel art, it
 makes pixel art from whichever picture it took. A picture that is too full or too empty to
 tell apart at that size is left out, and the first letter of the source's name stands in.
-Andamp reads all of this from the installed app, without binding it, and reads it again when
+Alpaca reads all of this from the installed app, without binding it, and reads it again when
 the app is updated.
 
 ### Application id and signing key
@@ -134,7 +134,7 @@ Most sources depend on `source-common` and extend `PackServiceBase`. You can als
 `aidl` directory and the classes in `Wire.kt` into your project and implement the service
 yourself. In that case:
 
-- The package must stay `nl.mattix.andamp.core.packapi`, because it is part of the
+- The package must stay `nl.mattix.alpaca.core.packapi`, because it is part of the
   interface descriptor that both ends compare.
 - A copied parcel must have the same fields in the same order as `Wire.kt`. Parcels are
   read by position.
@@ -159,10 +159,10 @@ IPackListener (oneway)
 
 ### Versions
 
-Andamp calls `apiVersion()` first. If the number differs from its own `PACK_API`, it asks
+Alpaca calls `apiVersion()` first. If the number differs from its own `PACK_API`, it asks
 nothing else of the source. For a lower number, Preferences show the source as too old for
-this version of Andamp, with a button that opens the page listing sources. For a higher
-number, they show it as made for a newer version of Andamp.
+this version of Alpaca, with a button that opens the page listing sources. For a higher
+number, they show it as made for a newer version of Alpaca.
 
 Parcels are positional and carry no field names. Adding, removing or reordering a field in
 any parcel changes the bytes, so every such change needs a new `PACK_API`, and a source
@@ -181,9 +181,9 @@ is answered on the binder thread and may block there.
 
 ### The queue
 
-The source owns the queue. Andamp sends rows with `setQueue` and `enqueue` and then sends
+The source owns the queue. Alpaca sends rows with `setQueue` and `enqueue` and then sends
 transport calls. What plays next, what shuffle and repeat do, and where the cursor is are
-decided by the source and reported in `PackState`. Andamp draws what `PackState` says.
+decided by the source and reported in `PackState`. Alpaca draws what `PackState` says.
 
 ### Audio
 
@@ -192,7 +192,7 @@ stereo, 16-bit, four bytes a frame, with no framing around it. That is the only 
 player renders (`PcmProvider.SAMPLE_RATE_HZ`, `CHANNELS`, `BYTES_PER_FRAME`).
 
 On a seek, a change of track or a stop, close your end of the pipe. Everything already
-written is discarded with it. Andamp reads end-of-stream, flushes its own chain and calls
+written is discarded with it. Alpaca reads end-of-stream, flushes its own chain and calls
 `openAudio` again for a pipe that starts at the new position. The stream has no markers
 and no counters.
 
@@ -200,7 +200,7 @@ A write blocks while the player is not reading. That is the back-pressure that k
 decoder from running ahead of what is heard.
 
 A source that plays its audio somewhere else, such as on another device, sets
-`handsOverAudio = false`. Andamp then does not call `openAudio`.
+`handsOverAudio = false`. Alpaca then does not call `openAudio`.
 
 `PackAudioOut` in `source-common` implements the source's end of the pipe.
 
@@ -212,7 +212,7 @@ playlists, playlist tracks, search, find artists, and the four of
 `PackQuestion.PAGE` (500) items; set `PackAnswer.more` when there are more.
 
 Return `PackAnswer(failed = true)` when you cannot answer, for example because the
-connection is down. An answer with empty lists means there is nothing there, and Andamp
+connection is down. An answer with empty lists means there is nothing there, and Alpaca
 shows it as an empty library.
 
 ### Folders and genres
@@ -230,7 +230,7 @@ are not part of the contract version:
     android:value="true" />
 ```
 
-Andamp then asks four more kinds of question. It asks them of no other source, because a
+Alpaca then asks four more kinds of question. It asks them of no other source, because a
 source answers a kind it does not know as failed.
 
 | `PackQuestion.kind` | `id` | Answer |
@@ -248,13 +248,13 @@ the tracks of each.
 
 A source built on `BrowseSource` and `PackAnswers` implements `BrowseGroups` on its library.
 A server that lists tracks with the paths of their files but no folders can group them with
-`TrackFolders` in `source-common`. Andamp keeps the lists of folders and genres between
+`TrackFolders` in `source-common`. Alpaca keeps the lists of folders and genres between
 launches and asks for them again in the background, so listing every folder may take a
 while; the tracks of a folder or genre are asked for when it is opened.
 
 ### The account
 
-Andamp learns about the account in two ways, and a source implements both:
+Alpaca learns about the account in two ways, and a source implements both:
 
 - It calls `account()` when it binds and whenever it needs to know again. Answer from what
   is stored on the phone, without contacting the server, because the call blocks.
@@ -263,7 +263,7 @@ Andamp learns about the account in two ways, and a source implements both:
   calls `PackServiceBase.signedIn(context, service)` or `signedOut(context, service)`,
   and the service tells the listeners.
 
-## What Andamp does
+## What Alpaca does
 
 - It renders the source's audio through its own chain: the equalizer, balance, the effect
   rack, volume, and the tap the visualizers read. This is the same chain a file on the
@@ -279,7 +279,7 @@ A source therefore needs no foreground service and no notification of its own.
 
 ## Identity
 
-Andamp binds whatever source the listener installed. It has no pinned key and no list of
+Alpaca binds whatever source the listener installed. It has no pinned key and no list of
 approved authors.
 
 The source's page in Preferences shows the app's label, its package name and the first
@@ -322,11 +322,11 @@ playlists record the scheme, so do not change it between versions: rows saved un
 old scheme would no longer reach your source. The scheme may be written with or without a
 trailing colon.
 
-**`home`.** Andamp writes `home` into a saved playlist beside the rows. A phone without
+**`home`.** Alpaca writes `home` into a saved playlist beside the rows. A phone without
 your source, or a person who was given the playlist, can then be sent to the page where
 the source is available.
 
-**First install.** Andamp stores each source's scheme and label after it has reached the
+**First install.** Alpaca stores each source's scheme and label after it has reached the
 source. On the first launch after installing, the source appears once the first binding
 has completed. On later launches it is drawn from the stored values at once. A source that
 never appears has not answered `describe()`.
@@ -339,10 +339,10 @@ Publish an `update.json` and put its URL in `updates`:
 { "version": "1.1.0", "page": "https://example.org/source/download" }
 ```
 
-Andamp's Preferences then tell the listener that a newer version exists and open `page` in
-the browser. Andamp does not download or install anything.
+Alpaca's Preferences then tell the listener that a newer version exists and open `page` in
+the browser. Alpaca does not download or install anything.
 
-Test uninstalling your source. Andamp must keep the rows, mark them as missing and go on
+Test uninstalling your source. Alpaca must keep the rows, mark them as missing and go on
 playing everything else.
 
 ## Publishing

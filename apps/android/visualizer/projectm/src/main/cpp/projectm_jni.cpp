@@ -148,7 +148,7 @@ void onSwitchFailed(const char* presetFile, const char* message, void* userData)
 extern "C" {
 
 JNIEXPORT jstring JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectM_nativeVersion(JNIEnv* env, jobject /* thiz */)
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectM_nativeVersion(JNIEnv* env, jobject /* thiz */)
 {
     // projectm_get_version_string() hands over ownership; memory.h owns the free.
     char* version = projectm_get_version_string();
@@ -158,13 +158,13 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectM_nativeVersion(JNIEnv* env, jo
 }
 
 JNIEXPORT jint JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeMaxSamples(JNIEnv* /* env */, jobject /* thiz */)
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativeMaxSamples(JNIEnv* /* env */, jobject /* thiz */)
 {
     return static_cast<jint>(projectm_pcm_get_max_samples());
 }
 
 JNIEXPORT jlong JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeCreate(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativeCreate(
         JNIEnv* /* env */, jobject /* thiz */,
         jint width, jint height, jint meshWidth, jint meshHeight, jint fps)
 {
@@ -180,42 +180,42 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeCreate(
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeDestroy(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativeDestroy(
         JNIEnv* /* env */, jobject /* thiz */, jlong handle)
 {
     projectm_destroy(handleOf(handle));
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeSetWindowSize(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativeSetWindowSize(
         JNIEnv* /* env */, jobject /* thiz */, jlong handle, jint width, jint height)
 {
     projectm_set_window_size(handleOf(handle), static_cast<size_t>(width), static_cast<size_t>(height));
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeSetMeshSize(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativeSetMeshSize(
         JNIEnv* /* env */, jobject /* thiz */, jlong handle, jint width, jint height)
 {
     projectm_set_mesh_size(handleOf(handle), static_cast<size_t>(width), static_cast<size_t>(height));
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeSetFps(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativeSetFps(
         JNIEnv* /* env */, jobject /* thiz */, jlong handle, jint fps)
 {
     projectm_set_fps(handleOf(handle), fps);
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeRenderFrame(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativeRenderFrame(
         JNIEnv* /* env */, jobject /* thiz */, jlong handle)
 {
     projectm_opengl_render_frame(handleOf(handle));
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeAddPcmFloat(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativeAddPcmFloat(
         JNIEnv* env, jobject /* thiz */, jlong handle, jfloatArray samples, jint count, jint channels)
 {
     // The render loop must not allocate: a critical region hands over the
@@ -231,7 +231,7 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeAddPcmFloat(
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeLoadPresetFile(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativeLoadPresetFile(
         JNIEnv* env, jobject /* thiz */, jlong handle, jstring path, jboolean smooth)
 {
     const char* chars = env->GetStringUTFChars(path, nullptr);
@@ -243,7 +243,7 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeLoadPresetFile(
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeSetTextureSearchPaths(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativeSetTextureSearchPaths(
         JNIEnv* env, jobject /* thiz */, jlong handle, jobjectArray paths)
 {
     const jsize count = env->GetArrayLength(paths);
@@ -268,28 +268,28 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeSetTextureSearchP
 }
 
 JNIEXPORT jlong JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistCreate(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativePlaylistCreate(
         JNIEnv* /* env */, jobject /* thiz */, jlong handle)
 {
     return reinterpret_cast<jlong>(projectm_playlist_create(handleOf(handle)));
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistDestroy(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativePlaylistDestroy(
         JNIEnv* /* env */, jobject /* thiz */, jlong playlist)
 {
     projectm_playlist_destroy(playlistOf(playlist));
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistClear(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativePlaylistClear(
         JNIEnv* /* env */, jobject /* thiz */, jlong playlist)
 {
     projectm_playlist_clear(playlistOf(playlist));
 }
 
 JNIEXPORT jint JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistAddPath(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativePlaylistAddPath(
         JNIEnv* env, jobject /* thiz */, jlong playlist, jstring path, jboolean recurse)
 {
     const char* chars = env->GetStringUTFChars(path, nullptr);
@@ -303,42 +303,42 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistAddPath(
 }
 
 JNIEXPORT jint JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistSize(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativePlaylistSize(
         JNIEnv* /* env */, jobject /* thiz */, jlong playlist)
 {
     return static_cast<jint>(projectm_playlist_size(playlistOf(playlist)));
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistSetShuffle(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativePlaylistSetShuffle(
         JNIEnv* /* env */, jobject /* thiz */, jlong playlist, jboolean shuffle)
 {
     projectm_playlist_set_shuffle(playlistOf(playlist), shuffle == JNI_TRUE);
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistSetRetryCount(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativePlaylistSetRetryCount(
         JNIEnv* /* env */, jobject /* thiz */, jlong playlist, jint retries)
 {
     projectm_playlist_set_retry_count(playlistOf(playlist), static_cast<uint32_t>(retries));
 }
 
 JNIEXPORT jint JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistPlayNext(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativePlaylistPlayNext(
         JNIEnv* /* env */, jobject /* thiz */, jlong playlist, jboolean hardCut)
 {
     return static_cast<jint>(projectm_playlist_play_next(playlistOf(playlist), hardCut == JNI_TRUE));
 }
 
 JNIEXPORT jint JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistPlayPrevious(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativePlaylistPlayPrevious(
         JNIEnv* /* env */, jobject /* thiz */, jlong playlist, jboolean hardCut)
 {
     return static_cast<jint>(projectm_playlist_play_previous(playlistOf(playlist), hardCut == JNI_TRUE));
 }
 
 JNIEXPORT jint JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistSetPosition(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativePlaylistSetPosition(
         JNIEnv* /* env */, jobject /* thiz */, jlong playlist, jint position, jboolean hardCut)
 {
     return static_cast<jint>(projectm_playlist_set_position(playlistOf(playlist),
@@ -347,14 +347,14 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistSetPositi
 }
 
 JNIEXPORT jint JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistPosition(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativePlaylistPosition(
         JNIEnv* /* env */, jobject /* thiz */, jlong playlist)
 {
     return static_cast<jint>(projectm_playlist_get_position(playlistOf(playlist)));
 }
 
 JNIEXPORT jstring JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistItem(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativePlaylistItem(
         JNIEnv* env, jobject /* thiz */, jlong playlist, jint index)
 {
     char* item = projectm_playlist_item(playlistOf(playlist), static_cast<uint32_t>(index));
@@ -367,7 +367,7 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistItem(
 }
 
 JNIEXPORT jint JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistAddPresets(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativePlaylistAddPresets(
         JNIEnv* env, jobject /* thiz */, jlong playlist, jobjectArray paths)
 {
     // one crossing for a whole list, and no duplicate check: projectM's is a linear search per
@@ -389,7 +389,7 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistAddPreset
 }
 
 JNIEXPORT jlong JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistWatchFailures(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativePlaylistWatchFailures(
         JNIEnv* /* env */, jobject /* thiz */, jlong playlist, jint retries)
 {
     auto* watch = new FailureWatch();
@@ -401,7 +401,7 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistWatchFail
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeWatchDirection(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativeWatchDirection(
         JNIEnv* /* env */, jobject /* thiz */, jlong watch, jboolean backwards)
 {
     auto* failures = reinterpret_cast<FailureWatch*>(watch);
@@ -410,7 +410,7 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeWatchDirection(
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistUnwatchFailures(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativePlaylistUnwatchFailures(
         JNIEnv* /* env */, jobject /* thiz */, jlong playlist, jlong watch)
 {
     projectm_playlist_set_preset_switch_failed_event_callback(playlistOf(playlist), nullptr, nullptr);
@@ -418,7 +418,7 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistUnwatchFa
 }
 
 JNIEXPORT jbyteArray JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeTakeFailures(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativeTakeFailures(
         JNIEnv* env, jobject /* thiz */, jlong watch)
 {
     auto* failures = reinterpret_cast<FailureWatch*>(watch);
@@ -433,7 +433,7 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeTakeFailures(
 }
 
 JNIEXPORT jbyteArray JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeTakeLog(
+Java_nl_mattix_alpaca_visualizer_projectm_ProjectMNative_nativeTakeLog(
         JNIEnv* env, jobject /* thiz */)
 {
     return zeroEnded(env, projectMLog().take());

@@ -1,4 +1,4 @@
-# The "Extend Andamp" developer site: the two things somebody outside this
+# The "Extend Alpaca" developer site: the two things somebody outside this
 # repository can write against - a music source, and a DSP plug-in.
 #
 # docs_dir is not docs/. docs/ also holds design notes, measurements and the
@@ -6,8 +6,8 @@
 # docs/ is not published by accident. `./gradlew docsSite` fills the staging
 # directory from the list in the root build file, so running mkdocs by hand
 # against this file needs the Gradle task to have staged first.
-site_name: Extend Andamp
-site_description: Write a music source or a DSP plug-in for Andamp.
+site_name: Extend Alpaca
+site_description: Write a music source or a DSP plug-in for Alpaca.
 docs_dir: build/docs-src
 
 # Plain files, openable from disk. `true` would write every page as
@@ -83,7 +83,7 @@ validation:
     not_found: ignore
 
 nav:
-  - Extend Andamp: index.md
+  - Extend Alpaca: index.md
   - Music sources: source-packs.md
   - Writing a DSP plug-in: dsp-plugins-intro.md
   - DSP plug-in reference: dsp-plugin-spec.md

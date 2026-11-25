@@ -31,14 +31,14 @@ fun versionCodeOf(name: String): Int {
 }
 
 /**
- * The id of the player this app belongs to. It follows `:app`, which `-Pandamp.id.suffix`
- * gives a second id for trying a change beside the Andamp a store installed; this app's own id
- * is that one with `.androidauto` after it (`RemoteWindowLink`).
+ * The id of the player this app belongs to. It follows `:app`, which `-Palpaca.id.suffix`
+ * gives a second id for trying a change beside the Alpaca a store installed; this app's own id
+ * is that one with `.androidauto` after it (`RemoteWindowLink`). The id is still Andamp's.
  */
-val player = "nl.mattix.andamp" + (findProperty("andamp.id.suffix") as String?).orEmpty()
+val player = "nl.mattix.andamp" + (findProperty("alpaca.id.suffix") as String?).orEmpty()
 
 android {
-    namespace = "nl.mattix.andamp.androidauto"
+    namespace = "nl.mattix.alpaca.androidauto"
 
     defaultConfig {
         applicationId = "$player.androidauto"

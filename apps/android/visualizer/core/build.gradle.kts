@@ -9,5 +9,5 @@ plugins {
 // renders through, with its thread, its lifecycle gate and its command queue.
 // An engine module implements the loop; this owns everything around it.
 android {
-    namespace = "nl.mattix.andamp.visualizer.core"
+    namespace = "nl.mattix.alpaca.visualizer.core"
 }

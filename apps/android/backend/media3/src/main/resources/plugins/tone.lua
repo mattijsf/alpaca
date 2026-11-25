@@ -12,7 +12,7 @@ plugin {
   id      = "nl.mattix.andamp.tone",
   name    = "Bass & Treble",
   version = "1.0.0",
-  author  = "Andamp",
+  author  = "Alpaca",
   about   = "RBJ low shelf at 100 Hz and high shelf at 8 kHz (Q = 1), ±12 dB; output reduced by the larger boost to keep headroom.",
 }
 

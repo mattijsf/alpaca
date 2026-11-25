@@ -8,7 +8,7 @@ plugin {
   id      = "nl.mattix.andamp.example.shaped",
   name    = "Shaped",
   version = "1.0.0",
-  author  = "Andamp examples",
+  author  = "Alpaca examples",
   about   = "A tone control and a switched-in resonance, to show what a layout looks like.",
 }
 

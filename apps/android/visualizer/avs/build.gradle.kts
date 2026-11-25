@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "nl.mattix.andamp.visualizer.avs"
+    namespace = "nl.mattix.alpaca.visualizer.avs"
 
     // r27+ is the floor for 16 KB page alignment, required from Android 15
     ndkVersion = "28.2.13676358"

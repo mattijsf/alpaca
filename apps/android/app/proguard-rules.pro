@@ -1,7 +1,7 @@
 # What R8 may not take away: everything here is reached by name at run time,
 # not by a call R8 can see. Each rule says which.
 
-# JNI. The native side finds its functions by symbol - Java_nl_mattix_andamp_..._method -
+# JNI. The native side finds its functions by symbol - Java_nl_mattix_alpaca_..._method -
 # and never calls FindClass, so the class and method names on the Kotlin side are
 # the linkage. Renamed, the library loads and every call throws UnsatisfiedLinkError.
 -keepclasseswithmembernames,includedescriptorclasses class * {

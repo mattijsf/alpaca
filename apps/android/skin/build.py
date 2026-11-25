@@ -13,7 +13,7 @@
                                 each in its own process (a theme is resolved
                                 once, at import)
 
-The theme is chosen by ANDAMP_THEME: "dark" (the default), "light" or "spot".
+The theme is chosen by ALPACA_THEME: "dark" (the default), "light" or "spot".
 
 No third-party packages. The drawing layer cannot anti-alias and the zip is
 written with fixed timestamps, so two runs produce identical bytes.
@@ -24,8 +24,8 @@ import os
 import pathlib
 import sys
 
-from andamp import bmp, compose, png, palette as P, textfiles, package
-from andamp.sheets import (main, titlebar, cbuttons, shufrep, posbar, volume,
+from alpaca import bmp, compose, png, palette as P, textfiles, package
+from alpaca.sheets import (main, titlebar, cbuttons, shufrep, posbar, volume,
                            monoster, playpaus, numbers, text, eqmain, eq_ex,
                            pledit, gen, genex, frames)
 
@@ -116,12 +116,12 @@ def template():
     import json
     import subprocess
     import zipfile
-    from andamp import template as T
+    from alpaca import template as T
 
     canvases, members = render()
-    path = DIST / f"andamp-{P.THEME_NAME}-template.zip"
+    path = DIST / f"alpaca-{P.THEME_NAME}-template.zip"
     DIST.mkdir(exist_ok=True)
-    subprocess.run([sys.executable, "-m", "andamp.template", str(path)],
+    subprocess.run([sys.executable, "-m", "alpaca.template", str(path)],
                    check=True, capture_output=True)
 
     with zipfile.ZipFile(path) as z:
@@ -155,7 +155,7 @@ def template():
 
     # The role table resolved against this build's palette. The app's
     # SkinTemplateRolesTest compares its own resolution with this file.
-    golden = DIST / f"andamp-{P.THEME_NAME}-roles.json"
+    golden = DIST / f"alpaca-{P.THEME_NAME}-roles.json"
     golden.write_text(json.dumps(
         {name: "#%06X" % value for name, value in colours.items()}, indent=1) + "\n")
 
@@ -195,10 +195,10 @@ if __name__ == "__main__":
         sys.exit(template())
     elif cmd == "all":
         import subprocess
-        from andamp.tokens import NAMES
+        from alpaca.tokens import NAMES
         rc = 0
         for theme in NAMES:
-            env = {**os.environ, "ANDAMP_THEME": theme}
+            env = {**os.environ, "ALPACA_THEME": theme}
             rc |= subprocess.call([sys.executable, __file__, "verify"], env=env)
             # The template is generated from the same sheets, so it is rebuilt
             # with them.

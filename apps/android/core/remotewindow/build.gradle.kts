@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "nl.mattix.andamp.core.remotewindow"
+    namespace = "nl.mattix.alpaca.core.remotewindow"
 
     buildFeatures {
         aidl = true

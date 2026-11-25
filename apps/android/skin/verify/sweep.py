@@ -11,7 +11,7 @@ held fixed; what varies is the hue of the source color and how much chroma
 each family carries. Chroma 0 stands in for Monochrome.
 
     python3 verify/sweep.py [N]            N schemes (default 2000) for the
-                                           active theme (ANDAMP_THEME)
+                                           active theme (ALPACA_THEME)
     python3 verify/sweep.py [N] --repair   the same, with the repair on
 
 The theme needs a literal ROLES table: dark or light.
@@ -22,8 +22,8 @@ import sys
 
 sys.path.insert(0, ".")
 
-from andamp import palette as P, roles as R, tonal as T   # noqa: E402
-from andamp.tokens import load                            # noqa: E402
+from alpaca import palette as P, roles as R, tonal as T   # noqa: E402
+from alpaca.tokens import load                            # noqa: E402
 
 # Which tonal palette each M3 role is drawn from, by the role name's prefix.
 FAMILY_BY_PREFIX = [

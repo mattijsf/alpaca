@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.22.1)
 
-project(andamp_projectm LANGUAGES C CXX)
+project(alpaca_projectm LANGUAGES C CXX)
 
 set(PROJECTM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../third_party/projectm")
 
@@ -49,9 +49,9 @@ endforeach()
 
 add_subdirectory("${PROJECTM_DIR}" projectm)
 
-add_library(andamp_projectm SHARED projectm_jni.cpp)
+add_library(alpaca_projectm SHARED projectm_jni.cpp)
 
-target_link_libraries(andamp_projectm
+target_link_libraries(alpaca_projectm
         PRIVATE
         libprojectM::projectM
         libprojectM::playlist

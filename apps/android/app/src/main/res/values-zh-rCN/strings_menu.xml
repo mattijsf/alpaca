@@ -15,7 +15,7 @@
     <string name="menu_playback">播放控制</string>
     <string name="menu_visualization">可视化效果</string>
     <string name="menu_skins">面板</string>
-    <string name="menu_support_andamp">支持 Andamp...</string>
+    <string name="menu_support_alpaca">支持 Alpaca...</string>
     <string name="menu_exit">退出</string>
     <string name="menu_previous">上一首</string>
     <string name="menu_pause">暂停</string>
@@ -87,7 +87,7 @@
 
     <!-- WidgetMenu.kt -->
     <string name="menu_widget_settings">小部件设置...</string>
-    <string name="menu_open_andamp">打开 Andamp</string>
+    <string name="menu_open_alpaca">打开 Alpaca</string>
 
     <!-- BookmarkSheetDialog.kt -->
     <string name="menu_rename_bookmark">重命名书签</string>

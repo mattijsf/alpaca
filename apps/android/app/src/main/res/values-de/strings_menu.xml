@@ -15,7 +15,7 @@
     <string name="menu_playback">Wiedergabe</string>
     <string name="menu_visualization">Visualisierung</string>
     <string name="menu_skins">Skins</string>
-    <string name="menu_support_andamp">Andamp unterstützen...</string>
+    <string name="menu_support_alpaca">Alpaca unterstützen...</string>
     <string name="menu_exit">Beenden</string>
     <string name="menu_previous">Vorheriger Titel</string>
     <string name="menu_pause">Pause</string>
@@ -87,7 +87,7 @@
 
     <!-- WidgetMenu.kt -->
     <string name="menu_widget_settings">Widget-Einstellungen...</string>
-    <string name="menu_open_andamp">Andamp öffnen</string>
+    <string name="menu_open_alpaca">Alpaca öffnen</string>
 
     <!-- BookmarkSheetDialog.kt -->
     <string name="menu_rename_bookmark">Lesezeichen umbenennen</string>

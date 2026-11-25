@@ -1,6 +1,6 @@
 # Changelog
 
-What changed for somebody who uses Andamp, newest first. It is written from the commit
+What changed for somebody who uses Alpaca, newest first. It is written from the commit
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
@@ -12,7 +12,7 @@ messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `doc
 * a long press on a modern skin's own menu opens it straight away ([#166](https://github.com/mattijsf/andamp/issues/166)) ([dd89abe](https://github.com/mattijsf/andamp/commit/dd89abef6bfcf505dc1b6ce6cd96f9b12769753d))
 * a modern skin moves and resizes as a desktop window ([#171](https://github.com/mattijsf/andamp/issues/171)) ([4ea7f2c](https://github.com/mattijsf/andamp/commit/4ea7f2c548cfb5734108ef28d902ad4ea3fa6de5))
 * a modern skin moves by a drag that starts on its buttons and menu bar too ([#168](https://github.com/mattijsf/andamp/issues/168)) ([0072795](https://github.com/mattijsf/andamp/commit/0072795be27a6916a89ee91056b7fa4ca821909f))
-* a modern skin's menu bar opens the matching Andamp menu ([#160](https://github.com/mattijsf/andamp/issues/160)) ([4241b0a](https://github.com/mattijsf/andamp/commit/4241b0a3e39091f1121c5e4e675482f368eae8d5))
+* a modern skin's menu bar opens the matching Alpaca menu ([#160](https://github.com/mattijsf/andamp/issues/160)) ([4241b0a](https://github.com/mattijsf/andamp/commit/4241b0a3e39091f1121c5e4e675482f368eae8d5))
 * a modern skin's X stops the music and closes the player, as the classic X does ([#169](https://github.com/mattijsf/andamp/issues/169)) ([3b86667](https://github.com/mattijsf/andamp/commit/3b86667a18c13376e487c890b28f10ba8a983b71))
 * open Winamp skins from a file manager or a download ([#115](https://github.com/mattijsf/andamp/issues/115)) ([18f5bb9](https://github.com/mattijsf/andamp/commit/18f5bb953e54cfe5e41811d0772bb647a74a2c60))
 * Options has a Skin Settings menu with the settings a modern skin offers ([#158](https://github.com/mattijsf/andamp/issues/158)) ([8d191f8](https://github.com/mattijsf/andamp/commit/8d191f80b32148cf5f5dc61064feea57a0dc787f))
@@ -39,7 +39,7 @@ messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `doc
 
 ### New
 
-* One library for all your music: the songs on your phone and on your music servers, together. If a song is in both places, Andamp plays the one on your phone ([#80](https://github.com/mattijsf/andamp/issues/80))
+* One library for all your music: the songs on your phone and on your music servers, together. If a song is in both places, Alpaca plays the one on your phone ([#80](https://github.com/mattijsf/andamp/issues/80))
 * Browse by folder or by genre, on your phone and on your music server ([#85](https://github.com/mattijsf/andamp/issues/85)) ([#93](https://github.com/mattijsf/andamp/issues/93))
 * See what you added lately and what you play most ([#81](https://github.com/mattijsf/andamp/issues/81))
 * Sort albums, jump from a song to its album or artist, and play a whole album or artist in one tap ([#83](https://github.com/mattijsf/andamp/issues/83))
@@ -47,8 +47,8 @@ messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `doc
 * The library opens faster, even without a connection, and remembers where you were in each tab. Search now finds artists and albums too ([#79](https://github.com/mattijsf/andamp/issues/79)) ([#77](https://github.com/mattijsf/andamp/issues/77)) ([#78](https://github.com/mattijsf/andamp/issues/78))
 * The library can use your skin's font, just like the playlist, and you choose how songs are shown ([#76](https://github.com/mattijsf/andamp/issues/76)) ([#86](https://github.com/mattijsf/andamp/issues/86))
 * A small logo next to each song, album and playlist shows where it comes from. The source menu shows them too ([#82](https://github.com/mattijsf/andamp/issues/82)) ([#87](https://github.com/mattijsf/andamp/issues/87)) ([#89](https://github.com/mattijsf/andamp/issues/89)) ([#90](https://github.com/mattijsf/andamp/issues/90))
-* Mark visualizer presets as favorites and preview one before you pick it. If a preset won't load, Andamp tells you why ([#74](https://github.com/mattijsf/andamp/issues/74))
-* The App info page in Android's settings now opens Andamp's settings ([#67](https://github.com/mattijsf/andamp/issues/67))
+* Mark visualizer presets as favorites and preview one before you pick it. If a preset won't load, Alpaca tells you why ([#74](https://github.com/mattijsf/andamp/issues/74))
+* The App info page in Android's settings now opens Alpaca's settings ([#67](https://github.com/mattijsf/andamp/issues/67))
 
 
 ### Fixed
@@ -60,7 +60,7 @@ messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `doc
 * The visualizer window no longer flashes your wallpaper when it opens ([#72](https://github.com/mattijsf/andamp/issues/72))
 * Plug-in links from the website now open the right page in Preferences ([#73](https://github.com/mattijsf/andamp/issues/73))
 * Song titles line up next to the source logos ([#88](https://github.com/mattijsf/andamp/issues/88))
-* Andamp no longer lists a notifications permission it never used ([#92](https://github.com/mattijsf/andamp/issues/92))
+* Alpaca no longer lists a notifications permission it never used ([#92](https://github.com/mattijsf/andamp/issues/92))
 
 
 ### Faster
@@ -72,15 +72,15 @@ messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `doc
 
 ### New
 
-* Andamp can be read in Dutch, German and French ([#55](https://github.com/mattijsf/andamp/issues/55)) ([3c15c17](https://github.com/mattijsf/andamp/commit/3c15c1780e830b43bb0546f5fd7d9fdb2423620c))
-* Andamp can be read in Simplified Chinese ([#53](https://github.com/mattijsf/andamp/issues/53)) ([7dfe2d7](https://github.com/mattijsf/andamp/commit/7dfe2d7825a18254320b42c21ba180f679f07704))
+* Alpaca can be read in Dutch, German and French ([#55](https://github.com/mattijsf/andamp/issues/55)) ([3c15c17](https://github.com/mattijsf/andamp/commit/3c15c1780e830b43bb0546f5fd7d9fdb2423620c))
+* Alpaca can be read in Simplified Chinese ([#53](https://github.com/mattijsf/andamp/issues/53)) ([7dfe2d7](https://github.com/mattijsf/andamp/commit/7dfe2d7825a18254320b42c21ba180f679f07704))
 
 ## [0.14.0](https://github.com/mattijsf/andamp/compare/v0.13.0...v0.14.0) (2026-10-12)
 
 
 ### New
 
-* Andamp shows up in Android Auto, with the playlist to pick a song from ([#50](https://github.com/mattijsf/andamp/issues/50)) ([b40d325](https://github.com/mattijsf/andamp/commit/b40d325d19346ca7bfd4b6100b393a9e18ae0924))
+* Alpaca shows up in Android Auto, with the playlist to pick a song from ([#50](https://github.com/mattijsf/andamp/issues/50)) ([b40d325](https://github.com/mattijsf/andamp/commit/b40d325d19346ca7bfd4b6100b393a9e18ae0924))
 * Preferences look like the phone's Settings app, and a music source shows its app's icon ([#49](https://github.com/mattijsf/andamp/issues/49)) ([3e716c7](https://github.com/mattijsf/andamp/commit/3e716c7e453965bfb5b6485ebc5463378fde9869))
 * the playlist is written in the skin's own letters, and list rows can be made taller for easier tapping ([#47](https://github.com/mattijsf/andamp/issues/47)) ([189e275](https://github.com/mattijsf/andamp/commit/189e275dd5603737abb26b9021ce2fbb9ad9c646))
 
@@ -129,8 +129,8 @@ messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `doc
 
 ### New
 
-* leave a tip from Preferences &gt; Support Andamp ([#17](https://github.com/mattijsf/andamp/issues/17)) ([55c235a](https://github.com/mattijsf/andamp/commit/55c235aed839944c85edb7ec08a12508e1be921b))
-* music from the phone's storage plays even when Andamp can no longer read its folder ([#24](https://github.com/mattijsf/andamp/issues/24)) ([d2ed725](https://github.com/mattijsf/andamp/commit/d2ed725a8034fea6046000473763bf6a67dcb8b8))
+* leave a tip from Preferences &gt; Support Alpaca ([#17](https://github.com/mattijsf/andamp/issues/17)) ([55c235a](https://github.com/mattijsf/andamp/commit/55c235aed839944c85edb7ec08a12508e1be921b))
+* music from the phone's storage plays even when Alpaca can no longer read its folder ([#24](https://github.com/mattijsf/andamp/issues/24)) ([d2ed725](https://github.com/mattijsf/andamp/commit/d2ed725a8034fea6046000473763bf6a67dcb8b8))
 
 
 ### Fixed
@@ -175,7 +175,7 @@ messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `doc
 
 ### Fixed
 
-* show when a source needs a newer Andamp, and the right kbps for untagged and 144 kbit/s mp3 files ([#2](https://github.com/mattijsf/andamp/issues/2)) ([b70d8a2](https://github.com/mattijsf/andamp/commit/b70d8a25cdbd3b07755b0d17921df046bd7becf6))
+* show when a source needs a newer Alpaca, and the right kbps for untagged and 144 kbit/s mp3 files ([#2](https://github.com/mattijsf/andamp/issues/2)) ([b70d8a2](https://github.com/mattijsf/andamp/commit/b70d8a25cdbd3b07755b0d17921df046bd7becf6))
 
 ## 0.7.1
 

@@ -12,7 +12,7 @@ plugins {
 // Kotlin. The one class that needs Android is here, with the permission it needs in its own
 // manifest, so every APK that uses it gets the permission merged in.
 android {
-    namespace = "nl.mattix.andamp.core.network"
+    namespace = "nl.mattix.alpaca.core.network"
 }
 
 dependencies {

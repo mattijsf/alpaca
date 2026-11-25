@@ -8,13 +8,13 @@
 
     <!-- PlaylistFileOps.kt -->
     <string name="playlist_save_title">Playlist speichern</string>
-    <string name="playlist_save_in_andamp">In Andamp speichern</string>
-    <string name="playlist_save_in_andamp_note">Zu finden im Tab „LISTEN“ der Medienbibliothek</string>
+    <string name="playlist_save_in_alpaca">In Alpaca speichern</string>
+    <string name="playlist_save_in_alpaca_note">Zu finden im Tab „LISTEN“ der Medienbibliothek</string>
     <string name="playlist_export">Als Datei exportieren…</string>
     <string name="playlist_export_note">Eine .m3u-Datei, die andere Player lesen können</string>
     <string name="playlist_load_title">Playlist laden</string>
-    <string name="playlist_open_from_andamp">Aus Andamp öffnen</string>
-    <string name="playlist_open_from_andamp_note">Eine der hier gespeicherten Listen</string>
+    <string name="playlist_open_from_alpaca">Aus Alpaca öffnen</string>
+    <string name="playlist_open_from_alpaca_note">Eine der hier gespeicherten Listen</string>
     <string name="playlist_import">Aus Datei importieren…</string>
     <string name="playlist_import_note">Eine .m3u-Datei von diesem Smartphone</string>
     <string name="playlist_save_as_title">Playlist speichern unter</string>

@@ -1,0 +1,266 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package nl.mattix.alpaca.visualizer.projectm
+
+/**
+ * The Kotlin face of libprojectM. One instance owns one native handle.
+ *
+ * Every method must be called on the thread holding the GL context: libprojectM
+ * is not thread-safe and renders with whatever context is current.
+ * [ProjectMView]'s render thread is that thread, and work arriving from the UI
+ * is queued onto it.
+ */
+class ProjectMEngine {
+    private var handle = 0L
+    private var playlist = 0L
+
+    /** The collector of failed preset switches; see [takeFailures]. */
+    private var failures = 0L
+
+    /** Whether [create] succeeded and [destroy] has not run. */
+    val isAlive: Boolean get() = handle != 0L
+
+    /** The samples projectM draws as a waveform in one frame, which is what its API reports as the most it stores. */
+    val maxSamples: Int get() = ProjectMNative.nativeMaxSamples()
+
+    /**
+     * @param meshWidth the warp mesh's width. MilkDrop's per-pixel equations run
+     *   per mesh vertex, so the mesh size sets the frame's cost.
+     */
+    fun create(
+        width: Int,
+        height: Int,
+        meshWidth: Int,
+        meshHeight: Int,
+        fps: Int,
+    ) {
+        check(!isAlive) { "already created" }
+        handle = ProjectMNative.nativeCreate(width, height, meshWidth, meshHeight, fps)
+        check(isAlive) { "projectm_create failed" }
+    }
+
+    fun resize(
+        width: Int,
+        height: Int,
+    ) = ProjectMNative.nativeSetWindowSize(alive(), width, height)
+
+    fun setMeshSize(
+        width: Int,
+        height: Int,
+    ) = ProjectMNative.nativeSetMeshSize(alive(), width, height)
+
+    fun setFps(fps: Int) = ProjectMNative.nativeSetFps(alive(), fps)
+
+    /**
+     * Hands projectM raw PCM; it runs its own analysis, so no FFT is wanted here.
+     * [samples] is expected to be a reused buffer, since this is called every frame.
+     */
+    fun addPcmFloat(
+        samples: FloatArray,
+        count: Int = samples.size,
+        stereo: Boolean = false,
+    ) = ProjectMNative.nativeAddPcmFloat(alive(), samples, count.coerceAtMost(samples.size), if (stereo) STEREO else MONO)
+
+    /** Renders one frame into the currently bound framebuffer. */
+    fun renderFrame() = ProjectMNative.nativeRenderFrame(alive())
+
+    fun loadPresetFile(
+        path: String,
+        smooth: Boolean,
+    ) = ProjectMNative.nativeLoadPresetFile(alive(), path, smooth)
+
+    /**
+     * MilkDrop 2 presets name texture files and render wrong (or not at all)
+     * without them, so a pack's `textures/` directory has to be registered
+     * alongside its presets. Reloads every texture, so it is not a per-frame call.
+     */
+    fun setTextureSearchPaths(paths: List<String>) = ProjectMNative.nativeSetTextureSearchPaths(alive(), paths.toTypedArray())
+
+    /**
+     * Replaces the playlist with everything under [directory].
+     *
+     * @return how many presets were found.
+     */
+    fun loadPresetDirectory(
+        directory: String,
+        recurse: Boolean = true,
+    ): Int {
+        val handle = playlistHandle()
+        ProjectMNative.nativePlaylistClear(handle)
+        val added = ProjectMNative.nativePlaylistAddPath(handle, directory, recurse)
+        heading(backwards = false)
+        if (added > 0) ProjectMNative.nativePlaylistSetPosition(handle, 0, true)
+        return added
+    }
+
+    /**
+     * Replaces the playlist with [files], in that order: a pack's, or presets from several
+     * packs, such as the listener's favorites. Plays the one at [startAt] first, so a list
+     * that goes back to a preset compiles only that one.
+     *
+     * @return how many were added.
+     */
+    fun loadPresetFiles(
+        files: List<String>,
+        startAt: Int = 0,
+    ): Int {
+        val handle = playlistHandle()
+        ProjectMNative.nativePlaylistClear(handle)
+        val added = ProjectMNative.nativePlaylistAddPresets(handle, files.toTypedArray())
+        heading(backwards = false)
+        if (added > 0) ProjectMNative.nativePlaylistSetPosition(handle, startAt.takeIf { it in 0 until added } ?: 0, true)
+        return added
+    }
+
+    /**
+     * The presets the playlist could not switch to since the last call, each with projectM's
+     * reason. A preset that fails is skipped (see [PRESET_RETRIES]), so this is the only place
+     * the listener can learn why.
+     */
+    fun takeFailures(): List<Pair<String, String>> {
+        if (failures == 0L) return emptyList()
+        return ProjectMNative
+            .zeroEnded(
+                ProjectMNative.nativeTakeFailures(failures),
+            ).chunked(2) { (file, reason) -> file to reason }
+    }
+
+    /** What projectM wrote to its error stream since the last call; see [PresetLog]. */
+    fun takeLog(): List<String> = ProjectMNative.zeroEnded(ProjectMNative.nativeTakeLog())
+
+    val playlistSize: Int get() = ProjectMNative.nativePlaylistSize(playlistHandle())
+
+    fun playlistNext(hardCut: Boolean = true) {
+        val handle = playlistHandle()
+        heading(backwards = false)
+        ProjectMNative.nativePlaylistPlayNext(handle, hardCut)
+    }
+
+    fun playlistPrevious(hardCut: Boolean = true) {
+        val handle = playlistHandle()
+        heading(backwards = true)
+        ProjectMNative.nativePlaylistPlayPrevious(handle, hardCut)
+    }
+
+    /** Whether the last switch asked for went back, so a preset to skip is skipped the same way. */
+    var backwards = false
+        private set
+
+    /** Whether the last switch asked for was to one preset by its place: that one plays, even when skipped. */
+    var picked = false
+        private set
+
+    /** Which way a broken preset is skipped past on the switch about to happen. */
+    private fun heading(
+        backwards: Boolean,
+        picked: Boolean = false,
+    ) {
+        this.backwards = backwards
+        this.picked = picked
+        if (failures != 0L) ProjectMNative.nativeWatchDirection(failures, backwards)
+    }
+
+    /** The switch asked for has happened; projectM's own switching goes forward again. */
+    fun switched() {
+        backwards = false
+        picked = false
+    }
+
+    fun playlistSetShuffle(shuffle: Boolean) = ProjectMNative.nativePlaylistSetShuffle(playlistHandle(), shuffle)
+
+    /**
+     * Jumps to a preset by its place in the playlist. An index outside the
+     * playlist is refused: projectm_playlist_set_position turns it into 0, so a
+     * stale index from a list that has since been reloaded would restart the pack.
+     *
+     * @return whether it moved.
+     */
+    fun playlistGoTo(
+        index: Int,
+        hardCut: Boolean = true,
+    ): Boolean {
+        val handle = playlistHandle()
+        if (index < 0 || index >= ProjectMNative.nativePlaylistSize(handle)) return false
+        heading(backwards = false, picked = true)
+        ProjectMNative.nativePlaylistSetPosition(handle, index, hardCut)
+        return true
+    }
+
+    /**
+     * Every preset's file path, in playlist order.
+     *
+     * The order is projectM's own, from walking the pack directory, and it is
+     * the order [playlistGoTo] indexes into, so a list shown to the listener has
+     * to come from here.
+     */
+    fun playlistPaths(): List<String> {
+        val handle = playlistHandle()
+        val size = ProjectMNative.nativePlaylistSize(handle)
+        return (0 until size).mapNotNull { ProjectMNative.nativePlaylistItem(handle, it) }
+    }
+
+    /** Index of the preset currently showing. */
+    val playlistPosition: Int get() = ProjectMNative.nativePlaylistPosition(playlistHandle())
+
+    /** The preset file at [index], or null when the playlist is shorter than that. */
+    fun playlistItem(index: Int): String? = ProjectMNative.nativePlaylistItem(playlistHandle(), index)
+
+    /**
+     * The playlist is created lazily: an engine that never loads a pack keeps
+     * rendering projectM's built-in idle preset.
+     */
+    private fun playlistHandle(): Long {
+        if (playlist == 0L) {
+            playlist = ProjectMNative.nativePlaylistCreate(alive())
+            check(playlist != 0L) { "projectm_playlist_create failed" }
+            // projectM's HLSL translation does not handle every preset in the
+            // wild. Retrying moves on to the next one instead of leaving the
+            // window on a preset that failed to compile, and each one skipped
+            // is collected with its reason.
+            failures = ProjectMNative.nativePlaylistWatchFailures(playlist, PRESET_RETRIES)
+        }
+        return playlist
+    }
+
+    fun destroy() {
+        if (!isAlive) return
+        // the playlist holds a reference to the projectM instance, so it goes first
+        if (playlist != 0L) {
+            if (failures != 0L) ProjectMNative.nativePlaylistUnwatchFailures(playlist, failures)
+            failures = 0L
+            ProjectMNative.nativePlaylistDestroy(playlist)
+            playlist = 0L
+        }
+        ProjectMNative.nativeDestroy(handle)
+        handle = 0L
+    }
+
+    private fun alive(): Long {
+        check(isAlive) { "engine is not created" }
+        return handle
+    }
+
+    init {
+        ProjectM.ensureLoaded()
+    }
+
+    companion object {
+        /**
+         * The samples projectM's analysis looks at each frame: its whole input buffer
+         * (`AudioBufferSamples` in Audio/AudioConstants.hpp), which is more than the
+         * waveform's [maxSamples]. It keeps the newest this many of whatever it is given.
+         *
+         * A frame that hands over this many replaces the buffer with one piece of audio.
+         * Fewer leaves the oldest samples of the frame before in it, and the jump where
+         * the two pieces meet reads as treble that is not in the music.
+         */
+        const val ANALYSIS_SAMPLES = 576
+
+        // projectm_channels in types.h
+        private const val MONO = 1
+        private const val STEREO = 2
+
+        /** How many presets the playlist may skip past before giving up on a switch. */
+        private const val PRESET_RETRIES = 5
+    }
+}

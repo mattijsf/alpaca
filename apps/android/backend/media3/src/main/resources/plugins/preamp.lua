@@ -12,7 +12,7 @@ plugin {
   id      = "nl.mattix.andamp.preamp",
   name    = "Preamp",
   version = "1.0.0",
-  author  = "Andamp",
+  author  = "Alpaca",
   about   = "Broadband gain, ±12 dB, applied to every channel ahead of the rack.",
 }
 

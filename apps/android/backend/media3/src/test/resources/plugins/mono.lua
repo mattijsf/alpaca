@@ -7,7 +7,7 @@ plugin {
   id      = "nl.mattix.andamp.mono",
   name    = "Mono",
   version = "1.0.0",
-  author  = "Andamp",
+  author  = "Alpaca",
   about   = "Sums the channels and sends the same signal to each.",
 }
 

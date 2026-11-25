@@ -53,30 +53,30 @@ val storePath: String? = signing.getProperty("storeFile")
  * Library. `none` is the APK installed without Play:
  *
  * ```
- * ./gradlew :app:assembleRelease -Pandamp.store=none
+ * ./gradlew :app:assembleRelease -Palpaca.store=none
  * ```
  *
  * It leaves that library out, since it is not open source, and its support page opens the website.
  * The two differ by one directory of sources, `src/storePlay` or `src/storeNone`, and by that one
  * dependency.
  */
-val store: String = (findProperty("andamp.store") as String?) ?: "play"
-require(store in setOf("play", "none")) { "andamp.store is '$store'; it is 'play' or 'none'" }
+val store: String = (findProperty("alpaca.store") as String?) ?: "play"
+require(store in setOf("play", "none")) { "alpaca.store is '$store'; it is 'play' or 'none'" }
 val storeSources = "src/store${store.replaceFirstChar { it.uppercase() }}/java"
 
 /**
- * A second id for the app, so that a build installs beside the Andamp a store put on a phone
+ * A second id for the app, so that a build installs beside the Alpaca a store put on a phone
  * and leaves it and its playlist alone:
  *
  * ```
- * ./gradlew :app:installDebug -Pandamp.id.suffix=.dev
+ * ./gradlew :app:installDebug -Palpaca.id.suffix=.dev
  * ```
  *
  * installs `nl.mattix.andamp.dev`. It is for trying a change on such a phone. `:androidauto`
  * reads the same property and then belongs to this second app. No release is built with it.
- * Its launcher name says the suffix ("Andamp dev"), so it is told apart from the installed app.
+ * Its launcher name says the suffix ("Alpaca dev"), so it is told apart from the installed app.
  */
-val idSuffix: String? = (findProperty("andamp.id.suffix") as String?)?.takeIf { it.isNotBlank() }
+val idSuffix: String? = (findProperty("alpaca.id.suffix") as String?)?.takeIf { it.isNotBlank() }
 
 /**
  * A semver name as one climbing integer: 1.2.3 becomes 10203.
@@ -93,7 +93,7 @@ fun versionCodeOf(name: String): Int {
 }
 
 /**
- * The skins Andamp ships, copied from where they are generated.
+ * The skins Alpaca ships, copied from where they are generated.
  *
  * `skin/` is the source: one Python build that writes three themes. They are copied at build time,
  * so no second copy is kept under assets. What goes: the three .wsz, and the two templates from
@@ -114,7 +114,7 @@ abstract class BundleSkins : DefaultTask() {
     fun copy() {
         files.sync {
             from(this@BundleSkins.from) {
-                include("AndAmp *.wsz", "andamp-dark-template.zip", "andamp-light-template.zip")
+                include("Alpaca *.wsz", "alpaca-dark-template.zip", "alpaca-light-template.zip")
             }
             // the asset path is skins/
             into(this@BundleSkins.into.dir("skins"))
@@ -124,7 +124,7 @@ abstract class BundleSkins : DefaultTask() {
 
 val bundledSkins =
     tasks.register<BundleSkins>("bundledSkins") {
-        description = "Copies the generated AndAmp skins into the packaged assets."
+        description = "Copies the generated Alpaca skins into the packaged assets."
         from.set(rootProject.layout.projectDirectory.dir("skin/dist"))
     }
 
@@ -173,7 +173,7 @@ val bundledLicenses =
         liberationSans.set(rootProject.layout.projectDirectory.file("docs/LiberationSans-LICENSE.txt"))
         dejaVu.set(
             rootProject.layout.projectDirectory.file(
-                "app/src/main/resources/nl/mattix/andamp/wal/defaultset/fonts/DejaVu-LICENSE.txt",
+                "app/src/main/resources/nl/mattix/alpaca/wal/defaultset/fonts/DejaVu-LICENSE.txt",
             ),
         )
         projectM.set(
@@ -261,9 +261,10 @@ abstract class NamesNothing : DefaultTask() {
 }
 
 android {
-    namespace = "nl.mattix.andamp"
+    namespace = "nl.mattix.alpaca"
 
     defaultConfig {
+        // the id Play and installed phones know the app by, from when it was named Andamp
         applicationId = "nl.mattix.andamp"
         targetSdk = 36
         // release-please owns this line
@@ -274,7 +275,7 @@ android {
         versionCode = versionCodeOf(versionName!!)
         idSuffix?.let { applicationIdSuffix = it }
         val suffixName = idSuffix?.trimStart('.')
-        manifestPlaceholders["appLabel"] = suffixName?.let { "Andamp $it" } ?: "@string/app_name"
+        manifestPlaceholders["appLabel"] = suffixName?.let { "Alpaca $it" } ?: "@string/app_name"
     }
 
     // One app, and no flavors. No source is compiled in: a source is an app the listener installed,
@@ -314,7 +315,7 @@ android {
     androidResources {
         noCompress += "wsz"
         // The languages the app has, listed for Android from the values-<language> directories, so
-        // a new translation shows up under the phone's Settings > Apps > Andamp > Language without
+        // a new translation shows up under the phone's Settings > Apps > Alpaca > Language without
         // being named anywhere else. res/resources.properties says which language values/ is in.
         generateLocaleConfig = true
     }

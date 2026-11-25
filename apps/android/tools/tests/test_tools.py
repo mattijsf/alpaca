@@ -120,16 +120,16 @@ class Section(unittest.TestCase):
 class CommitTypes(unittest.TestCase):
     def test_main_sources_and_built_skins_ship(self):
         for path in (
-            "app/src/main/java/nl/mattix/andamp/MainActivity.kt",
-            "core/dsp/src/main/kotlin/nl/mattix/andamp/core/dsp/GraphEngine.kt",
-            "skin/dist/AndAmp Dark.wsz",
-            "skin/dist/andamp-dark-template.zip",
+            "app/src/main/java/nl/mattix/alpaca/MainActivity.kt",
+            "core/dsp/src/main/kotlin/nl/mattix/alpaca/core/dsp/GraphEngine.kt",
+            "skin/dist/Alpaca Dark.wsz",
+            "skin/dist/alpaca-dark-template.zip",
         ):
             self.assertTrue(commit_type.SHIPS.search(path), path)
 
     def test_tests_tools_docs_and_previews_do_not(self):
         for path in (
-            "app/src/test/java/nl/mattix/andamp/FooTest.kt",
+            "app/src/test/java/nl/mattix/alpaca/FooTest.kt",
             "tools/release.py",
             "docs/extend.md",
             "skin/dist/preview/dark.png",

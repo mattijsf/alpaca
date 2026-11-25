@@ -48,12 +48,12 @@
       Stations are user-entered urls, so it is allowed for every host.
     -->
     <application
-        android:name=".AndAmpApp"
+        android:name=".AlpacaApp"
         android:label="${appLabel}"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:enableOnBackInvokedCallback="true"
-        android:theme="@style/Theme.AndAmp"
+        android:theme="@style/Theme.Alpaca"
         android:usesCleartextTraffic="true">
 
         <!--
@@ -77,18 +77,28 @@
             android:launchMode="singleTop"
             android:screenOrientation="user"
             android:windowSoftInputMode="adjustResize"
-            android:configChanges="orientation|screenSize|keyboardHidden">
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
+        <!--
+          The launcher entry, under the class name MainActivity had when the app was named
+          Andamp. A launcher keeps a home screen icon by that name and drops it when the
+          name is gone.
+        -->
+        <activity-alias
+            android:name="nl.mattix.andamp.MainActivity"
+            android:targetActivity=".MainActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
+        </activity-alias>
 
         <!--
           A Winamp skin opened or shared from another app: classic (.wsz) or modern (.wal).
           Some apps name a skin's type (the types Winamp registered); most hand a skin over as
           application/octet-stream or a zip type, so the second filter takes those only on a path
-          ending in .wsz or .wal, and only to open, so Andamp stays out of the share sheet of
+          ending in .wsz or .wal, and only to open, so Alpaca stays out of the share sheet of
           every zip. See SkinImportActivity for why this is not MainActivity.
         -->
         <activity
@@ -97,7 +107,7 @@
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:theme="@android:style/Theme.NoDisplay">
-            <intent-filter android:label="@string/import_add_to_andamp">
+            <intent-filter android:label="@string/import_add_to_alpaca">
                 <action android:name="android.intent.action.VIEW" />
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -105,7 +115,7 @@
                 <data android:mimeType="interface/x-winamp3-skin" />
                 <data android:mimeType="application/x-winamp-skin" />
             </intent-filter>
-            <intent-filter android:label="@string/import_add_to_andamp">
+            <intent-filter android:label="@string/import_add_to_alpaca">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="content" />
@@ -137,7 +147,7 @@
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:theme="@android:style/Theme.NoDisplay">
-            <intent-filter android:label="@string/import_add_to_andamp">
+            <intent-filter android:label="@string/import_add_to_alpaca">
                 <action android:name="android.intent.action.VIEW" />
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -145,7 +155,7 @@
                 <data android:mimeType="application/x-lua" />
                 <data android:mimeType="text/x-lua-source" />
             </intent-filter>
-            <intent-filter android:label="@string/import_add_to_andamp">
+            <intent-filter android:label="@string/import_add_to_alpaca">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="content" />
@@ -158,8 +168,8 @@
                 <data android:pathPattern=".*\\..*\\..*\\.lua" />
             </intent-filter>
             <!--
-              The Install button on Andamp's site: a plain link to the .lua, which
-              Android gives to Andamp once the site's /.well-known/assetlinks.json
+              The Install button on Alpaca's site: a plain link to the .lua, which
+              Android gives to Alpaca once the site's /.well-known/assetlinks.json
               names this app. Only .lua files under the plug-ins path, so the page
               listing them still opens in the browser. What arrives is offered,
               not installed; see PluginLinks. One filter per host, because the
@@ -216,7 +226,7 @@
         </receiver>
         <activity
             android:name=".widget.WidgetMenuActivity"
-            android:theme="@style/Theme.AndAmp.WidgetMenu"
+            android:theme="@style/Theme.Alpaca.WidgetMenu"
             android:taskAffinity=""
             android:excludeFromRecents="true"
             android:launchMode="singleTop"

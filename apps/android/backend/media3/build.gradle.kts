@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "nl.mattix.andamp.backend.media3"
+    namespace = "nl.mattix.alpaca.backend.media3"
 
     defaultConfig {
         // the runner for the on-device cost benchmarks in androidTest

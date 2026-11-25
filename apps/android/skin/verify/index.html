@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>andamp — Webamp harness</title>
+  <title>alpaca — Webamp harness</title>
   <style>
     html, body { margin: 0; height: 100%; background: #0b0a0e; }
     #app { position: relative; height: 100%; }
@@ -16,7 +16,7 @@
   <script src="../node_modules/webamp/built/webamp.bundle.min.js"></script>
   <script>
     const params = new URLSearchParams(location.search);
-    const skin = params.get("skin") || "AndAmp Dark";
+    const skin = params.get("skin") || "Alpaca Dark";
     const hud = document.getElementById("hud");
     window.__errors = [];
     window.addEventListener("error", (e) => window.__errors.push(String(e.message)));
@@ -31,18 +31,18 @@
       const webamp = new Webamp({
         initialSkin: { url: `../dist/${encodeURIComponent(skin)}.wsz` },
         availableSkins: [
-          { url: "../dist/AndAmp%20Dark.wsz", name: "AndAmp Dark" },
-          { url: "../dist/AndAmp%20Light.wsz", name: "AndAmp Light" },
-          { url: "../dist/AndAmp%20Spot.wsz", name: "AndAmp Spot" },
+          { url: "../dist/Alpaca%20Dark.wsz", name: "Alpaca Dark" },
+          { url: "../dist/Alpaca%20Light.wsz", name: "Alpaca Light" },
+          { url: "../dist/Alpaca%20Spot.wsz", name: "Alpaca Spot" },
         ],
         initialTracks: [
-          { metaData: { artist: "andamp", title: "material 3 expressive" },
+          { metaData: { artist: "alpaca", title: "material 3 expressive" },
             url: silence, duration: 225 },
           { metaData: { artist: "android", title: "baseline purple" },
             url: silence, duration: 187 },
-          { metaData: { artist: "andamp", title: "wavy media slider" },
+          { metaData: { artist: "alpaca", title: "wavy media slider" },
             url: silence, duration: 342 },
-          { metaData: { artist: "andamp", title: "geometric numerals" },
+          { metaData: { artist: "alpaca", title: "geometric numerals" },
             url: silence, duration: 96 },
         ],
         windowLayout: {

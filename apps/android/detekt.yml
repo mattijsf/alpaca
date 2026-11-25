@@ -72,11 +72,11 @@ complexity:
     # function; there is no smaller unit to split it into, and splitting by
     # theme would put the boundary somewhere the C header does not
     # PackComponents.kt is the .avs body vocabulary (one factory per component)
-    # and AndAmpPack.kt is the shipped pack (one function per preset); like
+    # and AlpacaPack.kt is the shipped pack (one function per preset); like
     # ProjectMNative there is no smaller unit to split either into
     excludes:
       ["**/src/test*/**", "**/src/androidTest/**", "**/ProjectMNative.kt",
-       "**/author/PackComponents.kt", "**/author/AndAmpPack.kt"]
+       "**/author/PackComponents.kt", "**/author/AlpacaPack.kt"]
 
 naming:
   FunctionNaming:

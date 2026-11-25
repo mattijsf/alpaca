@@ -1,17 +1,17 @@
 # Third-party notices
 
-Andamp is built on other people's work. This file lists that work, its license, and what
+Alpaca is built on other people's work. This file lists that work, its license, and what
 the license requires.
 
 The licenses were read from each project's own repository. Upstream terms can change, so
 check them again before you redistribute.
 
-## Andamp itself: GPL-3.0-or-later
+## Alpaca itself: GPL-3.0-or-later
 
-Andamp's own code is under the GNU GPL, version 3 or later (see `LICENSE` and the license
+Alpaca's own code is under the GNU GPL, version 3 or later (see `LICENSE` and the license
 section of the README). There are two additional permissions under section 7. Effect
 plug-ins, visualizer presets and skins may use any license, because they reach the app
-only through its documented formats. And Andamp may be combined and distributed with the
+only through its documented formats. And Alpaca may be combined and distributed with the
 Google Play Billing Library, which is not free software (see its section below).
 
 The source SDK is Apache-2.0 (`LICENSE-APACHE-2.0`). It consists of `core/model`,
@@ -29,13 +29,13 @@ libraries this app links.
 
 <https://github.com/projectM-visualizer/projectm>
 
-The Milkdrop-compatible visualizer engine. Andamp calls its C API to render `.milk`
+The Milkdrop-compatible visualizer engine. Alpaca calls its C API to render `.milk`
 presets. See `docs/projectm-integration.md`.
 
 What LGPL-2.1 requires here:
 
 - **Dynamic linking.** `libprojectM-4.so` ships as a separate library in the APK and is
-  never linked statically into Andamp's code. This keeps the user's right to replace it.
+  never linked statically into Alpaca's code. This keeps the user's right to replace it.
 - **The license text.** The build copies projectM's `LICENSE.txt` into the APK as the
   asset `licenses/projectM-LGPL-2.1.txt` (`:app:bundledLicenses`).
 - **A record of modifications.** projectM is built unmodified. If a patch is ever
@@ -55,7 +55,7 @@ The current build:
 | Shipped | `libprojectM-4.so` and `libprojectM-4-playlist.so`, separate shared objects, per ABI |
 | Local patches | none |
 
-The LGPL applies to projectM, not to Andamp's own source, as long as projectM stays
+The LGPL applies to projectM, not to Alpaca's own source, as long as projectM stays
 dynamically linked.
 
 ## AVS (vis_avs): BSD 3-clause
@@ -93,7 +93,7 @@ attribution in the code. No code is vendored.
 The ns-eel expression evaluator that AVS presets are scripted in.
 `visualizer/avs/third_party/projectm-eval` is a git submodule, built by
 `visualizer/avs/src/main/cpp/CMakeLists.txt` and linked statically into
-`libandamp_avs.so`. projectM's build uses its own vendored copy.
+`libalpaca_avs.so`. projectM's build uses its own vendored copy.
 
 ## MilkDrop
 
@@ -135,7 +135,7 @@ APK as the asset `licenses/LiberationSans-OFL-1.1.txt`.
 <https://github.com/dejavu-fonts/dejavu-fonts>
 
 Bundled unmodified, regular and bold, in the default element set modern skins build on
-(`app/src/main/resources/nl/mattix/andamp/wal/defaultset/fonts/`). It stands
+(`app/src/main/resources/nl/mattix/alpaca/wal/defaultset/fonts/`). It stands
 in for the Windows fonts that Winamp modern skins name without carrying them, with widths
 close to Tahoma's. The fonts are Bitstream Vera with DejaVu's changes, which are in the
 public domain, and glyphs from Arev, under Arev's license, whose terms match Bitstream
@@ -147,18 +147,18 @@ Vera's. The license text is in
 
 <https://developer.android.com/google/play/billing>
 
-The tip jar on Preferences > Support Andamp buys its tips through Google Play, and Google
+The tip jar on Preferences > Support Alpaca buys its tips through Google Play, and Google
 Play accepts purchases only through this library. It comes from Google's Maven repository
 as `com.android.billingclient:billing-ktx`, brings the Google Play services libraries it
 depends on, and ships inside the build Google Play hands out. Only `PlayTill.kt` in `:app`
-uses it. The APK on the releases page is built without it (`-Pandamp.store=none`).
+uses it. The APK on the releases page is built without it (`-Palpaca.store=none`).
 
 It is under the Android Software Development Kit License
 (<https://developer.android.com/studio/terms>), which is not an open-source license and
-cannot be combined with GPL code on the GPL's own terms. So Andamp's license carries an
+cannot be combined with GPL code on the GPL's own terms. So Alpaca's license carries an
 additional permission under section 7 of the GPL, worded in the license section of the
-README: Andamp may be combined with this library and distributed that way, and the GPL
-keeps applying to all of Andamp's own code.
+README: Alpaca may be combined with this library and distributed that way, and the GPL
+keeps applying to all of Alpaca's own code.
 
 A build without the tip jar has no need of the permission: remove the dependency and
 `PlayTill.kt`, and give `TipJar` a `Till` that never connects.
@@ -182,7 +182,7 @@ attribution, which this file and the in-app licenses screen give.
 <https://github.com/mattijsf/walkit>
 
 The modern skin engine, in Rust: it runs every modern skin the app opens. It is the same author's work under the same
-license as Andamp, and arrives as the Android library `nl.mattix.walkit:walkit`.
+license as Alpaca, and arrives as the Android library `nl.mattix.walkit:walkit`.
 
 ## The licenses screen
 
@@ -205,7 +205,7 @@ carries.
 
 ## The bundled skins
 
-AndAmp Dark, AndAmp Light and AndAmp Spot are generated by `skin/`, a Python build in this
+Alpaca Dark, Alpaca Light and Alpaca Spot are generated by `skin/`, a Python build in this
 repository that writes all three from one source and checks that the output is
 reproducible byte for byte. The art is licensed under Creative Commons Attribution 4.0:
 use it, change it and share it, with credit to Mattix. The Python that draws it is GPL
@@ -218,4 +218,4 @@ like the rest of the code. No Nullsoft skin art is in this repository.
 `.avs` presets, including Winamp's own, carry their authors' terms and are not in this
 repository. The app loads them at runtime from storage the user chooses. The one pack the
 app ships, the "AndAmp" AVS pack, is this project's own: its presets are written in code
-(`visualizer/avs/.../author/AndAmpPack.kt`).
+(`visualizer/avs/.../author/AlpacaPack.kt`).

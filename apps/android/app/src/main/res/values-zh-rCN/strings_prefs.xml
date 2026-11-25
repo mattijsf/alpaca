@@ -12,11 +12,11 @@
     <string name="prefs_android_auto_from_play">Android Auto 会在汽车中显示它</string>
     <string name="prefs_android_auto_not_from_play">Android Auto 不会在汽车中显示它</string>
     <string name="prefs_android_auto_not_from_play_about">只有通过 Google Play 安装时，Android Auto 才会在汽车中显示 Autoamp。</string>
-    <string name="prefs_android_auto_matches">与此 Andamp 兼容</string>
+    <string name="prefs_android_auto_matches">与此 Alpaca 兼容</string>
     <string name="prefs_android_auto_older">请更新 Autoamp</string>
-    <string name="prefs_android_auto_older_about">它比此 Andamp 旧，因此在汽车中可能有些功能无法使用。</string>
-    <string name="prefs_android_auto_newer">请更新 Andamp</string>
-    <string name="prefs_android_auto_newer_about">它比此 Andamp 新，因此在汽车中可能有些功能无法使用。</string>
+    <string name="prefs_android_auto_older_about">它比此 Alpaca 旧，因此在汽车中可能有些功能无法使用。</string>
+    <string name="prefs_android_auto_newer">请更新 Alpaca</string>
+    <string name="prefs_android_auto_newer_about">它比此 Alpaca 新，因此在汽车中可能有些功能无法使用。</string>
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">此播放后端不支持效果。</string>
@@ -30,7 +30,7 @@
     <string name="prefs_effects_manage_plugins_summary">已添加的插件，以及添加更多插件</string>
 
     <!-- LicencesPage.kt -->
-    <string name="prefs_licences_note">Andamp 建立在他人的成果之上。每个条目都链接到其源代码，完整的许可证文本也在那里。</string>
+    <string name="prefs_licences_note">Alpaca 建立在他人的成果之上。每个条目都链接到其源代码，完整的许可证文本也在那里。</string>
 
     <!-- LimiterCard.kt -->
     <string name="prefs_limiter_title">峰值限制器</string>
@@ -99,7 +99,7 @@
 
     <!-- Notices.kt -->
     <string name="prefs_notice_projectm_what">Milkdrop 可视化效果引擎，用于渲染 .milk 预设。</string>
-    <string name="prefs_notice_projectm_obligation">Andamp 以动态方式链接 projectM %1$s，它是应用中的一个独立库，因此可以被替换。该修订版本的源代码位于上方地址的标签 v%1$s，Andamp 围绕它编写的胶水代码在 Andamp 自己的仓库中。projectM 未作任何修改。</string>
+    <string name="prefs_notice_projectm_obligation">Alpaca 以动态方式链接 projectM %1$s，它是应用中的一个独立库，因此可以被替换。该修订版本的源代码位于上方地址的标签 v%1$s，Alpaca 围绕它编写的胶水代码在 Alpaca 自己的仓库中。projectM 未作任何修改。</string>
     <string name="prefs_notice_avs_what">Winamp 的可视化效果，根据 Nullsoft 公开的源代码用 Kotlin 重新实现。</string>
     <string name="prefs_notice_avs_decoder_what">.avs 预设格式的帧结构与字段布局，预设读取器遵循它们。</string>
     <string name="prefs_notice_projectm_eval_what">计算 AVS 预设脚本中的表达式，内置于 AVS 库中。</string>
@@ -118,8 +118,8 @@
     <string name="prefs_notice_walkit_what">现代面板引擎，原生代码实现：用 Rust 编写，负责运行面板。</string>
 
     <!-- Store.kt (storePlay) -->
-    <string name="prefs_notice_play_billing_what">通过 Google Play 收取“支持 Andamp”页面上的打赏。</string>
-    <string name="prefs_notice_play_billing_obligation">此库不是开源的。Andamp 的许可证附带一项额外许可，允许将 Andamp 与它结合并分发结合后的成果。</string>
+    <string name="prefs_notice_play_billing_what">通过 Google Play 收取“支持 Alpaca”页面上的打赏。</string>
+    <string name="prefs_notice_play_billing_obligation">此库不是开源的。Alpaca 的许可证附带一项额外许可，允许将 Alpaca 与它结合并分发结合后的成果。</string>
 
     <!-- OverlayPrefs.kt -->
     <string name="prefs_overlay_grant">允许显示在其他应用的上层</string>
@@ -128,17 +128,17 @@
     <!-- PackPrefs.kt -->
     <string name="prefs_pack_uninstalled">已卸载，它的曲目会被跳过</string>
     <string name="prefs_pack_not_installed">未安装 - 请参阅下方的“更多音乐源”</string>
-    <string name="prefs_pack_too_old">已安装，但对这个版本的 Andamp 来说太旧</string>
-    <string name="prefs_pack_too_new">已安装，但它是为更新版本的 Andamp 制作的</string>
+    <string name="prefs_pack_too_old">已安装，但对这个版本的 Alpaca 来说太旧</string>
+    <string name="prefs_pack_too_new">已安装，但它是为更新版本的 Alpaca 制作的</string>
     <string name="prefs_pack_not_signed_in">未登录</string>
-    <string name="prefs_pack_notice_outdated">%1$s 是为旧版 Andamp 设置的，不会被要求播放任何内容。更新它即可恢复它的曲目。</string>
-    <string name="prefs_pack_notice_ahead">%1$s 是为新版 Andamp 设置的，不会被要求播放任何内容。更新 Andamp 即可恢复它的曲目。</string>
+    <string name="prefs_pack_notice_outdated">%1$s 是为旧版 Alpaca 设置的，不会被要求播放任何内容。更新它即可恢复它的曲目。</string>
+    <string name="prefs_pack_notice_ahead">%1$s 是为新版 Alpaca 设置的，不会被要求播放任何内容。更新 Alpaca 即可恢复它的曲目。</string>
     <string name="prefs_pack_update">更新 %1$s</string>
 
     <!-- PalettePrefs.kt -->
     <string name="prefs_palette_title">匹配壁纸颜色</string>
-    <string name="prefs_palette_on">AndAmp Dark 和 AndAmp Light 跟随壁纸取色，与手机的其他部分一致。</string>
-    <string name="prefs_palette_off">AndAmp Dark 和 AndAmp Light 保持自己的颜色。</string>
+    <string name="prefs_palette_on">Alpaca Dark 和 Alpaca Light 跟随壁纸取色，与手机的其他部分一致。</string>
+    <string name="prefs_palette_off">Alpaca Dark 和 Alpaca Light 保持自己的颜色。</string>
 
     <!-- PlayerPage.kt -->
     <string name="prefs_player_windows_section">窗口</string>
@@ -151,23 +151,23 @@
 
     <!-- ModernSkinPrefs.kt -->
     <string name="prefs_modern_skins_title">现代面板（测试版）</string>
-    <string name="prefs_modern_skins_on">除了经典面板，您还可以添加并使用 Winamp 现代面板（.wal）。部分现代面板的外观或功能可能与在 Winamp 中略有不同。按住现代面板即可打开 Andamp 的菜单。关闭此项后，播放器会换回您上次使用的经典面板。</string>
+    <string name="prefs_modern_skins_on">除了经典面板，您还可以添加并使用 Winamp 现代面板（.wal）。部分现代面板的外观或功能可能与在 Winamp 中略有不同。按住现代面板即可打开 Alpaca 的菜单。关闭此项后，播放器会换回您上次使用的经典面板。</string>
     <string name="prefs_modern_skins_off">只能添加经典面板（.wsz）。打开此项，即可同时添加并使用 Winamp 现代面板（.wal）。您以前添加的现代面板会一直隐藏，直到打开此项。</string>
     <string name="prefs_modern_skins_note">只有播放器使用现代面板。菜单、媒体库、面板浏览器、小部件和 Android Auto 会保留您上次使用的经典面板，除非您为小部件或 Android Auto 选择了其他面板。播放器使用现代面板时，菜单中的“播放列表编辑器”、“均衡器”、“双倍大小”和“可视化效果选项”会显示为灰色，因为播放器的窗口和可视化效果由该面板绘制。</string>
     <string name="prefs_sharp_pixels_title">锐利像素</string>
-    <string name="prefs_sharp_pixels_on">边缘清晰，但部分文字和线条会粗细不均。此项只影响 Andamp 为适应屏幕而以非整数倍大小（例如 2.5 倍）显示的现代面板。</string>
-    <string name="prefs_sharp_pixels_off">平滑，但略显模糊。打开此项可获得清晰的边缘，但部分文字和线条会粗细不均。此项只影响 Andamp 为适应屏幕而以非整数倍大小（例如 2.5 倍）显示的现代面板。</string>
+    <string name="prefs_sharp_pixels_on">边缘清晰，但部分文字和线条会粗细不均。此项只影响 Alpaca 为适应屏幕而以非整数倍大小（例如 2.5 倍）显示的现代面板。</string>
+    <string name="prefs_sharp_pixels_off">平滑，但略显模糊。打开此项可获得清晰的边缘，但部分文字和线条会粗细不均。此项只影响 Alpaca 为适应屏幕而以非整数倍大小（例如 2.5 倍）显示的现代面板。</string>
     <string name="prefs_windows_apart_title">窗口分开</string>
     <string name="prefs_windows_apart_on">现代面板的每个窗口都停在你放置的位置，如同桌面：拖动窗口的标题栏，它会像在 Winamp 中一样吸附到其他窗口和屏幕边缘。</string>
     <string name="prefs_windows_apart_off">现代面板的窗口叠放在主窗口下方。打开此项可把每个窗口放到你想要的位置，如同桌面。</string>
 
     <!-- PluginsSection.kt -->
-    <string name="prefs_plugins_intro">Lua 音频插件。Andamp 会保留自己的副本，因此原文件可以移动或删除。</string>
+    <string name="prefs_plugins_intro">Lua 音频插件。Alpaca 会保留自己的副本，因此原文件可以移动或删除。</string>
     <string name="prefs_plugins_adding">正在添加…</string>
     <string name="prefs_plugins_add">添加插件</string>
-    <string name="prefs_plugins_builtin_always">Andamp 自带的效果始终在机架中。</string>
+    <string name="prefs_plugins_builtin_always">Alpaca 自带的效果始终在机架中。</string>
     <string name="prefs_plugins_none">尚未添加插件</string>
-    <string name="prefs_plugins_none_hint">Andamp 自带的效果已经在机架中。添加 .lua 文件可获得更多效果。</string>
+    <string name="prefs_plugins_none_hint">Alpaca 自带的效果已经在机架中。添加 .lua 文件可获得更多效果。</string>
     <string name="prefs_plugins_remove_named">移除 %1$s</string>
     <string name="prefs_plugins_cannot_run">无法在此曲目的音频格式下运行。</string>
     <string name="prefs_plugins_remove_question">移除 %1$s？</string>
@@ -194,7 +194,7 @@
     <string name="prefs_plugins_credit_by">作者：%1$s</string>
     <string name="prefs_plugins_credit_none">未声明版本</string>
     <string name="prefs_plugins_more_title">更多效果</string>
-    <string name="prefs_plugins_more_summary">可从 Andamp 网站安装的效果插件</string>
+    <string name="prefs_plugins_more_summary">可从 Alpaca 网站安装的效果插件</string>
 
     <!-- PreferencesScreen.kt -->
     <string name="prefs_page_effects">效果</string>
@@ -204,15 +204,15 @@
     <string name="prefs_page_rows">歌曲行</string>
     <string name="prefs_page_widget">主屏幕小部件</string>
     <string name="prefs_page_android_auto">Android Auto</string>
-    <string name="prefs_page_support">支持 Andamp</string>
-    <string name="prefs_page_about">关于 Andamp</string>
+    <string name="prefs_page_support">支持 Alpaca</string>
+    <string name="prefs_page_about">关于 Alpaca</string>
     <string name="prefs_page_licences">开源许可证</string>
-    <string name="prefs_about_licences_summary">Andamp 所基于的项目及其许可证</string>
+    <string name="prefs_about_licences_summary">Alpaca 所基于的项目及其许可证</string>
     <string name="prefs_about_summary">版本和开源许可证</string>
     <string name="prefs_title">首选项</string>
     <string name="prefs_sound_section">声音</string>
     <string name="prefs_look_section">外观与操作</string>
-    <string name="prefs_about_note">Andamp %1$s，Winamp 2.8 的复刻版，与 Winamp 及其所有者无关联。</string>
+    <string name="prefs_about_note">Alpaca %1$s，Winamp 2.8 的复刻版，与 Winamp 及其所有者无关联。</string>
 
     <!-- PrefsTopBar.kt -->
     <string name="prefs_top_back">返回首选项</string>
@@ -255,7 +255,7 @@
     <!-- SourcesPrefs.kt -->
     <string name="prefs_sources_section">音乐源</string>
     <string name="prefs_sources_more_title">更多音乐源</string>
-    <string name="prefs_sources_more_summary">Andamp 还能从哪些地方播放音乐，以及如何添加</string>
+    <string name="prefs_sources_more_summary">Alpaca 还能从哪些地方播放音乐，以及如何添加</string>
     <string name="prefs_phone_permission_off">“%1$s”权限已关闭</string>
     <string name="prefs_phone_allow">允许“%1$s”以显示这部手机上的音乐</string>
     <string name="prefs_phone_summary">访问权限、媒体库和扫描</string>
@@ -292,13 +292,13 @@
     <string name="prefs_updates_retry">重试</string>
 
     <!-- SupportPrefs.kt -->
-    <string name="prefs_support_intro">Andamp 免费且没有广告。如果您喜欢它，可以打赏。打赏不会解锁任何功能：无论是否打赏，Andamp 的一切都保持免费。</string>
-    <string name="prefs_support_summary_outside">如何通过网站支持 Andamp</string>
+    <string name="prefs_support_intro">Alpaca 免费且没有广告。如果您喜欢它，可以打赏。打赏不会解锁任何功能：无论是否打赏，Alpaca 的一切都保持免费。</string>
+    <string name="prefs_support_summary_outside">如何通过网站支持 Alpaca</string>
     <string name="prefs_support_summary">打赏的用途和打赏方式</string>
     <string name="prefs_support_closed">这部手机目前无法打赏。</string>
     <string name="prefs_support_play_note">由 Google Play 收款。可以多次打赏。</string>
-    <string name="prefs_support_given">您已支持过 Andamp。谢谢。</string>
-    <string name="prefs_support_outside_intro">Andamp 免费且没有广告。如果您喜欢它，可以在它的网站上支持它。这不会解锁任何功能：无论是否支持，Andamp 的一切都保持免费。</string>
+    <string name="prefs_support_given">您已支持过 Alpaca。谢谢。</string>
+    <string name="prefs_support_outside_intro">Alpaca 免费且没有广告。如果您喜欢它，可以在它的网站上支持它。这不会解锁任何功能：无论是否支持，Alpaca 的一切都保持免费。</string>
     <string name="prefs_support_open_site">打开 %1$s</string>
     <string name="prefs_support_note_thanks">谢谢！您的打赏已收到。</string>
     <string name="prefs_support_note_waiting">谢谢！付款完成后您的打赏就会到账。</string>
@@ -336,7 +336,7 @@
 
     <!-- VolumePrefs.kt -->
     <string name="prefs_volume_title">独立音量</string>
-    <string name="prefs_volume_own">滑块只属于 Andamp，手机音量保持不变</string>
+    <string name="prefs_volume_own">滑块只属于 Alpaca，手机音量保持不变</string>
     <string name="prefs_volume_device">滑块调节手机的媒体音量，与音量键一样</string>
 
     <!-- WidgetPrefs.kt -->
@@ -347,7 +347,7 @@
     <string name="prefs_widget_summary">可视化效果、刷新率、大小、点按和面板</string>
     <string name="prefs_widget_refresh_title">刷新率</string>
     <string name="prefs_widget_size_title">大小</string>
-    <string name="prefs_widget_logo_title">只有徽标可打开 Andamp</string>
+    <string name="prefs_widget_logo_title">只有徽标可打开 Alpaca</string>
     <string name="prefs_widget_logo_summary">点按播放器本身没有反应，这样没点准按钮时仍会留在主屏幕上。</string>
     <string name="prefs_widget_volume_title">音量控制</string>
     <string name="prefs_widget_volume_summary">允许点按音量滑块。它离进度条很近，容易误触。</string>
@@ -358,11 +358,11 @@
     <string name="prefs_widget_limit_corners_title">边角会被裁切</string>
     <string name="prefs_widget_limit_corners_body">Android 会把所有应用的所有小部件的边角变成圆角，而且无法关闭。把播放器缩小可以留出余量，但按钮也会更难点中，所以它保持原来的大小。</string>
     <string name="prefs_widget_limit_icon_title">它可能被图标取代</string>
-    <string name="prefs_widget_limit_icon_body">为了省电，Android 有时会停止它认为您已不再使用的应用。这时主屏幕上会用 Andamp 图标代替播放器，点一下即可恢复。这种情况应该不常发生。</string>
+    <string name="prefs_widget_limit_icon_body">为了省电，Android 有时会停止它认为您已不再使用的应用。这时主屏幕上会用 Alpaca 图标代替播放器，点一下即可恢复。这种情况应该不常发生。</string>
     <string name="prefs_widget_limit_loop_title">柱状条是循环播放的</string>
     <string name="prefs_widget_limit_loop_body">大约半秒的音乐会被转换成图片，主屏幕循环播放这些图片，直到新的半秒把它们替换掉。因此柱状条会随音乐跳动，但并不完全同步。要做到逐拍同步，就得每秒发送很多次新图片，而这正是最耗电的做法。</string>
     <string name="prefs_widget_limit_running_title">进度条和音量条需要播放器在运行</string>
-    <string name="prefs_widget_limit_running_body">点按进度条或音量条是在告诉播放器去调整，所以如果 Android 已把 Andamp 从内存中清除，就没有可以接收指令的对象，点按不会有反应。按钮仍然有效：按下任意一个都会重新启动播放器，之后进度条和音量条也会恢复。</string>
+    <string name="prefs_widget_limit_running_body">点按进度条或音量条是在告诉播放器去调整，所以如果 Android 已把 Alpaca 从内存中清除，就没有可以接收指令的对象，点按不会有反应。按钮仍然有效：按下任意一个都会重新启动播放器，之后进度条和音量条也会恢复。</string>
 
     <!-- WidgetSettings.kt -->
     <string name="prefs_widget_size_fill">填满</string>

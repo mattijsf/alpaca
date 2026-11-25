@@ -21,7 +21,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "andamp"
+rootProject.name = "alpaca"
 include(":app")
 include(":core:dsp")
 include(":core:plugin")

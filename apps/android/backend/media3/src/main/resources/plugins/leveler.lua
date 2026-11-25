@@ -16,7 +16,7 @@ plugin {
   id      = "nl.mattix.andamp.leveler",
   name    = "Leveler",
   version = "1.0.0",
-  author  = "Andamp",
+  author  = "Alpaca",
   about   = "Stereo-linked RMS leveler towards −18 dBFS, up to ≈3.3:1 either way within ±12 dB, with a 5 ms look-ahead peak limiter.",
 }
 

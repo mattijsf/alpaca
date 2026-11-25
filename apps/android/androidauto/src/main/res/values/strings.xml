@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Autoamp</string>
-    <string name="no_player">Install or update Andamp on this phone to see it here.</string>
-    <string name="update_player">Update Andamp on your phone: some things here need a newer Andamp.</string>
+    <string name="no_player">Install or update Alpaca on this phone to see it here.</string>
+    <string name="update_player">Update Alpaca on your phone: some things here need a newer Alpaca.</string>
     <string name="update_this_app">Update Autoamp on your phone: some things here need a newer Autoamp.</string>
-    <string name="settings_need_player">These settings are in Andamp. Install Andamp on this phone first.</string>
+    <string name="settings_need_player">These settings are in Alpaca. Install Alpaca on this phone first.</string>
 </resources>

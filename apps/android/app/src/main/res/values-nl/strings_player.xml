@@ -8,13 +8,13 @@
 
     <!-- PlaylistFileOps.kt -->
     <string name="playlist_save_title">Afspeellijst opslaan</string>
-    <string name="playlist_save_in_andamp">Opslaan in Andamp</string>
-    <string name="playlist_save_in_andamp_note">Te bekijken in het tabblad LIJSTEN van de mediabibliotheek</string>
+    <string name="playlist_save_in_alpaca">Opslaan in Alpaca</string>
+    <string name="playlist_save_in_alpaca_note">Te bekijken in het tabblad LIJSTEN van de mediabibliotheek</string>
     <string name="playlist_export">Exporteren als bestand…</string>
     <string name="playlist_export_note">Een .m3u-bestand dat andere spelers kunnen lezen</string>
     <string name="playlist_load_title">Afspeellijst laden</string>
-    <string name="playlist_open_from_andamp">Openen uit Andamp</string>
-    <string name="playlist_open_from_andamp_note">Een van de lijsten die hier zijn opgeslagen</string>
+    <string name="playlist_open_from_alpaca">Openen uit Alpaca</string>
+    <string name="playlist_open_from_alpaca_note">Een van de lijsten die hier zijn opgeslagen</string>
     <string name="playlist_import">Importeren uit bestand…</string>
     <string name="playlist_import_note">Een .m3u-bestand van deze telefoon</string>
     <string name="playlist_save_as_title">Afspeellijst opslaan als</string>

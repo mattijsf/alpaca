@@ -9,7 +9,7 @@ import io
 import re
 import zipfile
 
-from andamp import canvas, palette as P, tonal as T
+from alpaca import canvas, palette as P, tonal as T
 from spec import sprites as S
 
 
@@ -169,8 +169,8 @@ def check_roles(r, canvases):
     builds the values. This asserts they agree entry for entry, and that
     nothing is painted that the table does not name: a color computed inside a
     sheet could not be rebound to a live scheme."""
-    from andamp import roles as R, tonal as T
-    from andamp.tokens import load
+    from alpaca import roles as R, tonal as T
+    from alpaca.tokens import load
 
     _, theme = load()
     m3 = list(theme.ROLES) if hasattr(theme, "ROLES") else list(theme.TONES)

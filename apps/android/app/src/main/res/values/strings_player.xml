@@ -8,13 +8,13 @@
 
     <!-- PlaylistFileOps.kt: LIST > SAVE LIST and LIST > LOAD LIST. LISTS is the media library's tab. -->
     <string name="playlist_save_title">Save playlist</string>
-    <string name="playlist_save_in_andamp">Save in Andamp</string>
-    <string name="playlist_save_in_andamp_note">Browsable in the media library\'s LISTS tab</string>
+    <string name="playlist_save_in_alpaca">Save in Alpaca</string>
+    <string name="playlist_save_in_alpaca_note">Browsable in the media library\'s LISTS tab</string>
     <string name="playlist_export">Export as file…</string>
     <string name="playlist_export_note">An .m3u file other players can read</string>
     <string name="playlist_load_title">Load playlist</string>
-    <string name="playlist_open_from_andamp">Open from Andamp</string>
-    <string name="playlist_open_from_andamp_note">One of the lists saved here</string>
+    <string name="playlist_open_from_alpaca">Open from Alpaca</string>
+    <string name="playlist_open_from_alpaca_note">One of the lists saved here</string>
     <string name="playlist_import">Import from file…</string>
     <string name="playlist_import_note">An .m3u file from this phone</string>
     <string name="playlist_save_as_title">Save playlist as</string>

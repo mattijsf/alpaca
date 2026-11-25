@@ -1,12 +1,12 @@
-# The APK for installing Andamp without Google Play, attached to a GitHub release.
+# The APK for installing Alpaca without Google Play, attached to a GitHub release.
 #
 # Google Play gets a bundle from tools/release.py, run by hand. This is the other build,
-# `-Pandamp.store=none`: it leaves the Play Billing Library out, so it is open source all the way
+# `-Palpaca.store=none`: it leaves the Play Billing Library out, so it is open source all the way
 # down, and its support page opens the website. Direct downloads, Obtainium and app catalogs that
 # read GitHub releases all take this one file.
 #
 # A second, small APK goes with it: Autoamp, the app Android Auto talks to (:androidauto), which
-# lends the car's screen to Andamp. Both are signed with the same key.
+# lends the car's screen to Alpaca. Both are signed with the same key.
 #
 # release-please.yml calls this when it has made a release, which is a draft at that point: a
 # published release in this repository is immutable and takes no more files. This attaches the
@@ -97,7 +97,7 @@ jobs:
         env:
           RT_STORE_PASSWORD: ${{ secrets.APK_KEYSTORE_PASSWORD }}
           RT_KEY_PASSWORD: ${{ secrets.APK_KEY_PASSWORD }}
-        run: ./gradlew :app:assembleRelease :androidauto:assembleRelease -Pandamp.store=none
+        run: ./gradlew :app:assembleRelease :androidauto:assembleRelease -Palpaca.store=none
 
       - name: Name them and check their signatures
         id: apk
@@ -112,10 +112,10 @@ jobs:
               exit 1
             fi
           }
-          named app/build/outputs/apk/release/app-release.apk "andamp-$version.apk"
-          named androidauto/build/outputs/apk/release/androidauto-release.apk "andamp-autoamp-$version.apk"
-          echo "file=andamp-$version.apk" >> "$GITHUB_OUTPUT"
-          echo "auto=andamp-autoamp-$version.apk" >> "$GITHUB_OUTPUT"
+          named app/build/outputs/apk/release/app-release.apk "alpaca-$version.apk"
+          named androidauto/build/outputs/apk/release/androidauto-release.apk "alpaca-autoamp-$version.apk"
+          echo "file=alpaca-$version.apk" >> "$GITHUB_OUTPUT"
+          echo "auto=alpaca-autoamp-$version.apk" >> "$GITHUB_OUTPUT"
 
       - name: Attach them to the release, then publish the release
         if: env.TAG != ''

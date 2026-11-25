@@ -15,7 +15,7 @@
     <string name="menu_playback">Lecture</string>
     <string name="menu_visualization">Visualisation</string>
     <string name="menu_skins">Skins</string>
-    <string name="menu_support_andamp">Soutenir Andamp...</string>
+    <string name="menu_support_alpaca">Soutenir Alpaca...</string>
     <string name="menu_exit">Quitter</string>
     <string name="menu_previous">Précédent</string>
     <string name="menu_pause">Pause</string>
@@ -87,7 +87,7 @@
 
     <!-- WidgetMenu.kt -->
     <string name="menu_widget_settings">Paramètres du widget...</string>
-    <string name="menu_open_andamp">Ouvrir Andamp</string>
+    <string name="menu_open_alpaca">Ouvrir Alpaca</string>
 
     <!-- BookmarkSheetDialog.kt -->
     <string name="menu_rename_bookmark">Renommer le signet</string>

@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "nl.mattix.andamp.pack.common"
+    namespace = "nl.mattix.alpaca.pack.common"
 
     testOptions {
         unitTests {

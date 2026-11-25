@@ -12,11 +12,11 @@
     <string name="prefs_android_auto_from_play">Android Auto toont de app in de auto</string>
     <string name="prefs_android_auto_not_from_play">Android Auto toont de app niet in een auto</string>
     <string name="prefs_android_auto_not_from_play_about">Android Auto toont Autoamp in een auto alleen als Google Play de app heeft geïnstalleerd.</string>
-    <string name="prefs_android_auto_matches">Compatibel met deze Andamp</string>
+    <string name="prefs_android_auto_matches">Compatibel met deze Alpaca</string>
     <string name="prefs_android_auto_older">Werk Autoamp bij</string>
-    <string name="prefs_android_auto_older_about">De app is ouder dan deze Andamp, dus in de auto werkt misschien niet alles.</string>
-    <string name="prefs_android_auto_newer">Werk Andamp bij</string>
-    <string name="prefs_android_auto_newer_about">De app is nieuwer dan deze Andamp, dus in de auto werkt misschien niet alles.</string>
+    <string name="prefs_android_auto_older_about">De app is ouder dan deze Alpaca, dus in de auto werkt misschien niet alles.</string>
+    <string name="prefs_android_auto_newer">Werk Alpaca bij</string>
+    <string name="prefs_android_auto_newer_about">De app is nieuwer dan deze Alpaca, dus in de auto werkt misschien niet alles.</string>
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">Deze afspeelbackend voert geen effecten uit.</string>
@@ -30,7 +30,7 @@
     <string name="prefs_effects_manage_plugins_summary">Plug-ins die je hebt toegevoegd, en meer toevoegen</string>
 
     <!-- LicencesPage.kt -->
-    <string name="prefs_licences_note">Andamp is gebouwd op het werk van anderen. Elk onderdeel linkt naar de bron, waar de volledige licentietekst staat.</string>
+    <string name="prefs_licences_note">Alpaca is gebouwd op het werk van anderen. Elk onderdeel linkt naar de bron, waar de volledige licentietekst staat.</string>
 
     <!-- LimiterCard.kt -->
     <string name="prefs_limiter_title">Pieklimiter</string>
@@ -102,7 +102,7 @@
 
     <!-- Notices.kt -->
     <string name="prefs_notice_projectm_what">De engine voor de Milkdrop-visualisatie, die .milk-presets weergeeft.</string>
-    <string name="prefs_notice_projectm_obligation">Andamp koppelt projectM %1$s dynamisch, als een aparte bibliotheek in de app, zodat die kan worden vervangen. De broncode van precies die revisie is tag v%1$s op het adres hierboven, en de code die Andamp eromheen bouwt staat in de repository van Andamp. Aan projectM is niets gewijzigd.</string>
+    <string name="prefs_notice_projectm_obligation">Alpaca koppelt projectM %1$s dynamisch, als een aparte bibliotheek in de app, zodat die kan worden vervangen. De broncode van precies die revisie is tag v%1$s op het adres hierboven, en de code die Alpaca eromheen bouwt staat in de repository van Alpaca. Aan projectM is niets gewijzigd.</string>
     <string name="prefs_notice_avs_what">De visualisatie van Winamp, opnieuw geschreven in Kotlin aan de hand van de broncode die Nullsoft heeft vrijgegeven.</string>
     <string name="prefs_notice_avs_decoder_what">De opbouw en veldindelingen van het .avs-formaat, zoals de lezer van presets ze volgt.</string>
     <string name="prefs_notice_projectm_eval_what">Rekent de expressies uit waarin AVS-presets zijn geschreven, ingebouwd in de AVS-bibliotheek.</string>
@@ -121,8 +121,8 @@
     <string name="prefs_notice_walkit_what">De engine voor moderne skins, in native code: die draait de skins, geschreven in Rust.</string>
 
     <!-- Store.kt (storePlay) -->
-    <string name="prefs_notice_play_billing_what">Neemt de fooien op de pagina Andamp steunen aan, via Google Play.</string>
-    <string name="prefs_notice_play_billing_obligation">Deze bibliotheek is niet open source. De licentie van Andamp bevat een aanvullende toestemming om Andamp ermee te combineren en het resultaat te verspreiden.</string>
+    <string name="prefs_notice_play_billing_what">Neemt de fooien op de pagina Alpaca steunen aan, via Google Play.</string>
+    <string name="prefs_notice_play_billing_obligation">Deze bibliotheek is niet open source. De licentie van Alpaca bevat een aanvullende toestemming om Alpaca ermee te combineren en het resultaat te verspreiden.</string>
 
     <!-- OverlayPrefs.kt -->
     <string name="prefs_overlay_grant">Weergeven vóór andere apps toestaan</string>
@@ -131,17 +131,17 @@
     <!-- PackPrefs.kt -->
     <string name="prefs_pack_uninstalled">Verwijderd, en de nummers ervan worden overgeslagen</string>
     <string name="prefs_pack_not_installed">Niet geïnstalleerd - zie Meer bronnen hieronder</string>
-    <string name="prefs_pack_too_old">Geïnstalleerd, maar te oud voor deze versie van Andamp</string>
-    <string name="prefs_pack_too_new">Geïnstalleerd, maar gemaakt voor een nieuwere versie van Andamp</string>
+    <string name="prefs_pack_too_old">Geïnstalleerd, maar te oud voor deze versie van Alpaca</string>
+    <string name="prefs_pack_too_new">Geïnstalleerd, maar gemaakt voor een nieuwere versie van Alpaca</string>
     <string name="prefs_pack_not_signed_in">Niet ingelogd</string>
-    <string name="prefs_pack_notice_outdated">%1$s is ingesteld voor een oudere Andamp en krijgt niets af te spelen. Met een nieuwere versie ervan komen de nummers terug.</string>
-    <string name="prefs_pack_notice_ahead">%1$s is ingesteld voor een nieuwere Andamp en krijgt niets af te spelen. Als je Andamp bijwerkt, komen de nummers terug.</string>
+    <string name="prefs_pack_notice_outdated">%1$s is ingesteld voor een oudere Alpaca en krijgt niets af te spelen. Met een nieuwere versie ervan komen de nummers terug.</string>
+    <string name="prefs_pack_notice_ahead">%1$s is ingesteld voor een nieuwere Alpaca en krijgt niets af te spelen. Als je Alpaca bijwerkt, komen de nummers terug.</string>
     <string name="prefs_pack_update">%1$s bijwerken</string>
 
     <!-- PalettePrefs.kt -->
     <string name="prefs_palette_title">Kleuren van de achtergrond volgen</string>
-    <string name="prefs_palette_on">AndAmp Dark en AndAmp Light nemen de kleuren van je achtergrond over, net als de rest van de telefoon.</string>
-    <string name="prefs_palette_off">AndAmp Dark en AndAmp Light houden hun vaste kleuren.</string>
+    <string name="prefs_palette_on">Alpaca Dark en Alpaca Light nemen de kleuren van je achtergrond over, net als de rest van de telefoon.</string>
+    <string name="prefs_palette_off">Alpaca Dark en Alpaca Light houden hun vaste kleuren.</string>
 
     <!-- PlayerPage.kt -->
     <string name="prefs_player_windows_section">Vensters</string>
@@ -154,23 +154,23 @@
 
     <!-- ModernSkinPrefs.kt -->
     <string name="prefs_modern_skins_title">Moderne skins (bèta)</string>
-    <string name="prefs_modern_skins_on">Naast klassieke skins kun je ook moderne Winamp-skins (.wal) toevoegen en dragen. Sommige zien er misschien iets anders uit of werken iets anders dan in Winamp. Houd je vinger op een moderne skin om het menu van Andamp te openen. Zet je dit uit, dan draagt de speler weer je laatste klassieke skin.</string>
+    <string name="prefs_modern_skins_on">Naast klassieke skins kun je ook moderne Winamp-skins (.wal) toevoegen en dragen. Sommige zien er misschien iets anders uit of werken iets anders dan in Winamp. Houd je vinger op een moderne skin om het menu van Alpaca te openen. Zet je dit uit, dan draagt de speler weer je laatste klassieke skin.</string>
     <string name="prefs_modern_skins_off">Je kunt alleen klassieke skins (.wsz) toevoegen. Zet dit aan om ook moderne Winamp-skins (.wal) toe te voegen en te dragen. Moderne skins die je eerder hebt toegevoegd, blijven tot dan verborgen.</string>
     <string name="prefs_modern_skins_note">Alleen de speler draagt een moderne skin. De menu’s, de mediabibliotheek, de skinbrowser, de widget en Android Auto houden je laatste klassieke skin, tenzij je voor de widget of Android Auto een andere hebt gekozen. Zolang de speler een moderne skin draagt, zijn Afspeellijsteditor, Equalizer, Dubbele grootte en Visualisatieopties grijs in het menu, omdat de skin de vensters en de visualisatie van de speler tekent.</string>
     <string name="prefs_sharp_pixels_title">Scherpe pixels</string>
-    <string name="prefs_sharp_pixels_on">Strakke randen, maar sommige letters en lijnen worden ongelijk dik. Dit verandert alleen moderne skins die Andamp op een tussenmaat laat zien, zoals 2,5 keer zo groot, zodat ze op je scherm passen.</string>
-    <string name="prefs_sharp_pixels_off">Zacht, maar iets wazig. Zet dit aan voor strakke randen; sommige letters en lijnen worden dan ongelijk dik. Dit verandert alleen moderne skins die Andamp op een tussenmaat laat zien, zoals 2,5 keer zo groot, zodat ze op je scherm passen.</string>
+    <string name="prefs_sharp_pixels_on">Strakke randen, maar sommige letters en lijnen worden ongelijk dik. Dit verandert alleen moderne skins die Alpaca op een tussenmaat laat zien, zoals 2,5 keer zo groot, zodat ze op je scherm passen.</string>
+    <string name="prefs_sharp_pixels_off">Zacht, maar iets wazig. Zet dit aan voor strakke randen; sommige letters en lijnen worden dan ongelijk dik. Dit verandert alleen moderne skins die Alpaca op een tussenmaat laat zien, zoals 2,5 keer zo groot, zodat ze op je scherm passen.</string>
     <string name="prefs_windows_apart_title">Vensters los</string>
     <string name="prefs_windows_apart_on">Elk venster van een moderne skin staat waar je het zet, zoals op een bureaublad: sleep een venster aan zijn titelbalk, en het hecht aan de andere en aan de randen zoals in Winamp.</string>
     <string name="prefs_windows_apart_off">De vensters van een moderne skin staan in één stapel onder het hoofdvenster. Zet dit aan om elk venster neer te zetten waar je wilt, zoals op een bureaublad.</string>
 
     <!-- PluginsSection.kt -->
-    <string name="prefs_plugins_intro">Lua-plug-ins voor geluid. Andamp bewaart een kopie, dus het oorspronkelijke bestand mag worden verplaatst of verwijderd.</string>
+    <string name="prefs_plugins_intro">Lua-plug-ins voor geluid. Alpaca bewaart een kopie, dus het oorspronkelijke bestand mag worden verplaatst of verwijderd.</string>
     <string name="prefs_plugins_adding">Toevoegen…</string>
     <string name="prefs_plugins_add">Plug-in toevoegen</string>
-    <string name="prefs_plugins_builtin_always">De effecten die bij Andamp horen, staan altijd in het rack.</string>
+    <string name="prefs_plugins_builtin_always">De effecten die bij Alpaca horen, staan altijd in het rack.</string>
     <string name="prefs_plugins_none">Geen plug-ins toegevoegd</string>
-    <string name="prefs_plugins_none_hint">De effecten die bij Andamp horen, staan al in het rack. Voeg een .lua-bestand toe voor meer.</string>
+    <string name="prefs_plugins_none_hint">De effecten die bij Alpaca horen, staan al in het rack. Voeg een .lua-bestand toe voor meer.</string>
     <string name="prefs_plugins_remove_named">%1$s verwijderen</string>
     <string name="prefs_plugins_cannot_run">Werkt niet met het audioformaat van dit nummer.</string>
     <string name="prefs_plugins_remove_question">%1$s verwijderen?</string>
@@ -197,7 +197,7 @@
     <string name="prefs_plugins_credit_by">door %1$s</string>
     <string name="prefs_plugins_credit_none">geen versie opgegeven</string>
     <string name="prefs_plugins_more_title">Meer effecten</string>
-    <string name="prefs_plugins_more_summary">Effectplug-ins om te installeren vanaf de site van Andamp</string>
+    <string name="prefs_plugins_more_summary">Effectplug-ins om te installeren vanaf de site van Alpaca</string>
 
     <!-- PreferencesScreen.kt -->
     <string name="prefs_page_effects">Effecten</string>
@@ -207,15 +207,15 @@
     <string name="prefs_page_rows">Nummerrijen</string>
     <string name="prefs_page_widget">Widget op het startscherm</string>
     <string name="prefs_page_android_auto">Android Auto</string>
-    <string name="prefs_page_support">Andamp steunen</string>
-    <string name="prefs_page_about">Over Andamp</string>
+    <string name="prefs_page_support">Alpaca steunen</string>
+    <string name="prefs_page_about">Over Alpaca</string>
     <string name="prefs_page_licences">Opensourcelicenties</string>
-    <string name="prefs_about_licences_summary">De projecten waarop Andamp is gebouwd, en hun licenties</string>
+    <string name="prefs_about_licences_summary">De projecten waarop Alpaca is gebouwd, en hun licenties</string>
     <string name="prefs_about_summary">Versie en opensourcelicenties</string>
     <string name="prefs_title">Voorkeuren</string>
     <string name="prefs_sound_section">Geluid</string>
     <string name="prefs_look_section">Uiterlijk en bediening</string>
-    <string name="prefs_about_note">Andamp %1$s: een replica van Winamp 2.8, niet verbonden aan Winamp of de eigenaren ervan.</string>
+    <string name="prefs_about_note">Alpaca %1$s: een replica van Winamp 2.8, niet verbonden aan Winamp of de eigenaren ervan.</string>
 
     <!-- PrefsTopBar.kt -->
     <string name="prefs_top_back">Terug naar voorkeuren</string>
@@ -258,7 +258,7 @@
     <!-- SourcesPrefs.kt -->
     <string name="prefs_sources_section">Muziekbronnen</string>
     <string name="prefs_sources_more_title">Meer bronnen</string>
-    <string name="prefs_sources_more_summary">Andere plekken waarvan Andamp muziek kan afspelen, en hoe je ze toevoegt</string>
+    <string name="prefs_sources_more_summary">Andere plekken waarvan Alpaca muziek kan afspelen, en hoe je ze toevoegt</string>
     <string name="prefs_phone_permission_off">Toestemming %1$s staat uit</string>
     <string name="prefs_phone_allow">Sta %1$s toe om de muziek op deze telefoon te tonen</string>
     <string name="prefs_phone_summary">Toegang, bibliotheek en scannen</string>
@@ -295,13 +295,13 @@
     <string name="prefs_updates_retry">Opnieuw proberen</string>
 
     <!-- SupportPrefs.kt -->
-    <string name="prefs_support_intro">Andamp is gratis en heeft geen advertenties. Als je er plezier van hebt, kun je een fooi geven. Een fooi ontgrendelt niets: alles in Andamp blijft gratis, met of zonder.</string>
-    <string name="prefs_support_summary_outside">Hoe je Andamp via de website steunt</string>
+    <string name="prefs_support_intro">Alpaca is gratis en heeft geen advertenties. Als je er plezier van hebt, kun je een fooi geven. Een fooi ontgrendelt niets: alles in Alpaca blijft gratis, met of zonder.</string>
+    <string name="prefs_support_summary_outside">Hoe je Alpaca via de website steunt</string>
     <string name="prefs_support_summary">Waar een fooi voor is, en hoe je er een geeft</string>
     <string name="prefs_support_closed">Fooien zijn op deze telefoon nu niet beschikbaar.</string>
     <string name="prefs_support_play_note">Google Play handelt de betaling af. Je kunt vaker dan één keer een fooi geven.</string>
-    <string name="prefs_support_given">Je hebt Andamp gesteund. Dank je wel.</string>
-    <string name="prefs_support_outside_intro">Andamp is gratis en heeft geen advertenties. Als je er plezier van hebt, kun je Andamp steunen via de website. Dat ontgrendelt niets: alles in Andamp blijft gratis, met of zonder.</string>
+    <string name="prefs_support_given">Je hebt Alpaca gesteund. Dank je wel.</string>
+    <string name="prefs_support_outside_intro">Alpaca is gratis en heeft geen advertenties. Als je er plezier van hebt, kun je Alpaca steunen via de website. Dat ontgrendelt niets: alles in Alpaca blijft gratis, met of zonder.</string>
     <string name="prefs_support_open_site">%1$s openen</string>
     <string name="prefs_support_note_thanks">Dank je wel! Je fooi is aangekomen.</string>
     <string name="prefs_support_note_waiting">Dank je wel! Je fooi komt aan zodra de betaling is afgerond.</string>
@@ -340,7 +340,7 @@
 
     <!-- VolumePrefs.kt -->
     <string name="prefs_volume_title">Onafhankelijk volume</string>
-    <string name="prefs_volume_own">De schuif is alleen van Andamp en het volume van de telefoon blijft staan</string>
+    <string name="prefs_volume_own">De schuif is alleen van Alpaca en het volume van de telefoon blijft staan</string>
     <string name="prefs_volume_device">De schuif regelt het mediavolume van de telefoon, net als de volumeknoppen</string>
 
     <!-- WidgetPrefs.kt -->
@@ -351,7 +351,7 @@
     <string name="prefs_widget_summary">Visualisatie, verversingssnelheid, grootte, tikken en skin</string>
     <string name="prefs_widget_refresh_title">Verversingssnelheid</string>
     <string name="prefs_widget_size_title">Grootte</string>
-    <string name="prefs_widget_logo_title">Alleen het logo opent Andamp</string>
+    <string name="prefs_widget_logo_title">Alleen het logo opent Alpaca</string>
     <string name="prefs_widget_logo_summary">Tikken op de speler doet niets, dus als je net naast een knop tikt, blijf je op het startscherm.</string>
     <string name="prefs_widget_volume_title">Volumeregeling</string>
     <string name="prefs_widget_volume_summary">Maakt de volumeschuif aantikbaar. Die zit dicht bij de zoekbalk en is makkelijk per ongeluk te raken.</string>
@@ -362,11 +362,11 @@
     <string name="prefs_widget_limit_corners_title">De hoeken worden afgesneden</string>
     <string name="prefs_widget_limit_corners_body">Android rondt de hoeken af van elke widget, van elke app, en dat is niet uit te zetten. Een kleinere speler zou ruimte overhouden, maar dan zijn de knoppen ook lastiger te raken, dus hij houdt zijn grootte.</string>
     <string name="prefs_widget_limit_icon_title">Er kan een pictogram voor in de plaats komen</string>
-    <string name="prefs_widget_limit_icon_body">Om de batterij te sparen stopt Android soms apps waarvan het denkt dat je er klaar mee bent. Dan toont het startscherm een pictogram van Andamp in plaats van de speler - één tik brengt hem terug. Het zou niet vaak moeten gebeuren.</string>
+    <string name="prefs_widget_limit_icon_body">Om de batterij te sparen stopt Android soms apps waarvan het denkt dat je er klaar mee bent. Dan toont het startscherm een pictogram van Alpaca in plaats van de speler - één tik brengt hem terug. Het zou niet vaak moeten gebeuren.</string>
     <string name="prefs_widget_limit_loop_title">De balken draaien in een lus</string>
     <string name="prefs_widget_limit_loop_body">Ongeveer een halve seconde muziek wordt omgezet in beelden, en het startscherm speelt die steeds opnieuw af tot een nieuwe halve seconde ze vervangt. De balken bewegen dus mee met de muziek zonder er ooit helemaal gelijk mee te lopen. Elke tel bijhouden zou betekenen dat er vele keren per seconde nieuwe beelden worden gestuurd, en juist dat trekt een batterij leeg.</string>
     <string name="prefs_widget_limit_running_title">De balken werken alleen als de speler draait</string>
-    <string name="prefs_widget_limit_running_body">Een tik op de positie- of volumebalk vertelt de speler dat hij moet verspringen. Als Android Andamp uit het geheugen heeft gehaald, is er niets om dat aan te vertellen en doet de tik niets. De knoppen werken nog wel: een druk op een knop start de speler opnieuw, en daarna doen de balken het weer.</string>
+    <string name="prefs_widget_limit_running_body">Een tik op de positie- of volumebalk vertelt de speler dat hij moet verspringen. Als Android Alpaca uit het geheugen heeft gehaald, is er niets om dat aan te vertellen en doet de tik niets. De knoppen werken nog wel: een druk op een knop start de speler opnieuw, en daarna doen de balken het weer.</string>
 
     <!-- WidgetSettings.kt -->
     <string name="prefs_widget_size_fill">Vullen</string>

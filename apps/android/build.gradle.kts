@@ -135,7 +135,7 @@ tasks.register("apiDocs") {
 }
 
 /**
- * The "Extend Andamp" site: MkDocs over a named list of pages, with the Dokka
+ * The "Extend Alpaca" site: MkDocs over a named list of pages, with the Dokka
  * reference dropped in beside them, into one directory of plain files that any
  * static host will serve and a browser will open off a disk.
  *
@@ -242,7 +242,7 @@ abstract class DocsSite : DefaultTask() {
         val index = File(stage, "index.md")
         if (!index.isFile) {
             logger.lifecycle("docsSite: no index page staged - writing a stub so the site has a root.")
-            index.writeText("# Extend Andamp\n\nThis page is not written yet.\n")
+            index.writeText("# Extend Alpaca\n\nThis page is not written yet.\n")
         }
         val examplesDir = examples.get().asFile
         if (examplesDir.isDirectory) {
@@ -285,7 +285,7 @@ abstract class DocsSite : DefaultTask() {
 // reference.
 tasks.register<DocsSite>("docsSite") {
     group = "documentation"
-    description = "The \"Extend Andamp\" developer site - allowlisted pages plus the API reference - into build/docs-site."
+    description = "The \"Extend Alpaca\" developer site - allowlisted pages plus the API reference - into build/docs-site."
     dependsOn("apiDocs")
 
     val allowlist =
@@ -348,20 +348,22 @@ subprojects {
  * `publishToMavenLocal` needs nothing. Reaching Maven Central and signing are
  * asked for with `-PsdkRelease`, on the machine that holds the key, so a clone
  * can publish locally without one.
+ *
+ * The group is still the app's old name: sources resolve the SDK under it.
  */
 val sdkGroup = "nl.mattix.andamp"
 val sdkKotlin = KotlinVersion.KOTLIN_2_2
 val sdkStdlib = "2.2.20"
-val sdkVersion: String = libs.versions.andampSdk.get()
+val sdkVersion: String = libs.versions.alpacaSdk.get()
 val sdkModules =
     mapOf(
-        ":core:model" to ("model" to "The types Andamp's source contract is stated in: tracks, transport, backend state."),
-        ":core:playback" to ("playback" to "Andamp's playback contract and its contract tests, which ship as test fixtures."),
-        ":core:network" to ("network" to "Whether the phone has a network, as Andamp and its sources ask it."),
+        ":core:model" to ("model" to "The types Alpaca's source contract is stated in: tracks, transport, backend state."),
+        ":core:playback" to ("playback" to "Alpaca's playback contract and its contract tests, which ship as test fixtures."),
+        ":core:network" to ("network" to "Whether the phone has a network, as Alpaca and its sources ask it."),
         ":core:packapi" to
-            ("source-api" to "The contract between Andamp and a music source: the AIDL and the parcels that cross."),
+            ("source-api" to "The contract between Alpaca and a music source: the AIDL and the parcels that cross."),
         ":pack:common" to
-            ("source-common" to "The source side of Andamp's contract that is the same in every source: service, audio, paging."),
+            ("source-common" to "The source side of Alpaca's contract that is the same in every source: service, audio, paging."),
     )
 
 subprojects {
@@ -400,7 +402,7 @@ subprojects {
                 signAllPublications()
             }
             pom {
-                name.set("Andamp $artifact")
+                name.set("Alpaca $artifact")
                 description.set(summary)
                 url.set("https://github.com/mattijsf/andamp")
                 inceptionYear.set("2026")

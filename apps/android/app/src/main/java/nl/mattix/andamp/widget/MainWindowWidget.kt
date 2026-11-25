@@ -7,6 +7,11 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import nl.mattix.alpaca.widget.WidgetControl
+import nl.mattix.alpaca.widget.WidgetFlash
+import nl.mattix.alpaca.widget.WidgetIntents
+import nl.mattix.alpaca.widget.WidgetSender
+import nl.mattix.alpaca.widget.WidgetSlider
 
 /**
  * The main player window, on the home screen.
@@ -19,6 +24,9 @@ import android.os.Bundle
  *
  * This class only receives broadcasts. A press goes to [WidgetControl], which hands it to the
  * player's facade and builds a player when none is attached; pictures are sent by [WidgetSender].
+ *
+ * It keeps the package the app had when it was named Andamp. A launcher holds a placed widget by
+ * its provider's class name and removes the widget when that class is gone.
  */
 class MainWindowWidget : AppWidgetProvider() {
     override fun onUpdate(

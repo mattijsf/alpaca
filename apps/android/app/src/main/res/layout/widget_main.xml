@@ -34,7 +34,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:scaleType="centerInside"
-            android:contentDescription="Andamp player" />
+            android:contentDescription="Alpaca player" />
 
 
         <!--
@@ -111,13 +111,13 @@
             android:id="@+id/widget_menu"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:contentDescription="Andamp menu" />
+            android:contentDescription="Alpaca menu" />
 
         <ImageView
             android:id="@+id/widget_logo"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:contentDescription="Open Andamp" />
+            android:contentDescription="Open Alpaca" />
 
         <ImageView
             android:id="@+id/widget_btn_1"

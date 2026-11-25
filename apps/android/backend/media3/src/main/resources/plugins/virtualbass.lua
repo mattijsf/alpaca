@@ -17,7 +17,7 @@ plugin {
   id      = "nl.mattix.andamp.virtualbass",
   name    = "Virtual Bass",
   version = "1.0.0",
-  author  = "Andamp",
+  author  = "Alpaca",
   about   = "Psychoacoustic bass: the band below 150 Hz is saturated (tanh) and its harmonics, band-limited to 150–700 Hz, are mixed over the dry signal.",
 }
 

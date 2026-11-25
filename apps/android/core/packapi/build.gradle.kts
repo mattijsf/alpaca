@@ -11,7 +11,7 @@ plugins {
 }
 
 android {
-    namespace = "nl.mattix.andamp.core.packapi"
+    namespace = "nl.mattix.alpaca.core.packapi"
 
     buildFeatures {
         aidl = true

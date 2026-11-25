@@ -13,7 +13,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from andamp import palette as P
+from alpaca import palette as P
 from spec import sprites as S
 
 
@@ -43,7 +43,7 @@ def mask_bbox(mask):
 
 
 def audit_masks(report):
-    from andamp import art
+    from alpaca import art
 
     names = [n for n in dir(art)
              if n.isupper() and isinstance(getattr(art, n), list)
@@ -229,7 +229,7 @@ MARGINS = {}
 
 
 def audit_window_edge(report):
-    from andamp import art, shapes, palette as P, draw
+    from alpaca import art, shapes, palette as P, draw
 
     cut = set(shapes.cut_offsets(275, 116, P.STYLE["radius_window"]))
     for name, bx, attr in BAR_BUTTONS:
@@ -274,7 +274,7 @@ ICON_BOXES = [
 def audit_fit(report):
     """An icon larger than the box it is stamped into is clipped by Canvas.px
     without an error."""
-    from andamp import art
+    from alpaca import art
 
     for name, bw, bh, where in ICON_BOXES:
         mask = getattr(art, name, None)
@@ -290,7 +290,7 @@ def audit_fit(report):
 
 def audit_grid(report):
     """Container edges must land on a declared rail."""
-    from andamp.sheets import main, eqmain
+    from alpaca.sheets import main, eqmain
 
     for name, x, y, w, h in main.containers():
         if x not in main.LEFT_RAILS:

@@ -25,7 +25,7 @@
             android:resource="@xml/automotive_app_desc" />
 
         <service
-            android:name="nl.mattix.andamp.backend.media3.PlaybackService"
+            android:name="nl.mattix.alpaca.backend.media3.PlaybackService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">
             <!--

@@ -1,6 +1,7 @@
-# Andamp engineering notes
+# Alpaca engineering notes
 
-Andamp is a Winamp 2.8 replica in Jetpack Compose (`nl.mattix.andamp`). It has three
+Alpaca is a Winamp 2.8 replica in Jetpack Compose (package `nl.mattix.alpaca`; the application
+id is still `nl.mattix.andamp`, the name Play and installed phones know it by). It has three
 classic windows: the main player (275x116 virtual pixels), the equalizer (275x116) and the
 playlist (275 wide, as tall as the space left). They are docked in a vertical stack until
 you drag them apart. The screen turns with the device. Upright and sideways are each a
@@ -26,7 +27,7 @@ UI surface is wrong, even if it works today.
 ./gradlew verifyRoborazziDebug        # unit tests plus golden screenshot comparison
 ./gradlew recordRoborazziDebug        # re-record goldens in app/src/test/snapshots (review the diff)
 ./gradlew apiDocs                     # the KDoc as an HTML API reference, in build/api-docs
-./gradlew docsSite                    # the "Extend Andamp" developer site, in build/docs-site
+./gradlew docsSite                    # the "Extend Alpaca" developer site, in build/docs-site
 ./gradlew publishToMavenLocal         # the source SDK's five artifacts, into ~/.m2, unsigned
 ./gradlew installDebug                # install on all connected devices
 adb shell am start -n nl.mattix.andamp/.MainActivity
@@ -83,7 +84,7 @@ are set once in the root build for every Android module.
 - **One APK, no flavors.** Nothing source-specific is compiled into `:app`, so the tasks
   are the plain ones: `assembleDebug`, `testDebugUnitTest`, `bundleRelease`,
   `publishReleaseBundle`.
-- **Two stores, one property.** `-Pandamp.store=none` builds the APK handed out without
+- **Two stores, one property.** `-Palpaca.store=none` builds the APK handed out without
   Google Play; the default, `play`, is the build Play gets. The property picks one source
   directory, `app/src/storePlay` or `app/src/storeNone`, and decides whether the Play
   Billing Library is a dependency. Each directory holds a `Store` object with the same
@@ -92,7 +93,7 @@ are set once in the root build for every Android module.
   APK back and fails if the library is in it (`verify*ApkCarriesNoBilling`). The gate runs
   the `play` build; `.github/workflows/apk.yml` builds, signs and attaches the other to
   each GitHub release, with the APK of `:androidauto` beside it.
-- **A second id, for a phone that has the store's Andamp.** `-Pandamp.id.suffix=.dev`
+- **A second id, for a phone that has the store's Alpaca.** `-Palpaca.id.suffix=.dev`
   makes the app `nl.mattix.andamp.dev`, which installs beside the other and leaves it and
   its playlist alone. `:androidauto` built with the same property is
   `nl.mattix.andamp.dev.androidauto` and lends to that second app: its id is always its
@@ -112,7 +113,7 @@ are set once in the root build for every Android module.
 
 ### The source SDK
 
-Five modules are published under one version, `andampSdk` in `gradle/libs.versions.toml`:
+Five modules are published under one version, `alpacaSdk` in `gradle/libs.versions.toml`:
 
 | Module | Artifact |
 |---|---|
@@ -318,7 +319,7 @@ top of its `Wire.kt`. Parcels are read by position, so any change to a parcel or
 needs a new `PackApi.PACK_API`, and the player refuses a source whose version differs.
 
 **Trust.** Anybody may write a source. There is no pinned key and no list of approved
-authors. Andamp trusts what the listener installed and shows who is answering on the
+authors. Alpaca trusts what the listener installed and shows who is answering on the
 source's page: the app's name, its package and the start of its signing fingerprint
 (`PackIdentity`). Android's rule that an update must carry the same key ties a source's
 versions together. In the other direction, a source answers whoever binds it. A source
@@ -410,13 +411,13 @@ fixed on purpose:
   the popup-menu wait (`WalMenuWait`), the names of Winamp's host actions (`HostAction`)
   and which window and run drawings a frame records again (`KeptFrames`). The adapters
   bring Compose's pointer events and geometry, the engine thread's `Handler`, the render
-  nodes, and what each host action does in Andamp.
+  nodes, and what each host action does in Alpaca.
 - `:core:skinplayer` also carries what a modern skin's player needs over any
   `SkinPlayer`: Winamp 5's scales (`WinampFiveUnits`) and the hold on a written value
   until the player shows it (`HeldWrite`).
-- The default element set modern skins build on (`AndampDefaultSet`: frames, title bar and
+- The default element set modern skins build on (`AlpacaDefaultSet`: frames, title bar and
   widgets in plain pictures of our own, and the stand-in fonts for Windows' system fonts)
-  lives in the app's resources under `nl/mattix/andamp/wal/defaultset`.
+  lives in the app's resources under `nl/mattix/alpaca/wal/defaultset`.
 
 ### In Android Auto
 
@@ -491,7 +492,7 @@ one of them steps the clocks (`WinampState.clocksTurn`).
   source. The file holds nothing that cannot be read again, so a schema change empties it.
 - **Folders and genres.** The phone's come from its index. A source gives folders and
   genres when its service's meta-data says so (`PackApi.META_FOLDERS`, `META_GENRES`),
-  read from the manifest like the marks; Andamp then asks it the question kinds
+  read from the manifest like the marks; Alpaca then asks it the question kinds
   `folders`, `folderTracks`, `genres` and `genreTracks`, which a pack built before them
   answers as failed. No parcel or call changed, so `PACK_API` did not. `GroupedSourceLibrary`
   keeps a source's lists in the index as two more pieces, reads the first one in the
@@ -568,7 +569,7 @@ one of them steps the clocks (`WinampState.clocksTurn`).
    the five-pixel letters of the skin's font exactly.
 5. **Window shapes come from `REGION.TXT`.** The player and the equalizer, in normal and
    shade form, are clipped to the skin's polygons. These are the four sections webamp
-   reads: `normal`, `windowshade`, `equalizer`, `equalizerws`. Andamp also reads a section
+   reads: `normal`, `windowshade`, `equalizer`, `equalizerws`. Alpaca also reads a section
    of its own, `[Corners]`, which rounds the other windows. The clip is on the window's
    own box, so touches are cut along with the art. A skin without the file is a rectangle.
 6. **The skin engine copies Winamp's quirks on purpose.** Case-insensitive zip lookup,
@@ -612,7 +613,7 @@ sentences, Arrange-Act-Assert.
 ### 2. Golden screenshot tests
 
 `WindowGoldenTest` uses Roborazzi with Robolectric native graphics. Each window's draw
-function renders at scale 1 with the base skin (AndAmp Dark) through `CanvasDrawScope` and
+function renders at scale 1 with the base skin (Alpaca Dark) through `CanvasDrawScope` and
 is compared with the goldens in `app/src/test/snapshots/`. `verifyRoborazziDebug` is part
 of `gate`. `recordRoborazziDebug` records new goldens.
 
@@ -649,7 +650,7 @@ gets at least one. Before a release, also run a smoke test on an emulator.
 - **`SkinPlayerContract`** (test fixtures of `:core:skinplayer`) is what any player under
   the skins must do: the transport, playlist picks, the version moving on each change and
   only then, clamped units, merged slider writes, listeners and seeking.
-  `FakeSkinPlayerTest` and `AndampSkinPlayerContractTest` pass it.
+  `FakeSkinPlayerTest` and `AlpacaSkinPlayerContractTest` pass it.
 - **`WindowParityTest`** lists every floating window (player, equalizer, playlist,
   plug-in, skin browser, library) in one parameterized suite. Each must publish a
   rectangle and a handle, measure the same screen as its neighbors, close on a near-miss
@@ -664,8 +665,8 @@ Presets and skins made by other people cannot be in this repository, so these te
 unless you point them at a local directory.
 
 ```bash
-ANDAMP_AVS_CORPUS=~/avs-presets ./gradlew :visualizer:avs:test
-ANDAMP_SKIN_CORPUS=~/skins ./gradlew test
+ALPACA_AVS_CORPUS=~/avs-presets ./gradlew :visualizer:avs:test
+ALPACA_SKIN_CORPUS=~/skins ./gradlew test
 ```
 
 `AvsCorpusTest` parses every `.avs` file and asserts the share that parses and that the
@@ -767,7 +768,7 @@ the phone's language.
   view model holds the app's (`vm.words`, which the menu builders read), an ops class that
   words a prompt or a header takes it as a constructor parameter, and a composable hands it
   on with `rememberWords()`.
-- **Keys** are `area_meaning` in snake case (`menu_support_andamp`, `prefs_support_summary`),
+- **Keys** are `area_meaning` in snake case (`menu_support_alpaca`, `prefs_support_summary`),
   the area being the file's. The English text is the key's documentation; a comment on the
   resource says where it shows and what a placeholder holds when the key alone does not.
 - **Placeholders** are positional, `%1$s`, `%1$d`; a count that changes the wording is a
@@ -796,7 +797,7 @@ the phone's language.
 
 ## Assets
 
-The three bundled skins (AndAmp Dark, Light and Spot) are built by `skin/` from one Python
+The three bundled skins (Alpaca Dark, Light and Spot) are built by `skin/` from one Python
 source: `python3 skin/build.py all`. `:app:bundledSkins` copies the output into the
 packaged assets. Dark is the base skin: a fresh install uses it, a skin that lacks a sheet
 borrows from it, and the goldens are drawn with it.

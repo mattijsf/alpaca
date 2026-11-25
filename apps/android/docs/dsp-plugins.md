@@ -238,10 +238,10 @@ In this repository:
 - `core/dsp`: `Primitive.kt`, `GraphSpec.kt`, `GraphValidator.kt`, `GraphCompiler.kt`,
   `Tape.kt`, `GraphEngine.kt`, `BlockRunner.kt`
 - `core/plugin`: `PluginLoader.kt`, `Sandbox.kt`, `GraphBinding.kt`, `UiBinding.kt`
-- `backend/media3/src/main/java/nl/mattix/andamp/backend/media3/`: `DspAudioProcessor.kt`,
+- `backend/media3/src/main/java/nl/mattix/alpaca/backend/media3/`: `DspAudioProcessor.kt`,
   `dsp/DspStage.kt`, `dsp/BuiltInStages.kt`, `graph/BuiltInGraphs.kt`,
   `graph/BundledPlugins.kt`
-- `backend/media3/src/test/java/nl/mattix/andamp/backend/media3/dsp/`: the hand-written
+- `backend/media3/src/test/java/nl/mattix/alpaca/backend/media3/dsp/`: the hand-written
   stages (`KaraokeStage.kt`, `ModulationStage.kt`, `ReverbStage.kt`, `PanStage.kt`)
 
 The design follows SuperCollider, where the language emits a graph (a SynthDef) and the

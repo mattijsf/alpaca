@@ -11,7 +11,7 @@ plugin {
   id      = "nl.mattix.andamp.pan",
   name    = "Pan",
   version = "1.0.0",
-  author  = "Andamp",
+  author  = "Alpaca",
   about   = "Places the signal across the image at constant power.",
 }
 

@@ -24,10 +24,10 @@
 
     <!-- SourcePrompts.kt -->
     <string name="source_missing_title">%1$s ist nicht eingerichtet</string>
-    <string name="source_missing_body">Richte %1$s ein, um die Titel dieser Quelle in Andamp abzuspielen. Bis dahin werden sie übersprungen.</string>
+    <string name="source_missing_body">Richte %1$s ein, um die Titel dieser Quelle in Alpaca abzuspielen. Bis dahin werden sie übersprungen.</string>
     <string name="source_missing_confirm">%1$s einrichten</string>
     <string name="source_signed_out_title">%1$s ist abgemeldet</string>
-    <string name="source_signed_out_body">Melde dich an, um deine Titel von %1$s in Andamp abzuspielen. Bis dahin werden sie übersprungen.</string>
+    <string name="source_signed_out_body">Melde dich an, um deine Titel von %1$s in Alpaca abzuspielen. Bis dahin werden sie übersprungen.</string>
     <string name="source_signed_out_confirm">Anmelden</string>
 
     <!-- MusicPermission.kt: the names Android's settings show in German -->
@@ -36,23 +36,23 @@
     <string name="permission_storage">Speicher</string>
 
     <!-- LibraryAccess.kt and LibraryPrompt.kt -->
-    <string name="access_granted">Andamp hat die Berechtigung „%1$s“. Titel, die du hinzufügst, lassen sich auch nach einem Neustart abspielen.</string>
-    <string name="access_askable">Ohne die Berechtigung „%1$s“ kann Andamp weiterhin Dateien abspielen, die du auswählst, aber nach einem Neustart funktionieren sie vielleicht nicht mehr.</string>
+    <string name="access_granted">Alpaca hat die Berechtigung „%1$s“. Titel, die du hinzufügst, lassen sich auch nach einem Neustart abspielen.</string>
+    <string name="access_askable">Ohne die Berechtigung „%1$s“ kann Alpaca weiterhin Dateien abspielen, die du auswählst, aber nach einem Neustart funktionieren sie vielleicht nicht mehr.</string>
     <string name="access_blocked">Die Berechtigung „%1$s“ ist aus. Dateien, die du auswählst, lassen sich vorerst noch abspielen, aber nach einem Neustart funktionieren sie vielleicht nicht mehr.</string>
     <string name="access_ask_title">„%1$s“ zulassen</string>
-    <string name="access_ask_body">Andamp braucht „%1$s“, um die Musik auf diesem Smartphone abzuspielen.</string>
+    <string name="access_ask_body">Alpaca braucht „%1$s“, um die Musik auf diesem Smartphone abzuspielen.</string>
     <string name="access_off_title">Berechtigung „%1$s“ ist aus</string>
-    <string name="access_off_body">Lass „%1$s“ in den Einstellungen von Andamp zu, um die Musik auf diesem Smartphone abzuspielen.</string>
+    <string name="access_off_body">Lass „%1$s“ in den Einstellungen von Alpaca zu, um die Musik auf diesem Smartphone abzuspielen.</string>
 
     <!-- FolderAccessOps.kt -->
     <string name="folder_allow_again_title">%1$s wieder zulassen?</string>
     <string name="folder_other_folder">Das war ein anderer Ordner. Die Titel lassen sich nur aus dem Ordner abspielen, aus dem sie hinzugefügt wurden.</string>
-    <string name="folder_no_longer_readable">Andamp kann diesen Ordner nicht mehr lesen. Lass ihn wieder zu, dann lassen sich seine Titel wie zuvor abspielen.</string>
+    <string name="folder_no_longer_readable">Alpaca kann diesen Ordner nicht mehr lesen. Lass ihn wieder zu, dann lassen sich seine Titel wie zuvor abspielen.</string>
 
     <!-- OverlayOps.kt -->
     <string name="overlay_title">Immer im Vordergrund</string>
     <string name="overlay_needs_android_11">Das Schweben über anderen Apps erfordert Android 11 oder neuer.</string>
-    <string name="overlay_needs_permission">Andamp braucht die Berechtigung „Über anderen Apps einblenden“, bevor es über ihnen schweben kann.</string>
+    <string name="overlay_needs_permission">Alpaca braucht die Berechtigung „Über anderen Apps einblenden“, bevor es über ihnen schweben kann.</string>
 
     <!-- PresetNotice.kt -->
     <string name="preset_unreadable">Diese Voreinstellung konnte nicht gelesen werden</string>
@@ -91,11 +91,11 @@
     <string name="skin_modern_failed_title">„%1$s“ ließ sich nicht öffnen</string>
     <string name="skin_modern_failed_body">Dieser moderne Skin ließ sich nicht laden und wurde deshalb nicht hinzugefügt.</string>
     <string name="skin_modern_stopped_title">„%1$s“ funktioniert nicht mehr</string>
-    <string name="skin_modern_stopped_body">Andamp zeigt vorerst deinen letzten klassischen Skin. Dieser moderne Skin wird beim nächsten Start von Andamp erneut versucht. Möchtest du das nicht, wähle unter Skins einen anderen Skin oder entferne diesen im Skin-Browser.</string>
-    <string name="skin_classic_stopped_body">Vorerst tritt AndAmp Dark an seine Stelle. Andamp versucht diesen Skin beim nächsten Start erneut.</string>
+    <string name="skin_modern_stopped_body">Alpaca zeigt vorerst deinen letzten klassischen Skin. Dieser moderne Skin wird beim nächsten Start von Alpaca erneut versucht. Möchtest du das nicht, wähle unter Skins einen anderen Skin oder entferne diesen im Skin-Browser.</string>
+    <string name="skin_classic_stopped_body">Vorerst tritt Alpaca Dark an seine Stelle. Alpaca versucht diesen Skin beim nächsten Start erneut.</string>
 
     <!-- AmpModals.kt -->
     <string name="skin_modern_offer_title">Moderne Skins einschalten?</string>
-    <string name="skin_modern_offer_body">„%1$s“ ist ein moderner Winamp-Skin. Moderne Skins sind noch in der Betaphase. Einschalten und diesen Skin hinzufügen? Halte einen modernen Skin gedrückt, um das Menü von Andamp zu öffnen. Du kannst moderne Skins unter Einstellungen&#160;&gt;&#160;Player wieder ausschalten.</string>
+    <string name="skin_modern_offer_body">„%1$s“ ist ein moderner Winamp-Skin. Moderne Skins sind noch in der Betaphase. Einschalten und diesen Skin hinzufügen? Halte einen modernen Skin gedrückt, um das Menü von Alpaca zu öffnen. Du kannst moderne Skins unter Einstellungen&#160;&gt;&#160;Player wieder ausschalten.</string>
     <string name="skin_modern_offer_accept">Einschalten und hinzufügen</string>
 </resources>

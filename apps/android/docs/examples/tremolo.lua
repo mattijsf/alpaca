@@ -8,7 +8,7 @@ plugin {
   id      = "nl.mattix.andamp.example.tremolo",
   name    = "Tremolo",
   version = "1.1.0",
-  author  = "Andamp examples",
+  author  = "Alpaca examples",
   about   = "Sways the volume up and down at a speed you pick.",
 }
 

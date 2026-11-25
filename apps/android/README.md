@@ -1,24 +1,24 @@
-# Andamp
+# Alpaca
 
 Winamp 2.8 on your Android phone. Pixel for pixel.
 
-Andamp renders the classic Winamp interface (player, equalizer and playlist) from real
+Alpaca renders the classic Winamp interface (player, equalizer and playlist) from real
 Winamp skin files: the actual sprite sheets from `.wsz` skins, drawn at integer scale with
 nearest-neighbor filtering.
 
 <p align="center">
-  <img src="docs/screenshot.png" width="360" alt="Andamp running its own dark skin" />
+  <img src="docs/screenshot.png" width="360" alt="Alpaca running its own dark skin" />
 </p>
 
 ## Status
 
-Andamp is in internal testing on Google Play. [CHANGELOG.md](CHANGELOG.md) lists what each
+Alpaca is in internal testing on Google Play. [CHANGELOG.md](CHANGELOG.md) lists what each
 release changed.
 
 Each [release](https://github.com/mattijsf/andamp/releases) also carries an APK for installing
 without Google Play. It is signed with a different key than a Play install, so the two do not
-update each other. A second, small APK beside it, `andamp-autoamp`, is Autoamp: the app that
-brings the Android Auto screen described below. It works beside an Andamp from either place.
+update each other. A second, small APK beside it, `alpaca-autoamp`, is Autoamp: the app that
+brings the Android Auto screen described below. It works beside an Alpaca from either place.
 
 What works:
 
@@ -33,7 +33,7 @@ What works:
 - A visualizer window running AVS and Milkdrop presets.
 - A floating player that stays on top of other apps (Android 11+), and a home-screen widget.
 - Android Auto: its own player with the playlist to pick from. With Autoamp beside it,
-  Andamp also puts its skinned main window on the car's screen. Android Auto shows an app with a screen of its own in a car only when the
+  Alpaca also puts its skinned main window on the car's screen. Android Auto shows an app with a screen of its own in a car only when the
   phone records Google Play as its installer.
 - Classic `.wsz` skins, and Winamp modern skins (`.wal`) in beta.
 - A browser for the Winamp Skin Museum.
@@ -57,7 +57,7 @@ Min SDK is 26. It turns with the phone, and remembers one window arrangement for
 
 ### Skins
 
-Three skins ship with the app: AndAmp Dark (the default), Light and Spot. To load another,
+Three skins ship with the app: Alpaca Dark (the default), Light and Spot. To load another,
 tap the menu button in the top-left corner of the titlebar and pick Skins > Load skin...
 for a classic `.wsz` file, or Skins > << Get more skins! >> to browse the
 [Winamp Skin Museum](https://skins.webamp.org). Loaded skins are kept and listed under
@@ -99,7 +99,7 @@ The UI never touches a backend directly. A new playback backend implements
 
 ## Translating
 
-Andamp's text is in string resources: English, with translations into Dutch, French,
+Alpaca's text is in string resources: English, with translations into Dutch, French,
 German and Simplified Chinese. Adding a language or correcting one needs no Kotlin, only
 a copy of the XML files. [docs/translating.md](docs/translating.md) says how.
 
@@ -151,7 +151,7 @@ Full third-party attribution: [NOTICE.md](NOTICE.md).
 
 Copyright (C) 2026 Mattix (Mattijs Fuijkschot).
 
-Andamp is free software under the GNU General Public License, version 3 or later. See
+Alpaca is free software under the GNU General Public License, version 3 or later. See
 [LICENSE](LICENSE).
 
 **The source SDK is Apache-2.0.** The modules a music source is written against
@@ -163,20 +163,20 @@ license.
 **Plug-ins, presets and skins are yours.** As an additional permission under section 7 of
 the GPL, you may create and distribute effect plug-ins (`.lua`), visualizer presets
 (`.milk`, `.avs`) and skins (`.wsz`, and `.wal` with the scripts inside them) under any terms
-you choose. This covers files loaded through those formats, not modified versions of Andamp
+you choose. This covers files loaded through those formats, not modified versions of Alpaca
 itself.
 
 **The tip jar uses Google Play's library.** As an additional permission under section 7
-of the GPL, you may combine Andamp with the Google Play Billing Library
+of the GPL, you may combine Alpaca with the Google Play Billing Library
 (`com.android.billingclient`) and the Google Play services libraries it depends on, and
 distribute the combination, although those libraries are not under the GPL. The GPL keeps
-applying to all of Andamp's own code. The APK on the releases page is built without that
-library (`-Pandamp.store=none`), and its support page opens the website instead.
+applying to all of Alpaca's own code. The APK on the releases page is built without that
+library (`-Palpaca.store=none`), and its support page opens the website instead.
 
-**The bundled skins are artwork.** AndAmp Dark, Light and Spot (the `.wsz` files in
+**The bundled skins are artwork.** Alpaca Dark, Light and Spot (the `.wsz` files in
 `skin/dist/` and the art inside them) are licensed under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The Python build in `skin/`
 that draws them is GPL like the rest of the code.
 
-**The name is not part of the license.** "Andamp" and its icon identify this project. A
+**The name is not part of the license.** "Alpaca" and its icon identify this project. A
 fork gets everything the GPL gives it, under a name and icon of its own.

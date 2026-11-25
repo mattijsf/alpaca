@@ -4,7 +4,7 @@
          through the gutters around the skin windows: Winamp floating on a
          desktop. The skin canvases themselves are fully opaque sprites.
          API 28+ only; on O a translucent activity cannot ask to turn with the phone. -->
-    <style name="Theme.AndAmp" parent="@android:style/Theme.Material.NoActionBar">
+    <style name="Theme.Alpaca" parent="@android:style/Theme.Material.NoActionBar">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
     </style>

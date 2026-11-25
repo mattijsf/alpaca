@@ -26,10 +26,10 @@
 
     <!-- SourcePrompts.kt: %1$s is the music source's name -->
     <string name="source_missing_title">%1$s is not set up</string>
-    <string name="source_missing_body">Set up %1$s to play its tracks in Andamp. Until then they are skipped.</string>
+    <string name="source_missing_body">Set up %1$s to play its tracks in Alpaca. Until then they are skipped.</string>
     <string name="source_missing_confirm">Set up %1$s</string>
     <string name="source_signed_out_title">%1$s is signed out</string>
-    <string name="source_signed_out_body">Sign in to play your %1$s tracks in Andamp. Until then they are skipped.</string>
+    <string name="source_signed_out_body">Sign in to play your %1$s tracks in Alpaca. Until then they are skipped.</string>
     <string name="source_signed_out_confirm">Sign in</string>
 
     <!-- MusicPermission.kt: the audio permission as Android's settings name it -->
@@ -38,23 +38,23 @@
     <string name="permission_storage">Storage</string>
 
     <!-- LibraryAccess.kt and LibraryPrompt.kt: %1$s is the permission's name -->
-    <string name="access_granted">Andamp has the %1$s permission. Tracks you add keep playing after a restart.</string>
-    <string name="access_askable">Without the %1$s permission, Andamp can still play files you pick, but they may stop working after a restart.</string>
+    <string name="access_granted">Alpaca has the %1$s permission. Tracks you add keep playing after a restart.</string>
+    <string name="access_askable">Without the %1$s permission, Alpaca can still play files you pick, but they may stop working after a restart.</string>
     <string name="access_blocked">The %1$s permission is off. Files you pick still play for now, but they may stop working after a restart.</string>
     <string name="access_ask_title">Allow %1$s</string>
-    <string name="access_ask_body">Andamp needs %1$s to play the songs on this phone.</string>
+    <string name="access_ask_body">Alpaca needs %1$s to play the songs on this phone.</string>
     <string name="access_off_title">%1$s permission is off</string>
-    <string name="access_off_body">Allow %1$s in Andamp\'s settings to play the songs on this phone.</string>
+    <string name="access_off_body">Allow %1$s in Alpaca\'s settings to play the songs on this phone.</string>
 
     <!-- FolderAccessOps.kt: %1$s is the folder's name -->
     <string name="folder_allow_again_title">Allow %1$s again?</string>
     <string name="folder_other_folder">That was another folder. The songs play only from the folder they were added from.</string>
-    <string name="folder_no_longer_readable">Andamp can no longer read this folder. Allow it again and its songs play as before.</string>
+    <string name="folder_no_longer_readable">Alpaca can no longer read this folder. Allow it again and its songs play as before.</string>
 
     <!-- OverlayOps.kt: Always On Top -->
     <string name="overlay_title">Always on top</string>
     <string name="overlay_needs_android_11">Floating on top of other apps needs Android 11 or later.</string>
-    <string name="overlay_needs_permission">Andamp needs permission to draw over other apps before it can float on top of them.</string>
+    <string name="overlay_needs_permission">Alpaca needs permission to draw over other apps before it can float on top of them.</string>
 
     <!-- PresetNotice.kt: the visualizer's line about a preset -->
     <string name="preset_unreadable">This preset could not be read</string>
@@ -100,11 +100,11 @@
 
     <!-- SkinOps.kt: a worn modern skin that stopped working while it ran; %1$s is the skin's name -->
     <string name="skin_modern_stopped_title">“%1$s” stopped working</string>
-    <string name="skin_modern_stopped_body">Andamp shows your last classic skin instead for now. This modern skin is tried again the next time Andamp starts. To stop that, pick another skin in Skins or remove this one in the Skin Browser.</string>
-    <string name="skin_classic_stopped_body">AndAmp Dark takes its place for now. Andamp tries this skin again the next time it starts.</string>
+    <string name="skin_modern_stopped_body">Alpaca shows your last classic skin instead for now. This modern skin is tried again the next time Alpaca starts. To stop that, pick another skin in Skins or remove this one in the Skin Browser.</string>
+    <string name="skin_classic_stopped_body">Alpaca Dark takes its place for now. Alpaca tries this skin again the next time it starts.</string>
 
     <!-- AmpModals.kt: a modern skin picked while modern skins are off; %1$s is the picked file's name. No-break spaces (&#160;) around > keep the Preferences path on one line. -->
     <string name="skin_modern_offer_title">Turn on modern skins?</string>
-    <string name="skin_modern_offer_body">“%1$s” is a Winamp modern skin. Modern skins are in beta. Turn them on and add this skin? Press and hold a modern skin to open Andamp\'s menu. You can turn modern skins off in Preferences&#160;&gt;&#160;Player.</string>
+    <string name="skin_modern_offer_body">“%1$s” is a Winamp modern skin. Modern skins are in beta. Turn them on and add this skin? Press and hold a modern skin to open Alpaca\'s menu. You can turn modern skins off in Preferences&#160;&gt;&#160;Player.</string>
     <string name="skin_modern_offer_accept">Turn on and add</string>
 </resources>

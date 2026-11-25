@@ -261,7 +261,7 @@ def ask_discord(url: str, message: str, method: str) -> dict:
         url,
         data=body,
         method=method,
-        headers={"Content-Type": "application/json", "User-Agent": "andamp-release"},
+        headers={"Content-Type": "application/json", "User-Agent": "alpaca-release"},
     )
     try:
         with urllib.request.urlopen(request, timeout=20) as answer:
@@ -328,7 +328,7 @@ def main() -> int:
 
     name = version_name()
     code = version_code(name)
-    print(f"Andamp {name} (version code {code})\n")
+    print(f"Alpaca {name} (version code {code})\n")
     preflight(name, shipping=args.upload)
 
     lines = since(name, args.since) if args.since else section(name)
@@ -350,7 +350,7 @@ def main() -> int:
         print(f"    (a store listing is a summary, not a changelog - write {WRITTEN_BY_HAND.name}, its first line {name}, to say it in your own words)")
 
     tail = DISCORD_TAIL if args.upload else ""
-    discord = fit(lines, DISCORD_LIMIT - len(tail), markdown=True, head=f"## Andamp {name}\n\n")
+    discord = fit(lines, DISCORD_LIMIT - len(tail), markdown=True, head=f"## Alpaca {name}\n\n")
     if tail:
         discord += "\n" + tail
     print(f"  ✓ Discord text, {len(discord)}/{DISCORD_LIMIT} chars\n")

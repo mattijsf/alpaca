@@ -14,7 +14,7 @@ plugin {
   id      = "nl.mattix.andamp.karaoke",
   name    = "Karaoke",
   version = "1.0.0",
-  author  = "Andamp",
+  author  = "Alpaca",
   about   = "Cancels what both channels share, where a lead vocal sits.",
 }
 

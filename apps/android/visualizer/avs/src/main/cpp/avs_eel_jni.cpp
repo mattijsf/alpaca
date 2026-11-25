@@ -181,7 +181,7 @@ void projectm_eval_memory_host_unlock_mutex()
 }
 
 JNIEXPORT jlong JNICALL
-Java_nl_mattix_andamp_visualizer_avs_EelNative_contextCreate(JNIEnv* /* env */, jobject /* thiz */)
+Java_nl_mattix_alpaca_visualizer_avs_EelNative_contextCreate(JNIEnv* /* env */, jobject /* thiz */)
 {
     projectm_eval_context* context = projectm_eval_context_create(nullptr, nullptr);
     if (context != nullptr) {
@@ -193,7 +193,7 @@ Java_nl_mattix_andamp_visualizer_avs_EelNative_contextCreate(JNIEnv* /* env */, 
 // This frame's audio, for getosc and getspec: 576 samples in -1..1 and 576
 // magnitudes in 0..1, turned into the signed and unsigned bytes AVS holds.
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_avs_EelNative_setAudio(
+Java_nl_mattix_alpaca_visualizer_avs_EelNative_setAudio(
         JNIEnv* env, jobject /* thiz */, jfloatArray waveform, jfloatArray spectrum)
 {
     jfloat samples[kSamples] = {};
@@ -213,21 +213,21 @@ Java_nl_mattix_andamp_visualizer_avs_EelNative_setAudio(
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_avs_EelNative_contextDestroy(
+Java_nl_mattix_alpaca_visualizer_avs_EelNative_contextDestroy(
         JNIEnv* /* env */, jobject /* thiz */, jlong context)
 {
     projectm_eval_context_destroy(contextOf(context));
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_avs_EelNative_contextResetVariables(
+Java_nl_mattix_alpaca_visualizer_avs_EelNative_contextResetVariables(
         JNIEnv* /* env */, jobject /* thiz */, jlong context)
 {
     projectm_eval_context_reset_variables(contextOf(context));
 }
 
 JNIEXPORT jlong JNICALL
-Java_nl_mattix_andamp_visualizer_avs_EelNative_registerVariable(
+Java_nl_mattix_alpaca_visualizer_avs_EelNative_registerVariable(
         JNIEnv* env, jobject /* thiz */, jlong context, jstring name)
 {
     const char* chars = env->GetStringUTFChars(name, nullptr);
@@ -240,21 +240,21 @@ Java_nl_mattix_andamp_visualizer_avs_EelNative_registerVariable(
 }
 
 JNIEXPORT jdouble JNICALL
-Java_nl_mattix_andamp_visualizer_avs_EelNative_variableGet(
+Java_nl_mattix_alpaca_visualizer_avs_EelNative_variableGet(
         JNIEnv* /* env */, jobject /* thiz */, jlong variable)
 {
     return static_cast<jdouble>(*variableOf(variable));
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_avs_EelNative_variableSet(
+Java_nl_mattix_alpaca_visualizer_avs_EelNative_variableSet(
         JNIEnv* /* env */, jobject /* thiz */, jlong variable, jdouble value)
 {
     *variableOf(variable) = static_cast<PRJM_EVAL_F>(value);
 }
 
 JNIEXPORT jlong JNICALL
-Java_nl_mattix_andamp_visualizer_avs_EelNative_codeCompile(
+Java_nl_mattix_alpaca_visualizer_avs_EelNative_codeCompile(
         JNIEnv* env, jobject /* thiz */, jlong context, jstring source)
 {
     const char* chars = env->GetStringUTFChars(source, nullptr);
@@ -267,14 +267,14 @@ Java_nl_mattix_andamp_visualizer_avs_EelNative_codeCompile(
 }
 
 JNIEXPORT void JNICALL
-Java_nl_mattix_andamp_visualizer_avs_EelNative_codeDestroy(
+Java_nl_mattix_alpaca_visualizer_avs_EelNative_codeDestroy(
         JNIEnv* /* env */, jobject /* thiz */, jlong code)
 {
     projectm_eval_code_destroy(codeOf(code));
 }
 
 JNIEXPORT jdouble JNICALL
-Java_nl_mattix_andamp_visualizer_avs_EelNative_codeExecute(
+Java_nl_mattix_alpaca_visualizer_avs_EelNative_codeExecute(
         JNIEnv* /* env */, jobject /* thiz */, jlong code)
 {
     return static_cast<jdouble>(projectm_eval_code_execute(codeOf(code)));
@@ -282,7 +282,7 @@ Java_nl_mattix_andamp_visualizer_avs_EelNative_codeExecute(
 
 /** The compiler's last complaint, or null. Only meaningful right after a failed compile. */
 JNIEXPORT jstring JNICALL
-Java_nl_mattix_andamp_visualizer_avs_EelNative_lastError(
+Java_nl_mattix_alpaca_visualizer_avs_EelNative_lastError(
         JNIEnv* env, jobject /* thiz */, jlong context)
 {
     int line = 0;

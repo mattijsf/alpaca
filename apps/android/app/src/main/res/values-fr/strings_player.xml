@@ -8,13 +8,13 @@
 
     <!-- PlaylistFileOps.kt -->
     <string name="playlist_save_title">Enregistrer la liste de lecture</string>
-    <string name="playlist_save_in_andamp">Enregistrer dans Andamp</string>
-    <string name="playlist_save_in_andamp_note">Consultable dans l’onglet LISTES de la médiathèque</string>
+    <string name="playlist_save_in_alpaca">Enregistrer dans Alpaca</string>
+    <string name="playlist_save_in_alpaca_note">Consultable dans l’onglet LISTES de la médiathèque</string>
     <string name="playlist_export">Exporter dans un fichier…</string>
     <string name="playlist_export_note">Un fichier .m3u que d’autres lecteurs peuvent lire</string>
     <string name="playlist_load_title">Charger une liste de lecture</string>
-    <string name="playlist_open_from_andamp">Ouvrir depuis Andamp</string>
-    <string name="playlist_open_from_andamp_note">L’une des listes enregistrées ici</string>
+    <string name="playlist_open_from_alpaca">Ouvrir depuis Alpaca</string>
+    <string name="playlist_open_from_alpaca_note">L’une des listes enregistrées ici</string>
     <string name="playlist_import">Importer depuis un fichier…</string>
     <string name="playlist_import_note">Un fichier .m3u de ce téléphone</string>
     <string name="playlist_save_as_title">Enregistrer la liste de lecture sous</string>

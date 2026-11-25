@@ -7,7 +7,7 @@ plugin {
   id      = "nl.mattix.andamp.example.gain",
   name    = "Gain",
   version = "1.0.0",
-  author  = "Andamp examples",
+  author  = "Alpaca examples",
   about   = "Turns everything up or down. Nothing else.",
 }
 

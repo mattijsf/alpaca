@@ -4,7 +4,7 @@
 `.avs` presets, runs them on an `IntArray` framebuffer, and is the plug-in window's default
 engine (`VisPlugin.Avs`), beside projectM (`VisPlugin.Milkdrop`, see
 [projectm-integration.md](projectm-integration.md)). Native code is confined to the ns-eel
-evaluator, which ships as `libandamp_avs.so`.
+evaluator, which ships as `libalpaca_avs.so`.
 
 ## What AVS is
 
@@ -154,7 +154,7 @@ Variables runs its code and has no file to load from or save to.
 ns-eel is the one piece that is not Kotlin. `Eel` wraps
 [projectm-eval](https://github.com/projectM-visualizer/projectm-eval), an MIT ns-eel2
 reimplementation, pinned as this module's own submodule at
-`visualizer/avs/third_party/projectm-eval` and linked statically into `libandamp_avs.so`
+`visualizer/avs/third_party/projectm-eval` and linked statically into `libalpaca_avs.so`
 together with `avs_eel_jni.cpp`. Its API is the shape a component binding needs:
 
 ```c
@@ -191,7 +191,7 @@ visualizer/avs/
     Eel                                                 the evaluator binding
     AvsAudio, AvsAudioFrame, AvsBeat                    what components hear
     AvsView, AvsPlaylist, AvsIdlePreset                 what the app sees
-    author/                                             writing presets: AvsWriter, AndAmpPack
+    author/                                             writing presets: AvsWriter, AlpacaPack
   third_party/projectm-eval   git submodule
 ```
 
@@ -207,9 +207,9 @@ The parser and the pipeline use no `android.*` classes, so they are tested on th
 - `AvsAudio` keeps a ring of the app's PCM (`PcmSource`, from `:core:player`) and cuts AVS's
   classic 576-sample window from it each frame, with a 512-point FFT spread across 576 bins.
   `AvsBeat` is AVS's own beat detector, transcribed from vis_avs's `main.cpp`.
-- `AvsIdlePreset` plays when nothing is loaded. It is Andamp's own preset, built from the
+- `AvsIdlePreset` plays when nothing is loaded. It is Alpaca's own preset, built from the
   components' writers. It uses no script, so it also runs in JVM tests.
-- `author/AndAmpPack` is a pack of original presets written in code and serialized through
+- `author/AlpacaPack` is a pack of original presets written in code and serialized through
   `AvsWriter`. `PresetOps` installs it into the preset library on first run
   (`PresetLibrary.install`) and selects it for AVS.
 - `PresetLibrary` imports zips holding `.milk`, `.avs` and texture files, counts `.milk` and
@@ -236,13 +236,13 @@ Anything that compiles ns-eel needs the native library and runs on a device or e
 
 That covers `Eel` itself, the scripted renderers (Super Scope, Movement, Dynamic Movement),
 the per-component variable pools, a whole preset parsed, compiled and drawn
-(`AvsRealPresetTest`), and every preset in `AndAmpPack` rendering.
+(`AvsRealPresetTest`), and every preset in `AlpacaPack` rendering.
 
 `AvsCorpusTest` runs against a local directory of presets, which are not in this repository.
 It is skipped unless the environment variable is set:
 
 ```bash
-ANDAMP_AVS_CORPUS=~/avs-presets ./gradlew :visualizer:avs:test
+ALPACA_AVS_CORPUS=~/avs-presets ./gradlew :visualizer:avs:test
 ```
 
 It asserts that at least 99% of the files parse, prints how many presets run with nothing
@@ -257,6 +257,6 @@ runnable preset that needs no evaluator.
 | AVS-File-Decoder (ids and framing) | MIT - transcribed with attribution |
 | vis_avs (Nullsoft's original) | BSD 3-clause - arithmetic and field semantics transcribed with attribution; no C++ vendored or linked |
 | Preset packs | their authors' terms - not vendored, imported at run time |
-| `AndAmpPack`, `AvsIdlePreset` | Andamp's own |
+| `AlpacaPack`, `AvsIdlePreset` | Alpaca's own |
 
 NOTICE.md carries the attributions.

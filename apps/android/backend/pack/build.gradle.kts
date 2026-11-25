@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "nl.mattix.andamp.backend.pack"
+    namespace = "nl.mattix.alpaca.backend.pack"
 }
 
 dependencies {

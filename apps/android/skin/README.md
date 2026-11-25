@@ -1,23 +1,23 @@
-# AndAmp skins
+# Alpaca skins
 
 Three classic Winamp 2.x skins (`.wsz`), generated from one source by a Python
-script with no third-party dependencies: AndAmp Dark and Light, drawn in
-Material 3 Expressive's style, and AndAmp Spot, in Winamp's own green and
-amber. They are the skins Andamp ships, and every asset is reproducible byte
+script with no third-party dependencies: Alpaca Dark and Light, drawn in
+Material 3 Expressive's style, and Alpaca Spot, in Winamp's own green and
+amber. They are the skins Alpaca ships, and every asset is reproducible byte
 for byte.
 
 | theme | file | look |
 |---|---|---|
-| `dark` (default) | `dist/AndAmp Dark.wsz` | Material 3 baseline purple with M3 Expressive's shapes: filled controls with no strokes, three shape families, a play button in another hue |
-| `light` | `dist/AndAmp Light.wsz` | The same design in M3's baseline light scheme: dark controls on a near-white plate |
-| `spot` | `dist/AndAmp Spot.wsz` | Winamp's LCD green and spectrum amber, outlined controls, seven-segment time display, grip-pill sliders |
+| `dark` (default) | `dist/Alpaca Dark.wsz` | Material 3 baseline purple with M3 Expressive's shapes: filled controls with no strokes, three shape families, a play button in another hue |
+| `light` | `dist/Alpaca Light.wsz` | The same design in M3's baseline light scheme: dark controls on a near-white plate |
+| `spot` | `dist/Alpaca Spot.wsz` | Winamp's LCD green and spectrum amber, outlined controls, seven-segment time display, grip-pill sliders |
 
-![AndAmp Dark](dist/preview/dark-window.png)
-![AndAmp Light](dist/preview/light-window.png)
-![AndAmp Spot](dist/preview/spot-window.png)
+![Alpaca Dark](dist/preview/dark-window.png)
+![Alpaca Light](dist/preview/light-window.png)
+![Alpaca Spot](dist/preview/spot-window.png)
 
 The images above are written by the build (`preview`, `verify` and `all`):
-`andamp/compose.py` blits every sprite onto the plate at its `main-window.css`
+`alpaca/compose.py` blits every sprite onto the plate at its `main-window.css`
 destination in one fixed playback state, so they are reproducible byte for
 byte like the skins.
 
@@ -31,7 +31,7 @@ python3 build.py preview    # build, and write dist/preview/<theme>/*.png
 python3 build.py template   # write the runtime template and check that it rebinds
 ```
 
-The theme is chosen by `ANDAMP_THEME` (`dark` by default, or `light`/`spot`).
+The theme is chosen by `ALPACA_THEME` (`dark` by default, or `light`/`spot`).
 It is resolved once, at import, so `all` runs each theme in its own process.
 
 Each `.wsz` holds the twenty BMP sheets, `PLEDIT.TXT`, `VISCOLOR.TXT`,
@@ -39,8 +39,8 @@ Each `.wsz` holds the twenty BMP sheets, `PLEDIT.TXT`, `VISCOLOR.TXT`,
 which the Winamp Skin Museum shows as a skin's description.
 
 `build.py template` (part of `all`) also writes
-`dist/andamp-<theme>-template.zip` and `dist/andamp-<theme>-roles.json`: the
-skin with its colors factored out, from which Andamp rebuilds AndAmp Dark and
+`dist/alpaca-<theme>-template.zip` and `dist/alpaca-<theme>-roles.json`: the
+skin with its colors factored out, from which Alpaca rebuilds Alpaca Dark and
 Light from the phone's wallpaper palette. See
 [docs/runtime-theming.md](docs/runtime-theming.md).
 
@@ -51,12 +51,12 @@ Install by dropping a `.wsz` into Winamp's `Skins` folder, or load it in
 
 Winamp scales its windows by integer nearest-neighbor, so a blurred pixel
 stays blurred at every zoom level. The drawing layer here cannot anti-alias:
-`andamp/canvas.py` has no primitive that blends, eases or resamples, and every
+`alpaca/canvas.py` has no primitive that blends, eases or resamples, and every
 write is checked against a registry of declared color tokens. An undeclared
 color raises at draw time, and the verifier re-checks every emitted pixel
 against the same registry.
 
-## AndAmp Dark and Light
+## Alpaca Dark and Light
 
 The `dark` palette is the Material 3 baseline dark scheme (seed `#6750A4`)
 from Google's generated token export, and `light` is the baseline light
@@ -101,13 +101,13 @@ What the two themes draw at 275x116:
   silhouette and the artwork agree. The title bars ask for that arc
   unclamped: a 14px strip is a slice of a 116px window, and a corner clamped
   to the strip's height would be a tighter arc inside the region's.
-- **Andamp's mark in the corner.** The about target at `253,91,13x15` holds
+- **Alpaca's mark in the corner.** The about target at `253,91,13x15` holds
   the brand's mark, a bolt through a broken ring, at the full 13px the box
   allows. It lives in `icons.py`, outside the two icon sets, because every
   theme draws the same one.
 - **Round playlist corners.** Winamp's `REGION.TXT` has four sections (Normal,
   WindowShade, Equalizer, EqualizerWS) and none for the playlist. The build
-  adds a `[Corners]` section holding the top-left corner cut, and Andamp
+  adds a `[Corners]` section holding the top-left corner cut, and Alpaca
   mirrors it into all four corners of the playlist and the plug-in window at
   whatever size they are. In a player that does not read the section those
   windows stay rectangular, and the cut pixels show the sheet's window color.
@@ -177,7 +177,7 @@ outlined theme, gives them a `hairline` frame.
 
 ## Contrast is enforced
 
-Every foreground/background pair in `PAIRS` in `andamp/palette.py` is asserted
+Every foreground/background pair in `PAIRS` in `alpaca/palette.py` is asserted
 at WCAG 4.5:1 for text and 3:1 for non-text. The build fails otherwise.
 
 | pair | dark | light | spot | required |
@@ -244,13 +244,13 @@ at WCAG 4.5:1 for text and 3:1 for non-text. The build fails otherwise.
 | `selection` | `#655D74` | `#8F889F` | `#516650` |
 | `current_track` | `#EADDFF` | `#21005D` | `#6CFF7E` |
 
-A theme is `andamp/tokens/<name>.py`. It defines `SCHEME` (`"dark"` or
+A theme is `alpaca/tokens/<name>.py`. It defines `SCHEME` (`"dark"` or
 `"light"`), `SKIN` (the `.wsz` file name), `WORDMARK`, a `ROLES` table of
 literal hex (`dark`, `light`) or a `TONES` table of seed-and-tone pairs
 (`spot`), a `DERIVED` table with the `selection` tone, and a `STYLE` table
 choosing digits, iconography, slider treatment and the shape scale. A new
-theme's name also goes in `NAMES` in `andamp/tokens/__init__.py`, and its
-readme line in `BLURBS` in `andamp/textfiles.py`. `verify` fails when a
+theme's name also goes in `NAMES` in `alpaca/tokens/__init__.py`, and its
+readme line in `BLURBS` in `alpaca/textfiles.py`. `verify` fails when a
 palette breaks a contrast requirement.
 
 `dark` and `light` have the same `STYLE`: they are one design in two schemes
@@ -268,7 +268,7 @@ succeed:
 
 1. Every sheet matches its spec dimensions.
 2. Every pixel of every BMP is a declared token.
-3. Every painted color is a role. `andamp/roles.py`'s table, resolved, equals
+3. Every painted color is a role. `alpaca/roles.py`'s table, resolved, equals
    `palette.py` entry for entry, and nothing is painted that the table does
    not name. This is what lets the runtime template rebind every pixel.
 4. Every sprite rectangle lies inside its sheet.
@@ -308,7 +308,7 @@ is missing or malformed. Check 8 does.
 ```bash
 npm install && python3 -m http.server 8000
 # http://localhost:8000/verify/index.html
-#   ?skin=AndAmp%20Spot     load another skin
+#   ?skin=Alpaca%20Spot     load another skin
 #   ?x2=1                   double size
 ```
 
@@ -321,7 +321,7 @@ the right-click *Skins* menu.
 
 ```
 build.py              entry point (build / preview / verify / check / template / all)
-andamp/
+alpaca/
   bmp.py  png.py      encoders (stdlib struct / zlib)
   canvas.py           integer pixel ops; cannot anti-alias
   tonal.py            CIELAB tone ramps, WCAG contrast
@@ -349,7 +349,7 @@ docs/                 runtime-theming.md: the runtime template
 
 Webamp draws the equalizer's close button from the title bar art and uses
 `EQ_CLOSE_BUTTON` at (0, 116) only on `.clicked`. Classic Winamp, and players
-that follow it such as Andamp, treat (0, 116) as the button's resting sprite
+that follow it such as Alpaca, treat (0, 116) as the button's resting sprite
 and draw it all the time.
 
 So it is built as the resting face: the same glyph on the same

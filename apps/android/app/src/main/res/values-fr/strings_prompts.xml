@@ -24,10 +24,10 @@
 
     <!-- SourcePrompts.kt -->
     <string name="source_missing_title">La source %1$s n’est pas configurée</string>
-    <string name="source_missing_body">Configurez %1$s pour lire ses morceaux dans Andamp. D’ici là, ils sont ignorés.</string>
+    <string name="source_missing_body">Configurez %1$s pour lire ses morceaux dans Alpaca. D’ici là, ils sont ignorés.</string>
     <string name="source_missing_confirm">Configurer %1$s</string>
     <string name="source_signed_out_title">La source %1$s est déconnectée</string>
-    <string name="source_signed_out_body">Connectez-vous pour lire vos morceaux %1$s dans Andamp. D’ici là, ils sont ignorés.</string>
+    <string name="source_signed_out_body">Connectez-vous pour lire vos morceaux %1$s dans Alpaca. D’ici là, ils sont ignorés.</string>
     <string name="source_signed_out_confirm">Se connecter</string>
 
     <!-- MusicPermission.kt -->
@@ -36,23 +36,23 @@
     <string name="permission_storage">Stockage</string>
 
     <!-- LibraryAccess.kt and LibraryPrompt.kt -->
-    <string name="access_granted">Andamp dispose de l’autorisation « %1$s ». Les morceaux que vous ajoutez restent lisibles après un redémarrage.</string>
-    <string name="access_askable">Sans l’autorisation « %1$s », Andamp peut quand même lire les fichiers que vous choisissez, mais ils risquent de ne plus fonctionner après un redémarrage.</string>
+    <string name="access_granted">Alpaca dispose de l’autorisation « %1$s ». Les morceaux que vous ajoutez restent lisibles après un redémarrage.</string>
+    <string name="access_askable">Sans l’autorisation « %1$s », Alpaca peut quand même lire les fichiers que vous choisissez, mais ils risquent de ne plus fonctionner après un redémarrage.</string>
     <string name="access_blocked">L’autorisation « %1$s » est désactivée. Les fichiers que vous choisissez sont encore lus pour l’instant, mais ils risquent de ne plus fonctionner après un redémarrage.</string>
     <string name="access_ask_title">Autoriser « %1$s »</string>
-    <string name="access_ask_body">Andamp a besoin de l’autorisation « %1$s » pour lire les morceaux de ce téléphone.</string>
+    <string name="access_ask_body">Alpaca a besoin de l’autorisation « %1$s » pour lire les morceaux de ce téléphone.</string>
     <string name="access_off_title">L’autorisation « %1$s » est désactivée</string>
-    <string name="access_off_body">Autorisez « %1$s » dans les paramètres d’Andamp pour lire les morceaux de ce téléphone.</string>
+    <string name="access_off_body">Autorisez « %1$s » dans les paramètres d’Alpaca pour lire les morceaux de ce téléphone.</string>
 
     <!-- FolderAccessOps.kt -->
     <string name="folder_allow_again_title">Autoriser à nouveau le dossier %1$s ?</string>
     <string name="folder_other_folder">C’était un autre dossier. Les morceaux ne sont lus que depuis le dossier d’où ils ont été ajoutés.</string>
-    <string name="folder_no_longer_readable">Andamp ne peut plus lire ce dossier. Autorisez-le à nouveau et ses morceaux seront lus comme avant.</string>
+    <string name="folder_no_longer_readable">Alpaca ne peut plus lire ce dossier. Autorisez-le à nouveau et ses morceaux seront lus comme avant.</string>
 
     <!-- OverlayOps.kt -->
     <string name="overlay_title">Toujours visible</string>
     <string name="overlay_needs_android_11">Flotter au-dessus des autres applis nécessite Android 11 ou une version ultérieure.</string>
-    <string name="overlay_needs_permission">Andamp a besoin de l’autorisation de superposition aux autres applis avant de pouvoir flotter au-dessus d’elles.</string>
+    <string name="overlay_needs_permission">Alpaca a besoin de l’autorisation de superposition aux autres applis avant de pouvoir flotter au-dessus d’elles.</string>
 
     <!-- PresetNotice.kt -->
     <string name="preset_unreadable">Ce préréglage n’a pas pu être lu</string>
@@ -91,11 +91,11 @@
     <string name="skin_modern_failed_title">« %1$s » n’a pas pu être ouvert</string>
     <string name="skin_modern_failed_body">Ce skin moderne ne s’est pas chargé, il n’a donc pas été ajouté.</string>
     <string name="skin_modern_stopped_title">« %1$s » ne fonctionne plus</string>
-    <string name="skin_modern_stopped_body">Andamp affiche pour l’instant votre dernier skin classique à la place. Ce skin moderne sera réessayé au prochain démarrage d’Andamp. Pour que cela cesse, choisissez un autre skin dans « Skins » ou retirez celui-ci dans « Liste des skins ».</string>
-    <string name="skin_classic_stopped_body">AndAmp Dark le remplace pour l’instant. Andamp réessaiera ce skin au prochain démarrage.</string>
+    <string name="skin_modern_stopped_body">Alpaca affiche pour l’instant votre dernier skin classique à la place. Ce skin moderne sera réessayé au prochain démarrage d’Alpaca. Pour que cela cesse, choisissez un autre skin dans « Skins » ou retirez celui-ci dans « Liste des skins ».</string>
+    <string name="skin_classic_stopped_body">Alpaca Dark le remplace pour l’instant. Alpaca réessaiera ce skin au prochain démarrage.</string>
 
     <!-- AmpModals.kt -->
     <string name="skin_modern_offer_title">Activer les skins modernes ?</string>
-    <string name="skin_modern_offer_body">« %1$s » est un skin moderne de Winamp. Les skins modernes sont en bêta. Les activer et ajouter ce skin ? Maintenez le doigt sur un skin moderne pour ouvrir le menu d’Andamp. Vous pouvez désactiver les skins modernes dans Préférences&#160;&gt;&#160;Lecteur.</string>
+    <string name="skin_modern_offer_body">« %1$s » est un skin moderne de Winamp. Les skins modernes sont en bêta. Les activer et ajouter ce skin ? Maintenez le doigt sur un skin moderne pour ouvrir le menu d’Alpaca. Vous pouvez désactiver les skins modernes dans Préférences&#160;&gt;&#160;Lecteur.</string>
     <string name="skin_modern_offer_accept">Activer et ajouter</string>
 </resources>

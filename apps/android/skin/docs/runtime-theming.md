@@ -1,15 +1,15 @@
 # Runtime theming
 
-Andamp builds AndAmp Dark and AndAmp Light at run time from Android's dynamic `ColorScheme`, so
+Alpaca builds Alpaca Dark and Alpaca Light at run time from Android's dynamic `ColorScheme`, so
 the player follows Material You. The geometry is still generated and verified by the Python
 build here. This file describes the Python side: the template and how it is checked. The app
 side is [`docs/dynamic-skins.md`](../../docs/dynamic-skins.md).
 
 ## How it works
 
-`andamp/template.py` rebuilds every sheet with one sentinel per role in place of a color, so
+`alpaca/template.py` rebuilds every sheet with one sentinel per role in place of a color, so
 each pixel records which role drew it. The result is a role image: one byte per pixel. Together
-with the role table from `andamp/roles.py`, which says where each role's color comes from, it is
+with the role table from `alpaca/roles.py`, which says where each role's color comes from, it is
 the template.
 
 The role image is byte-identical between `dark` and `light`, all 419,442 pixels. The two themes
@@ -29,8 +29,8 @@ code is ported to Kotlin.
 | pixels across 20 sheets | 419,442 |
 | role indices, raw | 419,442 bytes (one byte per pixel) |
 | roles | 110 in `dark` and `light`, 114 in `spot` |
-| `andamp-dark-template.zip` | about 14.7 KB |
-| `AndAmp Dark.wsz` for comparison | about 21.8 KB |
+| `alpaca-dark-template.zip` | about 14.7 KB |
+| `Alpaca Dark.wsz` for comparison | about 21.8 KB |
 
 ## What a role resolves to
 
@@ -54,7 +54,7 @@ all standard `ColorScheme` fields, the fixed roles and the `surfaceContainer` fa
 ## The template
 
 `build.py template` (and so `build.py all`, for every theme) writes
-`dist/andamp-<theme>-template.zip`:
+`dist/alpaca-<theme>-template.zip`:
 
 ```
 manifest.json     format version, theme, scheme, the role table in dependency order,
@@ -63,7 +63,7 @@ manifest.json     format version, theme, scheme, the role table in dependency or
 sheets.idx        concatenated role indices, one byte per pixel
 ```
 
-and `dist/andamp-<theme>-roles.json`, the same table resolved against the palette that theme
+and `dist/alpaca-<theme>-roles.json`, the same table resolved against the palette that theme
 shipped, which the Kotlin tests compare against.
 
 It then asserts the round trip: rebinding the template to the theme's palette must reproduce
@@ -75,7 +75,7 @@ naming an unknown role.
 
 ## The Kotlin side
 
-The runtime is `nl.mattix.andamp.skin.SkinTemplate` and `Tonal` in `:app`:
+The runtime is `nl.mattix.alpaca.skin.SkinTemplate` and `Tonal` in `:app`:
 
 ```kotlin
 val template = SkinTemplate.load(zipStream)
@@ -89,7 +89,7 @@ val text = template.textFiles(colors)         // PLEDIT.TXT, VISCOLOR.TXT, REGIO
   the call takes only the `ColorScheme`.
 - `bitmaps` writes each sheet's pixels through the lookup table and makes a `Bitmap` of them.
   No BMP encoder and no zip.
-- `Tonal` is a port of `andamp/tonal.py` (CIELAB, where M3 uses HCT), so both sides compute the
+- `Tonal` is a port of `alpaca/tonal.py` (CIELAB, where M3 uses HCT), so both sides compute the
   same numbers.
 
 It is tested against the Python output: `SkinTemplateRolesTest` resolves the M3 baseline scheme
@@ -116,8 +116,8 @@ python3 verify/sweep.py 1800             # a theme with a literal ROLES table: d
 python3 verify/sweep.py 1800 --repair    # the same, with the repair on
 ```
 
-One run sweeps the active theme (`ANDAMP_THEME`). The sweep is a proxy for Android's scheme
+One run sweeps the active theme (`ALPACA_THEME`). The sweep is a proxy for Android's scheme
 generator: it keeps each role's tone and varies hue and chroma. At 1800 schemes every pair holds
-in both themes without repair; the tightest is AndAmp Dark's playlist selection band, at 1.03x
+in both themes without repair; the tightest is Alpaca Dark's playlist selection band, at 1.03x
 its 3:1. The runtime repairs a failing pair anyway (`colors(scheme, repair = true)`): it moves
 the pair's foreground along its own tone axis until the pair passes.

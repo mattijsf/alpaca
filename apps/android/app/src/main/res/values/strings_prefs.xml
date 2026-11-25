@@ -14,11 +14,11 @@
     <string name="prefs_android_auto_from_play">Android Auto will show it in the car</string>
     <string name="prefs_android_auto_not_from_play">Android Auto won\'t show it in a car</string>
     <string name="prefs_android_auto_not_from_play_about">Android Auto shows Autoamp in a car only when Google Play installed it.</string>
-    <string name="prefs_android_auto_matches">Compatible with this Andamp</string>
+    <string name="prefs_android_auto_matches">Compatible with this Alpaca</string>
     <string name="prefs_android_auto_older">Update Autoamp</string>
-    <string name="prefs_android_auto_older_about">It is older than this Andamp, so some things may not work in the car.</string>
-    <string name="prefs_android_auto_newer">Update Andamp</string>
-    <string name="prefs_android_auto_newer_about">It is newer than this Andamp, so some things may not work in the car.</string>
+    <string name="prefs_android_auto_older_about">It is older than this Alpaca, so some things may not work in the car.</string>
+    <string name="prefs_android_auto_newer">Update Alpaca</string>
+    <string name="prefs_android_auto_newer_about">It is newer than this Alpaca, so some things may not work in the car.</string>
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">This playback backend does not run effects.</string>
@@ -34,7 +34,7 @@
     <string name="prefs_effects_manage_plugins_summary">Plug-ins you added, and adding more</string>
 
     <!-- LicencesPage.kt -->
-    <string name="prefs_licences_note">Andamp is built on other people\'s work. Each entry links to its source, where the full license text lives.</string>
+    <string name="prefs_licences_note">Alpaca is built on other people\'s work. Each entry links to its source, where the full license text lives.</string>
 
     <!-- LimiterCard.kt -->
     <string name="prefs_limiter_title">Peak limiter</string>
@@ -118,7 +118,7 @@
     <!-- Notices.kt -->
     <string name="prefs_notice_projectm_what">The Milkdrop visualizer engine, rendering .milk presets.</string>
     <!-- The pinned projectM version, twice. -->
-    <string name="prefs_notice_projectm_obligation">Andamp links projectM %1$s dynamically, as a separate library in the app, so it can be replaced. The source for that exact revision is tag v%1$s at the address above, and the glue Andamp builds around it is in its own repository. No changes were made to projectM.</string>
+    <string name="prefs_notice_projectm_obligation">Alpaca links projectM %1$s dynamically, as a separate library in the app, so it can be replaced. The source for that exact revision is tag v%1$s at the address above, and the glue Alpaca builds around it is in its own repository. No changes were made to projectM.</string>
     <string name="prefs_notice_avs_what">Winamp\'s visualizer, reimplemented in Kotlin from Nullsoft\'s released source.</string>
     <string name="prefs_notice_avs_decoder_what">The .avs preset format\'s framing and field layouts, as the preset reader follows them.</string>
     <string name="prefs_notice_projectm_eval_what">Evaluates the expressions AVS presets are scripted in, built into the AVS library.</string>
@@ -138,8 +138,8 @@
     <string name="prefs_notice_walkit_what">The modern skin engine, in native code: it runs the skins, written in Rust.</string>
 
     <!-- Store.kt (storePlay) -->
-    <string name="prefs_notice_play_billing_what">Takes the tips on the Support Andamp page, through Google Play.</string>
-    <string name="prefs_notice_play_billing_obligation">This library is not open source. Andamp\'s license carries an additional permission to combine Andamp with it and to distribute the result.</string>
+    <string name="prefs_notice_play_billing_what">Takes the tips on the Support Alpaca page, through Google Play.</string>
+    <string name="prefs_notice_play_billing_obligation">This library is not open source. Alpaca\'s license carries an additional permission to combine Alpaca with it and to distribute the result.</string>
 
     <!-- OverlayPrefs.kt -->
     <string name="prefs_overlay_grant">Allow drawing over other apps</string>
@@ -149,18 +149,18 @@
     <!-- PackPrefs.kt -->
     <string name="prefs_pack_uninstalled">Uninstalled, and its tracks are skipped</string>
     <string name="prefs_pack_not_installed">Not installed - see More sources below</string>
-    <string name="prefs_pack_too_old">Installed, but too old for this version of Andamp</string>
-    <string name="prefs_pack_too_new">Installed, but made for a newer version of Andamp</string>
+    <string name="prefs_pack_too_old">Installed, but too old for this version of Alpaca</string>
+    <string name="prefs_pack_too_new">Installed, but made for a newer version of Alpaca</string>
     <string name="prefs_pack_not_signed_in">Not signed in</string>
     <!-- The source's name. -->
-    <string name="prefs_pack_notice_outdated">%1$s is set up for an older Andamp and is not asked to play anything. A newer one puts its tracks back.</string>
-    <string name="prefs_pack_notice_ahead">%1$s is set up for a newer Andamp and is not asked to play anything. Updating Andamp puts its tracks back.</string>
+    <string name="prefs_pack_notice_outdated">%1$s is set up for an older Alpaca and is not asked to play anything. A newer one puts its tracks back.</string>
+    <string name="prefs_pack_notice_ahead">%1$s is set up for a newer Alpaca and is not asked to play anything. Updating Alpaca puts its tracks back.</string>
     <string name="prefs_pack_update">Update %1$s</string>
 
     <!-- PalettePrefs.kt -->
     <string name="prefs_palette_title">Match wallpaper colors</string>
-    <string name="prefs_palette_on">AndAmp Dark and AndAmp Light take their colors from your wallpaper, like the rest of the phone.</string>
-    <string name="prefs_palette_off">AndAmp Dark and AndAmp Light keep their own colors.</string>
+    <string name="prefs_palette_on">Alpaca Dark and Alpaca Light take their colors from your wallpaper, like the rest of the phone.</string>
+    <string name="prefs_palette_off">Alpaca Dark and Alpaca Light keep their own colors.</string>
 
     <!-- PlayerPage.kt -->
     <string name="prefs_player_windows_section">Windows</string>
@@ -178,7 +178,7 @@
     <!-- The switch that lets Winamp modern skins be added and worn. -->
     <string name="prefs_modern_skins_title">Modern skins (beta)</string>
     <!-- Under the modern skins switch while it is on. -->
-    <string name="prefs_modern_skins_on">Winamp modern skins (.wal) can be added and worn, as well as classic ones. Some may look or work a little differently than in Winamp. Press and hold a modern skin to open Andamp\'s menu. Switching this off puts your last classic skin back on.</string>
+    <string name="prefs_modern_skins_on">Winamp modern skins (.wal) can be added and worn, as well as classic ones. Some may look or work a little differently than in Winamp. Press and hold a modern skin to open Alpaca\'s menu. Switching this off puts your last classic skin back on.</string>
     <!-- Under the modern skins switch while it is off. -->
     <string name="prefs_modern_skins_off">Only classic skins (.wsz) can be added. Switch this on to add and wear Winamp modern skins (.wal) too. Modern skins you added before stay hidden until then.</string>
     <!-- A note under the modern skins switch: what wears a modern skin and what keeps a classic one. -->
@@ -186,20 +186,20 @@
     <!-- The switch under the modern skins switch, shown while that one is on: modern skins shown at an in-between size are drawn with hard edges. "An in-between size" in the two texts below means a size that is not a whole number of times the skin's size, such as 2.5 times rather than exactly 2 or 3 times; it does not mean an odd number. "Uneven in width" means some strokes come out thicker than others. -->
     <string name="prefs_sharp_pixels_title">Sharp pixels</string>
     <!-- Under the sharp pixels switch while it is on. -->
-    <string name="prefs_sharp_pixels_on">Crisp edges, but some letters and lines come out uneven in width. This changes only modern skins that Andamp shows at an in-between size, such as 2.5 times, to fit your screen.</string>
+    <string name="prefs_sharp_pixels_on">Crisp edges, but some letters and lines come out uneven in width. This changes only modern skins that Alpaca shows at an in-between size, such as 2.5 times, to fit your screen.</string>
     <!-- Under the sharp pixels switch while it is off. -->
-    <string name="prefs_sharp_pixels_off">Smooth, but slightly blurred. Switch this on for crisp edges; some letters and lines then come out uneven in width. This changes only modern skins that Andamp shows at an in-between size, such as 2.5 times, to fit your screen.</string>
+    <string name="prefs_sharp_pixels_off">Smooth, but slightly blurred. Switch this on for crisp edges; some letters and lines then come out uneven in width. This changes only modern skins that Alpaca shows at an in-between size, such as 2.5 times, to fit your screen.</string>
     <string name="prefs_windows_apart_title">Windows apart</string>
     <string name="prefs_windows_apart_on">Each window of a modern skin sits where you put it, as on a desktop: drag a window by its title bar, and it docks to the others and to the edges as it does in Winamp.</string>
     <string name="prefs_windows_apart_off">The windows of a modern skin sit in one stack under the main window. Switch this on to put each window where you like, as on a desktop.</string>
 
     <!-- PluginsSection.kt -->
-    <string name="prefs_plugins_intro">Lua audio plug-ins. Andamp keeps its own copy, so the original file can be moved or deleted.</string>
+    <string name="prefs_plugins_intro">Lua audio plug-ins. Alpaca keeps its own copy, so the original file can be moved or deleted.</string>
     <string name="prefs_plugins_adding">Adding…</string>
     <string name="prefs_plugins_add">Add plug-in</string>
-    <string name="prefs_plugins_builtin_always">The effects that come with Andamp are always in the rack.</string>
+    <string name="prefs_plugins_builtin_always">The effects that come with Alpaca are always in the rack.</string>
     <string name="prefs_plugins_none">No plug-ins added</string>
-    <string name="prefs_plugins_none_hint">The effects that come with Andamp are already in the rack. Add a .lua file for more.</string>
+    <string name="prefs_plugins_none_hint">The effects that come with Alpaca are already in the rack. Add a .lua file for more.</string>
     <!-- The remove button's spoken name; the plug-in's name. -->
     <string name="prefs_plugins_remove_named">Remove %1$s</string>
     <string name="prefs_plugins_cannot_run">Can\'t run on this track\'s audio format.</string>
@@ -230,7 +230,7 @@
     <string name="prefs_plugins_credit_by">by %1$s</string>
     <string name="prefs_plugins_credit_none">no version declared</string>
     <string name="prefs_plugins_more_title">More effects</string>
-    <string name="prefs_plugins_more_summary">Effect plug-ins to install from Andamp\'s site</string>
+    <string name="prefs_plugins_more_summary">Effect plug-ins to install from Alpaca\'s site</string>
 
     <!-- PreferencesScreen.kt -->
     <string name="prefs_page_effects">Effects</string>
@@ -240,17 +240,17 @@
     <string name="prefs_page_rows">Song rows</string>
     <string name="prefs_page_widget">Home screen widget</string>
     <string name="prefs_page_android_auto">Android Auto</string>
-    <string name="prefs_page_support">Support Andamp</string>
-    <string name="prefs_page_about">About Andamp</string>
+    <string name="prefs_page_support">Support Alpaca</string>
+    <string name="prefs_page_about">About Alpaca</string>
     <string name="prefs_page_licences">Open-source licenses</string>
     <!-- The licenses row's line: what the page holds. -->
-    <string name="prefs_about_licences_summary">The projects Andamp is built on, and their licenses</string>
+    <string name="prefs_about_licences_summary">The projects Alpaca is built on, and their licenses</string>
     <!-- The About row's line: what the page holds. -->
     <string name="prefs_about_summary">Version and open-source licenses</string>
     <string name="prefs_title">Preferences</string>
     <string name="prefs_sound_section">Sound</string>
     <string name="prefs_look_section">Look &amp; feel</string>
-    <string name="prefs_about_note">Andamp %1$s — a Winamp 2.8 replica, not affiliated with Winamp or its owners.</string>
+    <string name="prefs_about_note">Alpaca %1$s — a Winamp 2.8 replica, not affiliated with Winamp or its owners.</string>
 
     <!-- PrefsTopBar.kt -->
     <string name="prefs_top_back">Back to preferences</string>
@@ -296,7 +296,7 @@
     <!-- SourcesPrefs.kt -->
     <string name="prefs_sources_section">Music sources</string>
     <string name="prefs_sources_more_title">More sources</string>
-    <string name="prefs_sources_more_summary">Other places Andamp can play music from, and how to add them</string>
+    <string name="prefs_sources_more_summary">Other places Alpaca can play music from, and how to add them</string>
     <!-- The permission's name, as the phone calls it. -->
     <string name="prefs_phone_permission_off">%1$s permission is off</string>
     <string name="prefs_phone_allow">Allow %1$s to show the music on this phone</string>
@@ -341,15 +341,15 @@
     <string name="prefs_updates_retry">Try again</string>
 
     <!-- SupportPrefs.kt -->
-    <string name="prefs_support_intro">Andamp is free and has no ads. If you enjoy it, you can leave a tip. A tip unlocks nothing: everything in Andamp stays free, with or without one.</string>
+    <string name="prefs_support_intro">Alpaca is free and has no ads. If you enjoy it, you can leave a tip. A tip unlocks nothing: everything in Alpaca stays free, with or without one.</string>
     <!-- The Support row's line in a build that points to the website instead. -->
-    <string name="prefs_support_summary_outside">How to support Andamp on its website</string>
+    <string name="prefs_support_summary_outside">How to support Alpaca on its website</string>
     <!-- The Support row's line where Google Play sells the tips: what the page holds. -->
     <string name="prefs_support_summary">What a tip is for, and how to give one</string>
     <string name="prefs_support_closed">Tips are not available on this phone right now.</string>
     <string name="prefs_support_play_note">Google Play takes the payment. A tip can be given more than once.</string>
-    <string name="prefs_support_given">You have supported Andamp. Thank you.</string>
-    <string name="prefs_support_outside_intro">Andamp is free and has no ads. If you enjoy it, you can support it on its website. That unlocks nothing: everything in Andamp stays free, with or without it.</string>
+    <string name="prefs_support_given">You have supported Alpaca. Thank you.</string>
+    <string name="prefs_support_outside_intro">Alpaca is free and has no ads. If you enjoy it, you can support it on its website. That unlocks nothing: everything in Alpaca stays free, with or without it.</string>
     <!-- The site's host name. -->
     <string name="prefs_support_open_site">Open %1$s</string>
     <string name="prefs_support_note_thanks">Thank you! Your tip arrived.</string>
@@ -392,7 +392,7 @@
 
     <!-- VolumePrefs.kt -->
     <string name="prefs_volume_title">Independent volume</string>
-    <string name="prefs_volume_own">The slider is Andamp\'s alone and the phone\'s volume stays put</string>
+    <string name="prefs_volume_own">The slider is Alpaca\'s alone and the phone\'s volume stays put</string>
     <string name="prefs_volume_device">The slider moves the phone\'s media volume, like the rocker</string>
 
     <!-- WidgetPrefs.kt -->
@@ -404,7 +404,7 @@
     <string name="prefs_widget_summary">Visualizer, refresh rate, size, taps and skin</string>
     <string name="prefs_widget_refresh_title">Refresh rate</string>
     <string name="prefs_widget_size_title">Size</string>
-    <string name="prefs_widget_logo_title">Only the logo opens Andamp</string>
+    <string name="prefs_widget_logo_title">Only the logo opens Alpaca</string>
     <string name="prefs_widget_logo_summary">Tapping the player does nothing, so a near miss on a button stays on the home screen.</string>
     <string name="prefs_widget_volume_title">Volume control</string>
     <string name="prefs_widget_volume_summary">Lets the volume slider be tapped. It sits close to the seek bar and is easy to hit by mistake.</string>
@@ -415,11 +415,11 @@
     <string name="prefs_widget_limit_corners_title">The corners are trimmed</string>
     <string name="prefs_widget_limit_corners_body">Android rounds off the corners of every widget, from every app, and there is no way to turn that off. A smaller player would leave room to spare, but it would also make the buttons harder to hit, so it keeps its size.</string>
     <string name="prefs_widget_limit_icon_title">It can be replaced by an icon</string>
-    <string name="prefs_widget_limit_icon_body">To save battery, Android sometimes stops apps it thinks you are done with. When that happens the home screen shows an Andamp icon in place of the player - one tap brings it back. It should not happen often.</string>
+    <string name="prefs_widget_limit_icon_body">To save battery, Android sometimes stops apps it thinks you are done with. When that happens the home screen shows an Alpaca icon in place of the player - one tap brings it back. It should not happen often.</string>
     <string name="prefs_widget_limit_loop_title">The bars are on a loop</string>
     <string name="prefs_widget_limit_loop_body">About half a second of the music is turned into pictures, and the home screen plays those round and round until a fresh half second replaces them. So the bars move with the music without ever being quite in step with it. Keeping up beat for beat would mean sending new pictures many times a second, which is what flattens a battery.</string>
     <string name="prefs_widget_limit_running_title">The bars need the player running</string>
-    <string name="prefs_widget_limit_running_body">Tapping the position or volume bar tells the player to move, so if Android has cleared Andamp from memory there is nothing to tell it and the tap does nothing. The buttons still work: pressing one starts the player again, and the bars follow.</string>
+    <string name="prefs_widget_limit_running_body">Tapping the position or volume bar tells the player to move, so if Android has cleared Alpaca from memory there is nothing to tell it and the tap does nothing. The buttons still work: pressing one starts the player again, and the bars follow.</string>
 
     <!-- WidgetSettings.kt -->
     <string name="prefs_widget_size_fill">Fill</string>

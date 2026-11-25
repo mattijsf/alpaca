@@ -50,7 +50,7 @@ number is refused. `author` and `version` are shown on the plug-in's card under
 too, and again under the effect's name in the rack. Any other key, `url` included, is
 accepted and not shown anywhere.
 
-The `id` cannot be one Andamp already uses for an effect of its own, bundled plug-ins
+The `id` cannot be one Alpaca already uses for an effect of its own, bundled plug-ins
 included.
 
 ## 2. Parameters
@@ -113,7 +113,7 @@ So a `pc` control with `display = { scale = 100 }` reads `50 %`, and the same co
 without a scale reads `50`.
 
 **`help` is where a control's trade goes.** A label has room for a word, and some controls
-have a consequence that cannot be guessed from one: Andamp's own Karaoke has a Width that
+have a consequence that cannot be guessed from one: Alpaca's own Karaoke has a Width that
 puts a floor on how much of the singer can be removed. Declare the sentence and the host
 draws a small circled i beside the control; tapping it shows the text in a popup, and
 tapping away dismisses it.
@@ -378,7 +378,7 @@ reflections share one line's memory.
 **Budgets.** A graph may have at most 512 nodes and 262,144 samples of delay memory in total,
 counted from every `maxTime`.
 
-The effects built into Andamp, Karaoke, Modulation and Reverb, are graphs over this same
+The effects built into Alpaca, Karaoke, Modulation and Reverb, are graphs over this same
 catalog, which is how it is known to be enough for them.
 
 ### How the graph is encoded
@@ -399,7 +399,7 @@ Three decisions, all borrowed rather than invented:
 A node returns exactly one edge, which is why an input reference needs no output index.
 
 **Reading across channels is ordinary.** `build` sees every channel, `g.input(k)` reads the
-stage's input frame rather than a partly written one, and Andamp's own Karaoke subtracts one
+stage's input frame rather than a partly written one, and Alpaca's own Karaoke subtracts one
 input channel from the other, so a mid/side split, a mono sum and a stereo widener are all
 expressible. So is a stereo-linked detector: `leveler.lua` takes the larger of two envelopes.
 What the catalog does not have is a primitive with two signal inputs sharing one piece of
@@ -449,7 +449,7 @@ which it ignores.
 
 Rejection is a load failure and nothing else. When a listener adds a plug-in, a rejection is
 a dialog with the reason in it and nothing is stored; an install is also refused when the
-plug-in fails at 48 or 22.05 kHz, or when its `id` belongs to an effect Andamp already has. A
+plug-in fails at 48 or 22.05 kHz, or when its `id` belongs to an effect Alpaca already has. A
 plug-in already installed that cannot be built for a stream is left out of the rack for that
 stream. Playback continues either way. Nothing a plug-in does may take the audio down.
 
@@ -483,11 +483,11 @@ Parts of the schema come from other systems:
 | SuperCollider SynthDef | tagged input references and per-node rate tags |
 | Elementary | named feedback taps instead of an anonymous placeholder |
 
-`enabledBy`, with the rule that the graph must read the toggle, is Andamp's own.
+`enabledBy`, with the rule that the graph must read the toggle, is Alpaca's own.
 
 ## 11. Examples
 
-The plug-ins Andamp ships are in `backend/media3/src/main/resources/plugins/`. They are loaded
+The plug-ins Alpaca ships are in `backend/media3/src/main/resources/plugins/`. They are loaded
 through the same loader and sandbox as a listener's own file, so they are examples and
 product at once, and each is one job with one or two controls:
 

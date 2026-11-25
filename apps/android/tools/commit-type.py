@@ -4,7 +4,7 @@
 Keep feat:, change: and fix: for what a listener notices.
 
 release-please builds the changelog and the release notes from commit types, so
-a type decides what somebody who installed Andamp gets told. A change to a build
+a type decides what somebody who installed Alpaca gets told. A change to a build
 file or to this script is not news to them.
 
 So a feat, change or fix has to touch something that ships. Everything else is

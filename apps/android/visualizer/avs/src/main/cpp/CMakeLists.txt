@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.22.1)
 
-project(andamp_avs LANGUAGES C CXX)
+project(alpaca_avs LANGUAGES C CXX)
 
 set(EVAL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../third_party/projectm-eval")
 
@@ -24,16 +24,16 @@ set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 
 add_subdirectory("${EVAL_DIR}" projectm-eval)
 
-add_library(andamp_avs SHARED avs_eel_jni.cpp)
+add_library(alpaca_avs SHARED avs_eel_jni.cpp)
 
 # Static: this is one small evaluator, it is MIT licensed, and nothing outside
 # this module calls it. :visualizer:projectm links its own copy, so the two
 # modules do not depend on each other.
 # avs_eel_jni.cpp adds AVS's own functions to a context's function list,
 # which is declared in the evaluator's internal headers
-target_include_directories(andamp_avs PRIVATE "${EVAL_DIR}/projectm-eval")
+target_include_directories(alpaca_avs PRIVATE "${EVAL_DIR}/projectm-eval")
 
-target_link_libraries(andamp_avs
+target_link_libraries(alpaca_avs
         PRIVATE
         projectM::Eval
         log

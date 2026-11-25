@@ -12,11 +12,11 @@
     <string name="prefs_android_auto_from_play">Android Auto zeigt die App im Auto</string>
     <string name="prefs_android_auto_not_from_play">Android Auto zeigt die App nicht im Auto</string>
     <string name="prefs_android_auto_not_from_play_about">Android Auto zeigt Autoamp in einem Auto nur, wenn Google Play die App installiert hat.</string>
-    <string name="prefs_android_auto_matches">Kompatibel mit diesem Andamp</string>
+    <string name="prefs_android_auto_matches">Kompatibel mit diesem Alpaca</string>
     <string name="prefs_android_auto_older">Aktualisiere Autoamp</string>
-    <string name="prefs_android_auto_older_about">Die App ist älter als dieses Andamp, daher funktioniert im Auto vielleicht nicht alles.</string>
-    <string name="prefs_android_auto_newer">Aktualisiere Andamp</string>
-    <string name="prefs_android_auto_newer_about">Die App ist neuer als dieses Andamp, daher funktioniert im Auto vielleicht nicht alles.</string>
+    <string name="prefs_android_auto_older_about">Die App ist älter als dieses Alpaca, daher funktioniert im Auto vielleicht nicht alles.</string>
+    <string name="prefs_android_auto_newer">Aktualisiere Alpaca</string>
+    <string name="prefs_android_auto_newer_about">Die App ist neuer als dieses Alpaca, daher funktioniert im Auto vielleicht nicht alles.</string>
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">Dieses Wiedergabe-Backend unterstützt keine Effekte.</string>
@@ -30,7 +30,7 @@
     <string name="prefs_effects_manage_plugins_summary">Hinzugefügte Plug-ins und weitere hinzufügen</string>
 
     <!-- LicencesPage.kt -->
-    <string name="prefs_licences_note">Andamp baut auf der Arbeit anderer auf. Jeder Eintrag verweist auf seine Quelle, wo der vollständige Lizenztext steht.</string>
+    <string name="prefs_licences_note">Alpaca baut auf der Arbeit anderer auf. Jeder Eintrag verweist auf seine Quelle, wo der vollständige Lizenztext steht.</string>
 
     <!-- LimiterCard.kt -->
     <string name="prefs_limiter_title">Peak-Limiter</string>
@@ -102,7 +102,7 @@
 
     <!-- Notices.kt -->
     <string name="prefs_notice_projectm_what">Die Engine der Milkdrop-Visualisierung; sie rendert .milk-Voreinstellungen.</string>
-    <string name="prefs_notice_projectm_obligation">Andamp bindet projectM %1$s dynamisch ein, als eigene Bibliothek in der App, damit sie ersetzt werden kann. Der Quelltext genau dieser Revision ist das Tag v%1$s unter der Adresse oben, und der Verbindungscode, den Andamp darum baut, liegt in Andamps eigenem Repository. An projectM wurde nichts geändert.</string>
+    <string name="prefs_notice_projectm_obligation">Alpaca bindet projectM %1$s dynamisch ein, als eigene Bibliothek in der App, damit sie ersetzt werden kann. Der Quelltext genau dieser Revision ist das Tag v%1$s unter der Adresse oben, und der Verbindungscode, den Alpaca darum baut, liegt in Alpacas eigenem Repository. An projectM wurde nichts geändert.</string>
     <string name="prefs_notice_avs_what">Winamps Visualisierung, in Kotlin neu implementiert nach dem Quelltext, den Nullsoft veröffentlicht hat.</string>
     <string name="prefs_notice_avs_decoder_what">Der Dateiaufbau und die Feldanordnung des .avs-Formats für Voreinstellungen, so wie der Leser der Voreinstellungen sie befolgt.</string>
     <string name="prefs_notice_projectm_eval_what">Wertet die Ausdrücke aus, in denen AVS-Voreinstellungen geskriptet sind; in die AVS-Bibliothek eingebaut.</string>
@@ -121,8 +121,8 @@
     <string name="prefs_notice_walkit_what">Die Engine für moderne Skins, in nativem Code: sie führt die Skins aus, geschrieben in Rust.</string>
 
     <!-- Store.kt (storePlay) -->
-    <string name="prefs_notice_play_billing_what">Nimmt die Trinkgelder auf der Seite „Andamp unterstützen“ über Google Play entgegen.</string>
-    <string name="prefs_notice_play_billing_obligation">Diese Bibliothek ist nicht quelloffen. Andamps Lizenz enthält eine zusätzliche Erlaubnis, Andamp mit ihr zu kombinieren und das Ergebnis zu verbreiten.</string>
+    <string name="prefs_notice_play_billing_what">Nimmt die Trinkgelder auf der Seite „Alpaca unterstützen“ über Google Play entgegen.</string>
+    <string name="prefs_notice_play_billing_obligation">Diese Bibliothek ist nicht quelloffen. Alpacas Lizenz enthält eine zusätzliche Erlaubnis, Alpaca mit ihr zu kombinieren und das Ergebnis zu verbreiten.</string>
 
     <!-- OverlayPrefs.kt -->
     <string name="prefs_overlay_grant">Einblendung über anderen Apps zulassen</string>
@@ -131,17 +131,17 @@
     <!-- PackPrefs.kt -->
     <string name="prefs_pack_uninstalled">Deinstalliert, die Titel werden übersprungen</string>
     <string name="prefs_pack_not_installed">Nicht installiert – siehe „Weitere Quellen“ unten</string>
-    <string name="prefs_pack_too_old">Installiert, aber zu alt für diese Version von Andamp</string>
-    <string name="prefs_pack_too_new">Installiert, aber für eine neuere Version von Andamp gemacht</string>
+    <string name="prefs_pack_too_old">Installiert, aber zu alt für diese Version von Alpaca</string>
+    <string name="prefs_pack_too_new">Installiert, aber für eine neuere Version von Alpaca gemacht</string>
     <string name="prefs_pack_not_signed_in">Nicht angemeldet</string>
-    <string name="prefs_pack_notice_outdated">%1$s ist für ein älteres Andamp eingerichtet und wird nicht zum Abspielen herangezogen. Eine neuere Version bringt die Titel zurück.</string>
-    <string name="prefs_pack_notice_ahead">%1$s ist für ein neueres Andamp eingerichtet und wird nicht zum Abspielen herangezogen. Ein Update von Andamp bringt die Titel zurück.</string>
+    <string name="prefs_pack_notice_outdated">%1$s ist für ein älteres Alpaca eingerichtet und wird nicht zum Abspielen herangezogen. Eine neuere Version bringt die Titel zurück.</string>
+    <string name="prefs_pack_notice_ahead">%1$s ist für ein neueres Alpaca eingerichtet und wird nicht zum Abspielen herangezogen. Ein Update von Alpaca bringt die Titel zurück.</string>
     <string name="prefs_pack_update">%1$s aktualisieren</string>
 
     <!-- PalettePrefs.kt -->
     <string name="prefs_palette_title">Farben des Hintergrundbilds übernehmen</string>
-    <string name="prefs_palette_on">AndAmp Dark und AndAmp Light übernehmen ihre Farben von deinem Hintergrundbild, wie der Rest des Smartphones.</string>
-    <string name="prefs_palette_off">AndAmp Dark und AndAmp Light behalten ihre eigenen Farben.</string>
+    <string name="prefs_palette_on">Alpaca Dark und Alpaca Light übernehmen ihre Farben von deinem Hintergrundbild, wie der Rest des Smartphones.</string>
+    <string name="prefs_palette_off">Alpaca Dark und Alpaca Light behalten ihre eigenen Farben.</string>
 
     <!-- PlayerPage.kt -->
     <string name="prefs_player_windows_section">Fenster</string>
@@ -154,23 +154,23 @@
 
     <!-- ModernSkinPrefs.kt -->
     <string name="prefs_modern_skins_title">Moderne Skins (Beta)</string>
-    <string name="prefs_modern_skins_on">Neben klassischen Skins kannst du auch moderne Winamp-Skins (.wal) hinzufügen und tragen. Manche sehen vielleicht etwas anders aus oder funktionieren etwas anders als in Winamp. Halte einen modernen Skin gedrückt, um das Menü von Andamp zu öffnen. Schaltest du dies aus, trägt der Player wieder deinen letzten klassischen Skin.</string>
+    <string name="prefs_modern_skins_on">Neben klassischen Skins kannst du auch moderne Winamp-Skins (.wal) hinzufügen und tragen. Manche sehen vielleicht etwas anders aus oder funktionieren etwas anders als in Winamp. Halte einen modernen Skin gedrückt, um das Menü von Alpaca zu öffnen. Schaltest du dies aus, trägt der Player wieder deinen letzten klassischen Skin.</string>
     <string name="prefs_modern_skins_off">Nur klassische Skins (.wsz) lassen sich hinzufügen. Schalte dies ein, um auch moderne Winamp-Skins (.wal) hinzuzufügen und zu tragen. Moderne Skins, die du schon hinzugefügt hast, bleiben bis dahin verborgen.</string>
     <string name="prefs_modern_skins_note">Nur der Player trägt einen modernen Skin. Die Menüs, die Medienbibliothek, der Skin-Browser, das Widget und Android Auto behalten deinen letzten klassischen Skin, außer du hast für das Widget oder Android Auto einen anderen gewählt. Solange der Player einen modernen Skin trägt, sind Playlist-Editor, Equalizer, Doppelte Größe und Visualisierungsoptionen im Menü ausgegraut, weil der Skin die Fenster und die Visualisierung des Players zeichnet.</string>
     <string name="prefs_sharp_pixels_title">Scharfe Pixel</string>
-    <string name="prefs_sharp_pixels_on">Klare Kanten, aber manche Buchstaben und Linien werden ungleich dick. Das betrifft nur moderne Skins, die Andamp in einer Zwischengröße zeigt, etwa 2,5-fach vergrößert, damit sie auf deinen Bildschirm passen.</string>
-    <string name="prefs_sharp_pixels_off">Weich, aber leicht unscharf. Schalte dies für klare Kanten ein; manche Buchstaben und Linien werden dann ungleich dick. Das betrifft nur moderne Skins, die Andamp in einer Zwischengröße zeigt, etwa 2,5-fach vergrößert, damit sie auf deinen Bildschirm passen.</string>
+    <string name="prefs_sharp_pixels_on">Klare Kanten, aber manche Buchstaben und Linien werden ungleich dick. Das betrifft nur moderne Skins, die Alpaca in einer Zwischengröße zeigt, etwa 2,5-fach vergrößert, damit sie auf deinen Bildschirm passen.</string>
+    <string name="prefs_sharp_pixels_off">Weich, aber leicht unscharf. Schalte dies für klare Kanten ein; manche Buchstaben und Linien werden dann ungleich dick. Das betrifft nur moderne Skins, die Alpaca in einer Zwischengröße zeigt, etwa 2,5-fach vergrößert, damit sie auf deinen Bildschirm passen.</string>
     <string name="prefs_windows_apart_title">Fenster frei</string>
     <string name="prefs_windows_apart_on">Jedes Fenster eines modernen Skins steht dort, wo du es hinlegst, wie auf einem Desktop: Zieh ein Fenster an seiner Titelleiste, und es dockt an die anderen und an die Ränder an wie in Winamp.</string>
     <string name="prefs_windows_apart_off">Die Fenster eines modernen Skins stehen in einem Stapel unter dem Hauptfenster. Schalte dies ein, um jedes Fenster dort hinzulegen, wo du möchtest, wie auf einem Desktop.</string>
 
     <!-- PluginsSection.kt -->
-    <string name="prefs_plugins_intro">Audio-Plug-ins in Lua. Andamp behält eine eigene Kopie, die Originaldatei kann also verschoben oder gelöscht werden.</string>
+    <string name="prefs_plugins_intro">Audio-Plug-ins in Lua. Alpaca behält eine eigene Kopie, die Originaldatei kann also verschoben oder gelöscht werden.</string>
     <string name="prefs_plugins_adding">Wird hinzugefügt…</string>
     <string name="prefs_plugins_add">Plug-in hinzufügen</string>
-    <string name="prefs_plugins_builtin_always">Die Effekte, die Andamp mitbringt, sind immer im Rack.</string>
+    <string name="prefs_plugins_builtin_always">Die Effekte, die Alpaca mitbringt, sind immer im Rack.</string>
     <string name="prefs_plugins_none">Keine Plug-ins hinzugefügt</string>
-    <string name="prefs_plugins_none_hint">Die Effekte, die Andamp mitbringt, sind schon im Rack. Füge für weitere eine .lua-Datei hinzu.</string>
+    <string name="prefs_plugins_none_hint">Die Effekte, die Alpaca mitbringt, sind schon im Rack. Füge für weitere eine .lua-Datei hinzu.</string>
     <string name="prefs_plugins_remove_named">%1$s entfernen</string>
     <string name="prefs_plugins_cannot_run">Läuft nicht mit dem Audioformat dieses Titels.</string>
     <string name="prefs_plugins_remove_question">%1$s entfernen?</string>
@@ -197,7 +197,7 @@
     <string name="prefs_plugins_credit_by">von %1$s</string>
     <string name="prefs_plugins_credit_none">keine Version angegeben</string>
     <string name="prefs_plugins_more_title">Weitere Effekte</string>
-    <string name="prefs_plugins_more_summary">Effekt-Plug-ins zum Installieren von Andamps Website</string>
+    <string name="prefs_plugins_more_summary">Effekt-Plug-ins zum Installieren von Alpacas Website</string>
 
     <!-- PreferencesScreen.kt -->
     <string name="prefs_page_effects">Effekte</string>
@@ -207,15 +207,15 @@
     <string name="prefs_page_rows">Titelzeilen</string>
     <string name="prefs_page_widget">Startbildschirm-Widget</string>
     <string name="prefs_page_android_auto">Android Auto</string>
-    <string name="prefs_page_support">Andamp unterstützen</string>
-    <string name="prefs_page_about">Über Andamp</string>
+    <string name="prefs_page_support">Alpaca unterstützen</string>
+    <string name="prefs_page_about">Über Alpaca</string>
     <string name="prefs_page_licences">Open-Source-Lizenzen</string>
-    <string name="prefs_about_licences_summary">Die Projekte, auf denen Andamp aufbaut, und ihre Lizenzen</string>
+    <string name="prefs_about_licences_summary">Die Projekte, auf denen Alpaca aufbaut, und ihre Lizenzen</string>
     <string name="prefs_about_summary">Version und Open-Source-Lizenzen</string>
     <string name="prefs_title">Einstellungen</string>
     <string name="prefs_sound_section">Klang</string>
     <string name="prefs_look_section">Aussehen &amp; Bedienung</string>
-    <string name="prefs_about_note">Andamp %1$s – ein Nachbau von Winamp 2.8, der in keiner Verbindung zu Winamp oder dessen Eigentümern steht.</string>
+    <string name="prefs_about_note">Alpaca %1$s – ein Nachbau von Winamp 2.8, der in keiner Verbindung zu Winamp oder dessen Eigentümern steht.</string>
 
     <!-- PrefsTopBar.kt -->
     <string name="prefs_top_back">Zurück zu den Einstellungen</string>
@@ -258,7 +258,7 @@
     <!-- SourcesPrefs.kt -->
     <string name="prefs_sources_section">Musikquellen</string>
     <string name="prefs_sources_more_title">Weitere Quellen</string>
-    <string name="prefs_sources_more_summary">Andere Orte, von denen Andamp Musik abspielen kann, und wie du sie hinzufügst</string>
+    <string name="prefs_sources_more_summary">Andere Orte, von denen Alpaca Musik abspielen kann, und wie du sie hinzufügst</string>
     <string name="prefs_phone_permission_off">Berechtigung „%1$s“ ist aus</string>
     <string name="prefs_phone_allow">„%1$s“ zulassen, um die Musik auf diesem Smartphone anzuzeigen</string>
     <string name="prefs_phone_summary">Zugriff, Bibliothek und Scan</string>
@@ -295,13 +295,13 @@
     <string name="prefs_updates_retry">Erneut versuchen</string>
 
     <!-- SupportPrefs.kt -->
-    <string name="prefs_support_intro">Andamp ist kostenlos und ohne Werbung. Wenn es dir gefällt, kannst du ein Trinkgeld geben. Ein Trinkgeld schaltet nichts frei: Alles in Andamp bleibt kostenlos, mit oder ohne.</string>
-    <string name="prefs_support_summary_outside">Wie du Andamp über die Website unterstützt</string>
+    <string name="prefs_support_intro">Alpaca ist kostenlos und ohne Werbung. Wenn es dir gefällt, kannst du ein Trinkgeld geben. Ein Trinkgeld schaltet nichts frei: Alles in Alpaca bleibt kostenlos, mit oder ohne.</string>
+    <string name="prefs_support_summary_outside">Wie du Alpaca über die Website unterstützt</string>
     <string name="prefs_support_summary">Wofür ein Trinkgeld ist und wie du eins gibst</string>
     <string name="prefs_support_closed">Trinkgelder sind auf diesem Smartphone gerade nicht verfügbar.</string>
     <string name="prefs_support_play_note">Google Play wickelt die Zahlung ab. Ein Trinkgeld kann mehr als einmal gegeben werden.</string>
-    <string name="prefs_support_given">Du hast Andamp unterstützt. Danke.</string>
-    <string name="prefs_support_outside_intro">Andamp ist kostenlos und ohne Werbung. Wenn es dir gefällt, kannst du es auf seiner Website unterstützen. Das schaltet nichts frei: Alles in Andamp bleibt kostenlos, mit oder ohne.</string>
+    <string name="prefs_support_given">Du hast Alpaca unterstützt. Danke.</string>
+    <string name="prefs_support_outside_intro">Alpaca ist kostenlos und ohne Werbung. Wenn es dir gefällt, kannst du es auf seiner Website unterstützen. Das schaltet nichts frei: Alles in Alpaca bleibt kostenlos, mit oder ohne.</string>
     <string name="prefs_support_open_site">%1$s öffnen</string>
     <string name="prefs_support_note_thanks">Danke! Dein Trinkgeld ist angekommen.</string>
     <string name="prefs_support_note_waiting">Danke! Dein Trinkgeld kommt an, sobald die Zahlung abgeschlossen ist.</string>
@@ -340,7 +340,7 @@
 
     <!-- VolumePrefs.kt -->
     <string name="prefs_volume_title">Unabhängige Lautstärke</string>
-    <string name="prefs_volume_own">Der Regler gehört allein Andamp, und die Lautstärke des Smartphones bleibt, wie sie ist</string>
+    <string name="prefs_volume_own">Der Regler gehört allein Alpaca, und die Lautstärke des Smartphones bleibt, wie sie ist</string>
     <string name="prefs_volume_device">Der Regler stellt die Medienlautstärke des Smartphones ein, wie die Lautstärketasten</string>
 
     <!-- WidgetPrefs.kt -->
@@ -351,7 +351,7 @@
     <string name="prefs_widget_summary">Visualisierung, Aktualisierungsrate, Größe, Tippen und Skin</string>
     <string name="prefs_widget_refresh_title">Aktualisierungsrate</string>
     <string name="prefs_widget_size_title">Größe</string>
-    <string name="prefs_widget_logo_title">Nur das Logo öffnet Andamp</string>
+    <string name="prefs_widget_logo_title">Nur das Logo öffnet Alpaca</string>
     <string name="prefs_widget_logo_summary">Tippen auf den Player bewirkt nichts; wer eine Schaltfläche knapp verfehlt, bleibt auf dem Startbildschirm.</string>
     <string name="prefs_widget_volume_title">Lautstärkeregelung</string>
     <string name="prefs_widget_volume_summary">Macht den Lautstärkeregler antippbar. Er sitzt dicht an der Positionsleiste und wird leicht versehentlich getroffen.</string>
@@ -362,11 +362,11 @@
     <string name="prefs_widget_limit_corners_title">Die Ecken sind beschnitten</string>
     <string name="prefs_widget_limit_corners_body">Android rundet die Ecken jedes Widgets ab, bei jeder App, und das lässt sich nicht abschalten. Ein kleinerer Player hätte Platz übrig, aber seine Schaltflächen wären auch schwerer zu treffen, also behält er seine Größe.</string>
     <string name="prefs_widget_limit_icon_title">Es kann durch ein Symbol ersetzt werden</string>
-    <string name="prefs_widget_limit_icon_body">Um Akku zu sparen, beendet Android manchmal Apps, von denen es annimmt, dass du mit ihnen fertig bist. Dann zeigt der Startbildschirm ein Andamp-Symbol anstelle des Players – einmal tippen holt ihn zurück. Das sollte nicht oft passieren.</string>
+    <string name="prefs_widget_limit_icon_body">Um Akku zu sparen, beendet Android manchmal Apps, von denen es annimmt, dass du mit ihnen fertig bist. Dann zeigt der Startbildschirm ein Alpaca-Symbol anstelle des Players – einmal tippen holt ihn zurück. Das sollte nicht oft passieren.</string>
     <string name="prefs_widget_limit_loop_title">Die Balken laufen in einer Schleife</string>
     <string name="prefs_widget_limit_loop_body">Etwa eine halbe Sekunde der Musik wird in Bilder umgesetzt, und der Startbildschirm spielt sie immer wieder ab, bis eine frische halbe Sekunde sie ersetzt. So bewegen sich die Balken zur Musik, ohne je ganz im Takt zu sein. Schlag für Schlag mitzuhalten hieße, viele Male pro Sekunde neue Bilder zu schicken, und genau das leert einen Akku.</string>
     <string name="prefs_widget_limit_running_title">Die Leisten brauchen den laufenden Player</string>
-    <string name="prefs_widget_limit_running_body">Tippen auf die Positions- oder Lautstärkeleiste weist den Player an, dorthin zu springen. Hat Android Andamp aus dem Speicher entfernt, ist nichts da, was die Anweisung annimmt, und das Tippen bewirkt nichts. Die Schaltflächen funktionieren weiter: Drückst du eine, startet der Player wieder, und die Leisten folgen.</string>
+    <string name="prefs_widget_limit_running_body">Tippen auf die Positions- oder Lautstärkeleiste weist den Player an, dorthin zu springen. Hat Android Alpaca aus dem Speicher entfernt, ist nichts da, was die Anweisung annimmt, und das Tippen bewirkt nichts. Die Schaltflächen funktionieren weiter: Drückst du eine, startet der Player wieder, und die Leisten folgen.</string>
 
     <!-- WidgetSettings.kt -->
     <string name="prefs_widget_size_fill">Füllen</string>

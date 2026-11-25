@@ -21,7 +21,7 @@ so the cost of a frame depends on the mesh size more than on the screen size.
 visualizer/projectm/
   src/main/cpp/            projectm_jni.cpp, CMakeLists.txt
   src/main/kotlin/…/projectm/
-    ProjectM               loads libandamp_projectm.so, reports the linked version
+    ProjectM               loads libalpaca_projectm.so, reports the linked version
     ProjectMNative         the external functions
     ProjectMEngine         the Kotlin surface over one projectM handle and its playlist
     EglSurface             an ES 3 context on a SurfaceTexture
@@ -123,7 +123,7 @@ authors' terms (see NOTICE.md).
 ## Build
 
 `src/main/cpp/CMakeLists.txt` adds projectM as a subdirectory and builds
-`libandamp_projectm.so` (the JNI code) against it. Details of the configuration:
+`libalpaca_projectm.so` (the JNI code) against it. Details of the configuration:
 
 - projectM's options are CMake cache variables, set with `set(... CACHE BOOL "" FORCE)` before
   `add_subdirectory()`. Only `-DANDROID_STL=c++_shared` is passed as a Gradle argument.
@@ -141,7 +141,7 @@ floor for 16 KB page alignment, required from Android 15) and CMake `3.22.1` (pr
 3.21), and builds `arm64-v8a` plus `x86_64` for the emulator.
 
 Per ABI the APK carries `libprojectM-4.so`, `libprojectM-4-playlist.so`,
-`libandamp_projectm.so` and `libc++_shared.so` (shared with `:visualizer:avs`).
+`libalpaca_projectm.so` and `libc++_shared.so` (shared with `:visualizer:avs`).
 
 ## Testing
 

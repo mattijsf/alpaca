@@ -1,6 +1,6 @@
-# Translating Andamp
+# Translating Alpaca
 
-Andamp's text is in string resources, so a language is a set of XML files and needs no
+Alpaca's text is in string resources, so a language is a set of XML files and needs no
 Kotlin. English is the original. There are translations into Dutch, French, German and
 Simplified Chinese. Each is a first pass: corrections from native speakers are welcome, as
 is any other language.
@@ -29,13 +29,13 @@ code where the region matters.
 
 1. Copy the `strings_*.xml` files from `values/` into the new directory.
 2. Translate the text between the tags. Leave the `name` of each entry as it is.
-3. Delete the entries marked `translatable="false"`: they are names, such as Andamp.
+3. Delete the entries marked `translatable="false"`: they are names, such as Alpaca.
 4. Check it: `./gradlew :app:testDebugUnitTest --tests '*TranslationsTest'`.
 5. Open a pull request.
 
 Nothing else has to change. The build lists the languages for Android from the directories
-it finds, so on Android 13 and later the new one shows up under Settings > Apps > Andamp >
-Language. On older versions Andamp follows the phone's language.
+it finds, so on Android 13 and later the new one shows up under Settings > Apps > Alpaca >
+Language. On older versions Alpaca follows the phone's language.
 
 A translation does not have to be complete. An entry it leaves out is shown in English.
 
@@ -64,7 +64,7 @@ To improve a translation that exists, edit its file and open a pull request.
   the window names, use the word that the Winamp translation into your language used, so
   the app reads the way people remember it. Use another word only where Winamp's would
   not be understood today. The tables below have the words used so far.
-- **Names stay.** Andamp, Winamp, Milkdrop, AVS, projectM, the names of skins, equalizer
+- **Names stay.** Alpaca, Winamp, Milkdrop, AVS, projectM, the names of skins, equalizer
   presets, plug-ins and effects are not translated. Nor are a modern skin's color theme names,
   the names of its options under Skin Settings and the labels it writes in its menus: they show
   as the skin wrote them.
@@ -93,7 +93,7 @@ comes from, so that the next person keeps to them.
   was found by comparing the translations of six open-source players (VLC, Clementine,
   Rhythmbox, Audacious, DeaDBeeF and Quod Libet) and the help pages of two large music
   services in that language.
-- **Andamp** is a word for something Winamp did not have.
+- **Alpaca** is a word for something Winamp did not have.
 - **Unverified** means the word has not been checked against Winamp's text in that language.
   If you know Winamp's word, a pull request that corrects the table and the strings is welcome.
 
@@ -103,11 +103,11 @@ comes from, so that the next person keeps to them.
 |---|---|---|
 | skin | skin | Winamp |
 | modern skin | moderne skin | Winamp |
-| Modern skins (beta) | Moderne skins (bèta) | Andamp |
+| Modern skins (beta) | Moderne skins (bèta) | Alpaca |
 | color theme | kleurthema | Winamp |
-| Skin menu | skinmenu | Andamp |
+| Skin menu | skinmenu | Alpaca |
 | Skin Settings | Skininstellingen | Winamp |
-| sharp pixels | scherpe pixels | Andamp |
+| sharp pixels | scherpe pixels | Alpaca |
 | visualization | visualisatie | Winamp |
 | Media Library | mediabibliotheek | Winamp |
 | playlist | afspeellijst | common usage (Winamp: speellijst) |
@@ -119,14 +119,14 @@ comes from, so that the next person keeps to them.
 | Always On Top | Altijd bovenop | Winamp |
 | Double Size | Dubbele grootte | Winamp |
 | Shuffle, Repeat | Shuffle, Herhalen | Winamp |
-| Sort list | Lijst sorteren | Andamp (Winamp: Sorteren) |
+| Sort list | Lijst sorteren | Alpaca (Winamp: Sorteren) |
 | Reverse list, Randomize list | Lijst omkeren, Lijst willekeurig maken | Winamp |
 | Playlist Editor | Afspeellijsteditor | common usage (Winamp: speellijsteditor) |
 | Jump to file, Jump to time | Spring naar bestand, Spring naar tijd | Winamp |
 | Enqueue | In wachtrij | Winamp (modern skins) |
-| music source | muziekbron | Andamp |
-| effect, rack | effect, rack | Andamp |
-| tip | fooi | Andamp |
+| music source | muziekbron | Alpaca |
+| effect, rack | effect, rack | Alpaca |
+| tip | fooi | Alpaca |
 
 ### French
 
@@ -134,11 +134,11 @@ comes from, so that the next person keeps to them.
 |---|---|---|
 | skin | skin | Winamp |
 | modern skin | skin moderne | Winamp |
-| Modern skins (beta) | Skins modernes (bêta) | Andamp |
+| Modern skins (beta) | Skins modernes (bêta) | Alpaca |
 | color theme | thème (menu: Thèmes) | Winamp |
-| Skin menu | menu du skin | Andamp |
+| Skin menu | menu du skin | Alpaca |
 | Skin Settings | Paramètres du skin | Winamp |
-| sharp pixels | pixels nets | Andamp |
+| sharp pixels | pixels nets | Alpaca |
 | visualization | visualisation | Winamp |
 | Media Library | médiathèque | Winamp |
 | playlist | liste de lecture | Winamp |
@@ -158,9 +158,9 @@ comes from, so that the next person keeps to them.
 | Sort list, Randomize list | Trier la liste, Mélanger la liste | Audacious |
 | Jump to file, Jump to time | Aller au morceau, Aller à un moment précis | Winamp |
 | Enqueue | Mettre à la suite | Winamp |
-| music source | source de musique | Andamp |
-| effect, rack | effet, rack | Andamp |
-| tip | pourboire | Andamp |
+| music source | source de musique | Alpaca |
+| effect, rack | effet, rack | Alpaca |
+| tip | pourboire | Alpaca |
 
 
 ### German
@@ -169,11 +169,11 @@ comes from, so that the next person keeps to them.
 |---|---|---|
 | skin | Skin | Winamp |
 | modern skin | moderner Skin | Winamp |
-| Modern skins (beta) | Moderne Skins (Beta) | Andamp |
+| Modern skins (beta) | Moderne Skins (Beta) | Alpaca |
 | color theme | Farbschema (menu: Farbschemen) | Winamp |
-| Skin menu | Skin-Menü | Andamp |
+| Skin menu | Skin-Menü | Alpaca |
 | Skin Settings | Skin-Einstellungen | Winamp |
-| sharp pixels | scharfe Pixel | Andamp |
+| sharp pixels | scharfe Pixel | Alpaca |
 | visualization | Visualisierung | Winamp |
 | Media Library | Medienbibliothek | Winamp |
 | playlist | Playlist | Winamp |
@@ -194,9 +194,9 @@ comes from, so that the next person keeps to them.
 | Jump to time | Springe zu Zeitmarke | Winamp |
 | file info | Titelinformationen | Winamp |
 | auto-load preset | automatische Voreinstellung (Load menu: Voreinstellungen automatisch laden) | Winamp |
-| music source | Musikquelle | Andamp |
-| effect, rack | Effekt, Rack | Andamp |
-| tip | Trinkgeld | Andamp |
+| music source | Musikquelle | Alpaca |
+| effect, rack | Effekt, Rack | Alpaca |
+| tip | Trinkgeld | Alpaca |
 
 ### Simplified Chinese
 
@@ -204,11 +204,11 @@ comes from, so that the next person keeps to them.
 |---|---|---|
 | skin | 面板 | Winamp |
 | modern skin | 现代面板 | Winamp |
-| Modern skins (beta) | 现代面板（测试版） | Andamp |
+| Modern skins (beta) | 现代面板（测试版） | Alpaca |
 | color theme | 颜色主题 | Winamp |
-| Skin menu | 面板菜单 | Andamp |
+| Skin menu | 面板菜单 | Alpaca |
 | Skin Settings | 面板设置 | Winamp |
-| sharp pixels | 锐利像素 | Andamp |
+| sharp pixels | 锐利像素 | Alpaca |
 | load | 加载 | Winamp |
 | visualization | 可视化效果 | Winamp |
 | Media Library | 媒体库 | Winamp |
@@ -220,13 +220,13 @@ comes from, so that the next person keeps to them.
 | Playlist Editor | 播放列表编辑器 | Winamp |
 | Equalizer | 均衡器 | Winamp |
 | Double Size | 双倍大小 | Winamp |
-| Sort list | 排序列表 | Andamp (Winamp: 排序) |
+| Sort list | 排序列表 | Alpaca (Winamp: 排序) |
 | Sort list by title, Reverse list, Randomize list | 按标题排列列表, 反转列表, 随机排列列表 | Winamp |
 | Always On Top | 总在最上 | Winamp |
 | Preferences | 首选项 | Winamp |
 | Shuffle, Repeat | 随机, 重复 | Winamp |
 | Enqueue | 排队 | Winamp |
 | Previous, Next | 上一首, 下一首 | Winamp |
-| music source | 音乐源 | Andamp |
-| effect, rack | 效果, 机架 | Andamp |
-| tip | 打赏 | Andamp |
+| music source | 音乐源 | Alpaca |
+| effect, rack | 效果, 机架 | Alpaca |
+| tip | 打赏 | Alpaca |
