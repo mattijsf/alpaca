@@ -1086,6 +1086,29 @@ fn the_window_the_keys_go_to_is_the_skins_one_in_front() {
     // a window that is none of the skin's changes nothing
     app.focus(9999);
     assert_eq!(in_front(&mut app), Some(main));
+    // another app takes the keys: the main window's title bar is drawn unlit, and lit again
+    // when the app has them back
+    app.step();
+    app.set_active(false);
+    assert!(app.step() > 0, "the skin shows every window behind");
+    app.set_active(true);
+    assert!(app.step() > 0, "and the main window in front again");
+    assert_eq!(in_front(&mut app), Some(main));
+}
+
+#[test]
+fn the_mouse_over_the_skin_with_no_button_down_is_heard() {
+    let dir = scratch("hover");
+    let mut app = start("", &dir);
+    app.step();
+    // over the main window, out of it, and a press after: the press still plays its part
+    let (x, y) = main_corner(&mut app);
+    app.hover(x + 20, y + 20);
+    app.step();
+    app.pointer_leave();
+    app.step();
+    app.hover(x + 20, y + 20);
+    assert!(app.skin().is_some());
 }
 
 #[test]

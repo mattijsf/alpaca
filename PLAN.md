@@ -115,7 +115,10 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   - [x] The equalizer's factory presets, the mouse wheel for the volume, View > Opacity.
   - [x] An icon.
   - [x] The mouse wheel on a list, classic and modern.
-  - [ ] Hovering: the engine has no call for it.
+  - [x] Hovering: the mouse over a modern skin with no button down is heard there
+    (`onEnterArea`, `onLeaveArea`, `onMouseMove`), and a button shows its hover picture.
+  - [x] While another app has the keys every window shows itself behind: classic title bars
+    unlit, a modern skin's `inactivealpha` and inactive pictures.
 - [x] 5. Effects: Andamp's `.lua` plug-in format (`core/src/dsp`): the loader in a shut-in
   Lua, the checks, the program and the engine, with the arithmetic of the Kotlin original;
   the six plug-ins Andamp ships; the rack after the equalizer, each effect fading when
@@ -196,8 +199,9 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   `core/Cargo.toml`, a revision by its number), ahead of release 0.10.4 by what the app
   uses: a row of a classic playlist brought into view (`show_classic_playlist_row`), the
   list under a point scrolled (`scroll_at`), a frame's divider dragged, the cursor that
-  belongs at a point (`pointer_shape_at`), the focus given to a window (`focus_window`) and a wider snap for
-  the equalizer's and the balance's sliders (`Presentation::snap_reach`).
+  belongs at a point (`pointer_shape_at`), the focus given to a window (`focus_window`), a wider snap for
+  the equalizer's and the balance's sliders (`Presentation::snap_reach`), the mouse with no
+  button down (`pointer_hover`, `pointer_leave`) and the app losing the keys (`set_app_active`).
   The owner expects more changes to walkit before its next release; with that release the
   pin goes.
 - The same revision has the fix for the engine's own check, under debug assertions, that a
@@ -215,9 +219,6 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 - The engine has one viewport, and a window snaps to its edges only: the app gives it the
   screen the main window is on. A window apart on another screen snaps to the other windows
   there, not to that screen's edges.
-- The engine has no call that takes the focus from every window: when another app takes
-  the keys, the title bar lit last stays lit, where Winamp's all show as behind. Before the
-  first window is given the keys none is lit.
 
 ### What to do next, in this order
 
@@ -228,8 +229,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
    wait.
 2. What the engine could offer, since the rest of the cost is its own: a tick that says what
    changed without building the draw lists; the playlist as something that says when it
-   changed (it is asked for whole, several times a tick); the mouse wheel and hovering; a
-   skin's visualizer frame that the app can draw into.
+   changed (it is asked for whole, several times a tick); a skin's visualizer frame that
+   the app can draw into.
 3. The effects' block runner, when an effect's cost matters.
 4. Milkdrop's cost, and its window as a skin's own.
 5. Step 7, the App Store: the sandbox (files by bookmark, the network for radio), signing,

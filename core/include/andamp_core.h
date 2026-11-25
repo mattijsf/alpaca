@@ -227,6 +227,10 @@ uint32_t andamp_app_main_window(AndampApp *app);
 void andamp_app_pointer_down(AndampApp *app, int32_t x, int32_t y, int32_t touch);
 void andamp_app_pointer_move(AndampApp *app, int32_t x, int32_t y);
 void andamp_app_pointer_up(AndampApp *app, int32_t x, int32_t y);
+/// The mouse moved with no button down, in layout pixels on the viewport: what is under it
+/// hears it, and a modern skin's button shows its hover picture. And the mouse left the skin.
+void andamp_app_hover(AndampApp *app, int32_t x, int32_t y);
+void andamp_app_pointer_leave(AndampApp *app);
 
 /// The keys held with the next presses: `add` is the system's key for picking playlist rows one
 /// by one (Command on a Mac, Control elsewhere), `range` is Shift, for picking the rows from
@@ -275,6 +279,10 @@ bool andamp_app_key(AndampApp *app, uint32_t window, const char *key);
 /// Window `window` of the skin (its id, as AndampWindow has it) is the one the keys go to now,
 /// by another way than a press on it: the skin shows it as the one in front on the next step.
 void andamp_app_focus(AndampApp *app, uint32_t window);
+
+/// Whether the app has the keyboard: while another app has it, every window of the skin shows
+/// itself behind, and the window that had the focus shows it again when the app is active again.
+void andamp_app_set_active(AndampApp *app, bool active);
 
 /// The mouse wheel at `x`, `y` on the viewport, in layout pixels: over a list of the skin,
 /// wherever it shows one, it scrolls the list, over the volume slider it turns the volume,

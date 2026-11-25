@@ -25,6 +25,8 @@ final class SkinController {
     private var timer: Timer?
     /// What watches the screens coming, going and changing.
     private var screenWatcher: NSObjectProtocol?
+    /// Told when the app gets the keyboard and when another app takes it.
+    private var activeWatchers: [NSObjectProtocol] = []
     /// What watches the windows going out of sight and coming back.
     private var watchers: [NSObjectProtocol] = []
     private var touch: Int32 = 0
@@ -83,10 +85,18 @@ final class SkinController {
             self.stale = true
             self.pump(force: true)
         }
+        activeWatchers = [
+            (NSApplication.didBecomeActiveNotification, true), (NSApplication.didResignActiveNotification, false),
+        ].map { name, active in
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                self?.appActive(active)
+            }
+        }
     }
 
     deinit {
         if let screenWatcher { NotificationCenter.default.removeObserver(screenWatcher) }
+        activeWatchers.forEach(NotificationCenter.default.removeObserver)
         dropWindows()
         andamp_app_free(app)
     }
@@ -413,11 +423,26 @@ final class SkinController {
         showCursor()
     }
 
-    /// The mouse moved over the skin with no button down, or left it: the library says which
-    /// cursor belongs where it is, and the arrow belongs off the skin.
+    /// The mouse moved over the skin with no button down, or left it: what is under it hears
+    /// it, the library says which cursor belongs where it is, and the arrow belongs off the skin.
     func mouseMoved(inside: Bool) {
         guard skin != nil, !pressed, !inMenu else { return }
+        if inside {
+            let (x, y) = point()
+            andamp_app_hover(app, x, y)
+        } else {
+            andamp_app_pointer_leave(app)
+        }
+        pump()
         showCursor(inside: inside)
+    }
+
+    /// The app got the keyboard, or another app took it: every window of the skin shows itself
+    /// behind while another app has it.
+    func appActive(_ active: Bool) {
+        guard skin != nil else { return }
+        andamp_app_set_active(app, active)
+        pump()
     }
 
     /// The cursor the library names for the mouse's place, or the arrow off the skin.

@@ -297,6 +297,35 @@ pub unsafe extern "C" fn andamp_app_modifiers(app: *mut AndampApp, add: bool, ra
     with_app(app, (), |a| a.set_modifiers(add, range));
 }
 
+/// The mouse moved to `x`, `y` on the viewport with no button down, in layout pixels: what is
+/// under it hears it, and a modern skin's button shows its hover picture.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_hover(app: *mut AndampApp, x: i32, y: i32) {
+    with_app(app, (), |a| a.hover(x, y));
+}
+
+/// The mouse left the skin's windows.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_pointer_leave(app: *mut AndampApp) {
+    with_app(app, (), App::pointer_leave);
+}
+
+/// Whether the app has the keyboard: while another app has it, every window of the skin shows
+/// itself behind.
+///
+/// # Safety
+/// `app` is null or a live app.
+#[no_mangle]
+pub unsafe extern "C" fn andamp_app_set_active(app: *mut AndampApp, active: bool) {
+    with_app(app, (), |a| a.set_active(active));
+}
+
 /// The mouse moved to `x`, `y` while down.
 ///
 /// # Safety
