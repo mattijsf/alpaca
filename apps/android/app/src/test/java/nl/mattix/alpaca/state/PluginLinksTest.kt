@@ -13,6 +13,11 @@ import org.junit.Test
 class PluginLinksTest {
     @Test
     fun `a lua file in the site's plug-in folder is a plug-in link`() {
+        assertTrue(PluginLinks.accepts("https://alpaca.fm/extensions/plugins/warmth.lua"))
+    }
+
+    @Test
+    fun `so is the same file on andamp_nl, the site's old name`() {
         assertTrue(PluginLinks.accepts("https://andamp.nl/extensions/plugins/warmth.lua"))
     }
 
@@ -45,6 +50,13 @@ class PluginLinksTest {
             "https://user@andamp.nl/extensions/plugins/warmth.lua",
             "https://andamp.nl:8443/extensions/plugins/warmth.lua",
             "https://andamp.nl/extensions/plugins/../../elsewhere/x.lua",
+            "http://alpaca.fm/extensions/plugins/warmth.lua",
+            "https://alpaca.fm/extensions/plugins/",
+            "https://alpaca.fm/andamp/extensions/plugins/warmth.lua",
+            "https://www.alpaca.fm/extensions/plugins/warmth.lua",
+            "https://alpaca.fm.evil.example/extensions/plugins/warmth.lua",
+            "https://user@alpaca.fm/extensions/plugins/warmth.lua",
+            "https://alpaca.fm:8443/extensions/plugins/warmth.lua",
             "not a url at all",
         ).forEach { assertFalse(it, PluginLinks.accepts(it)) }
     }

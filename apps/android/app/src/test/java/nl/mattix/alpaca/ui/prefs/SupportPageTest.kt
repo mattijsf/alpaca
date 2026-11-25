@@ -64,16 +64,16 @@ class SupportPageTest {
             SupportPrefs(
                 shelf = TipShelf.Open(listOf(small)),
                 onShown = { shown++ },
-                outside = "https://andamp.nl/#donate",
+                outside = "https://alpaca.fm/#donate",
                 onOutside = { opened += it },
             ),
         )
 
-        compose.onNodeWithText("Open andamp.nl").assertIsDisplayed()
+        compose.onNodeWithText("Open alpaca.fm").assertIsDisplayed()
         compose.onNodeWithTag("prefs.support.tip.tip_small").assertDoesNotExist()
         compose.onNodeWithTag("prefs.support.outside").performClick()
 
-        assertEquals(listOf("https://andamp.nl/#donate"), opened)
+        assertEquals(listOf("https://alpaca.fm/#donate"), opened)
         assertEquals("no store is asked what it sells", 0, shown)
     }
 
@@ -85,7 +85,7 @@ class SupportPageTest {
         assertEquals(tips, EnglishWords.get(SupportPrefs(given = true).summary()))
         assertEquals(
             "How to support Alpaca on its website",
-            EnglishWords.get(SupportPrefs(given = true, outside = "https://andamp.nl/#donate").summary()),
+            EnglishWords.get(SupportPrefs(given = true, outside = "https://alpaca.fm/#donate").summary()),
         )
     }
 

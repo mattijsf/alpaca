@@ -14,7 +14,7 @@ internal object Store {
 
     /** Where the support page sends the listener instead. */
     @Suppress("MayBeConst") // nullable, as in the build a store hands out
-    val supportPage: String? = "https://andamp.nl/#donate"
+    val supportPage: String? = "https://alpaca.fm/#donate"
 
     /** Nothing is carried for a store. */
     @Suppress("UNUSED_PARAMETER") // the same shape as the build a store hands out

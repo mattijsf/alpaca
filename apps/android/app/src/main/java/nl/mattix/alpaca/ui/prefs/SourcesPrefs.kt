@@ -103,7 +103,7 @@ data class PhonePrefs(
 internal const val PHONE_PAGE = "source/phone"
 
 /** The page that lists the sources that can be added. */
-internal const val MORE_SOURCES_URL = "https://andamp.nl/extensions/source"
+internal const val MORE_SOURCES_URL = "https://alpaca.fm/extensions/source"
 
 @Composable
 internal fun SourcesSection(

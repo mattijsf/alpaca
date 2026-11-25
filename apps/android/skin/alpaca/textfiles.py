@@ -111,7 +111,7 @@ def readme_txt() -> str:
         "",
         "By Mattix - https://mattix.nl",
         "",
-        "Made for Alpaca, a Winamp 2.8 player for Android: https://mattix.nl/andamp",
+        "Made for Alpaca, a Winamp 2.8 player for Android: https://alpaca.fm",
         "",
         "Licensed under Creative Commons Attribution 4.0: use it, change it",
         "and share it, as long as you credit Mattix.",
