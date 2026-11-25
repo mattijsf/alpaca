@@ -282,6 +282,10 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
 
 ### Log
 
+- 2026-11-25, the brand: the icon is an alpaca in profile, on the Mac (`apps/mac/icon/alpaca.svg`,
+  `AppIcon.icns`) as on Android, all drawn from one source the Android app's brand tools keep.
+  The built-in skins carry a 13-pixel alpaca in the main window's logo spot, drawn in the
+  skin's `edge` grey so the app's theme still takes the skin's accent.
 - 2026-11-25, the rename and one repository: Andamp is Alpaca, and this repository holds
   every app. `app/` became `apps/mac/`; the skins, fonts, wasabi and plug-ins every app
   brings went to `core/resources/`; the Android repository became this one, its app moved
