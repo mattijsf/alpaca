@@ -1,0 +1,545 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+//! The app behind every shell: what it starts with, its menu, what each command does, what
+//! the skin's buttons ask for, and what it keeps for the next run.
+//!
+//! A shell is the part written for one system. It shows the skin's windows, hands over the
+//! mouse and the keys, and draws the menu this module describes ([`App::menu`]); a pick comes
+//! back as a number ([`App::command`]). What only the system can do, the app asks of the shell
+//! as a [`Request`]: quit, hide, let the listener pick a file, show a menu at a place. The
+//! answer to a pick comes back through [`App::picked`]. Nothing here knows its system.
+//!
+//! Places on the screen are in points on the desktop, from a corner the shell picks, with y
+//! down: a layout pixel of the skin is [`App::zoom`] points. The shell says where its screens
+//! are ([`App::set_screens`]); the app keeps every window where one of them shows it.
+
+mod commands;
+mod effects;
+mod menu;
+mod options;
+mod playlist;
+mod pointer;
+mod prefs;
+mod request;
+mod screens;
+mod visualizer;
+mod worn;
+
+pub use options::Options;
+pub use pointer::Cursor;
+pub use request::{command, Ask, Menu, Request};
+pub use screens::{into_view, seen, Area};
+
+use std::cell::RefCell;
+use std::collections::BTreeSet;
+use std::path::{Path, PathBuf};
+use std::rc::Rc;
+
+use walkit::player::Status;
+
+use crate::fonts::Fonts;
+use crate::player::{location_kind, LocationKind, Player};
+use crate::settings::{self, Settings};
+use crate::skin::Skin;
+use crate::vis::Presets;
+
+/// The skin shown when none is asked for, which also lies under every classic skin.
+const DEFAULT_SKIN: &str = "Alpaca Dark.wsz";
+/// The skin `--modern` shows.
+const MODERN_SKIN: &str = "walkit-modern.wal";
+
+/// Shows a menu given as text and gives the number picked, 0 for none.
+pub type MenuHandler = Rc<dyn Fn(&str) -> i32>;
+
+/// The app.
+pub struct App {
+    /// The player every skin shows and drives.
+    pub player: Rc<RefCell<Player>>,
+    /// What is kept between runs.
+    pub settings: Settings,
+    /// What the command line asked for.
+    pub options: Options,
+    /// The Visualizer's presets.
+    pub presets: Presets,
+    skin: Option<Box<Skin>>,
+    /// The folder of what comes with the app: `skins`, `wasabi`, `fonts` and `plugins`.
+    resources: PathBuf,
+    /// The fonts under every skin: Arial and Tahoma from the system, else the stand-ins in
+    /// `resources`; read once, for every skin worn.
+    fonts: Rc<Fonts>,
+    /// The app's own folder, where the listener's plug-ins are.
+    config: Option<PathBuf>,
+    /// The part of each screen the windows move on, on the desktop: the main screen first.
+    screens: Vec<Area>,
+    /// The screen the engine has as its viewport: the one the main window is on.
+    view: Area,
+    /// The screens as they were before they last changed, until the windows were kept in view
+    /// on the new ones.
+    before: Vec<Area>,
+    /// Set when the windows are to be kept in view at the next step: after a drag, a change of
+    /// the size or of the screens.
+    unsettled: bool,
+    zoom: i32,
+    on_top: bool,
+    /// How much of the windows shows over what is behind them, in percent.
+    opacity: i32,
+    vis_open: bool,
+    /// The skin file worn.
+    worn: Option<PathBuf>,
+    /// Where the main window of the skin before this one was, for the next to open at.
+    main_corner: Option<(i32, i32)>,
+    requests: Vec<Request>,
+    menu_handler: Option<MenuHandler>,
+    effects_loaded: bool,
+    /// The ids of the plug-ins the listener added, which can be removed again.
+    own: BTreeSet<String>,
+    started: bool,
+    /// What the system asked to open before the app was up.
+    waiting: Vec<String>,
+    /// 2 from the start until the first step, 1 until the second, which puts the playlist
+    /// back; then 0.
+    playlist_due: u8,
+    /// What is left of the wheel's turns over the playlist, in rows, short of a whole one.
+    wheel_rows: f32,
+    /// The same for the volume, in its steps.
+    wheel_volume: f32,
+    /// The song that was current when the playlist was last brought to it.
+    followed: Option<usize>,
+    /// The row the keys with Shift select from, as Winamp's playlist counts them: the row
+    /// the last key without Shift went to.
+    key_anchor: Option<usize>,
+    /// When the mouse went down, while it is down.
+    pressed_at: Option<std::time::Instant>,
+    /// A release the skin has not been told of yet: the press was too short to be seen.
+    release: Option<pointer::Release>,
+}
+
+impl App {
+    /// The app as the command line `args` (without the program's name) and the settings of
+    /// the last run make it, with what comes with it in the folder `resources`, on one screen
+    /// of `screen` points with its top left corner at the desktop's; [`App::set_screens`]
+    /// says where the screens are. Nothing shows until [`App::start`].
+    pub fn new(args: &[String], resources: &Path, screen: (i32, i32)) -> App {
+        App::with(
+            Options::parse(args),
+            resources,
+            screen,
+            settings::config_dir(),
+            Player::new(),
+        )
+    }
+
+    /// The same with the parts given: the app's own folder `config`, and the player.
+    pub fn with(
+        options: Options,
+        resources: &Path,
+        screen: (i32, i32),
+        config: Option<PathBuf>,
+        player: Player,
+    ) -> App {
+        let mut settings = match &config {
+            Some(dir) if options.kept() => {
+                let old = settings::carry_over_old_folder(dir);
+                let mut settings = Settings::open(dir);
+                if let Some(old) = old {
+                    settings.moved_folder(&old, dir);
+                }
+                settings
+            }
+            _ => Settings::none(),
+        };
+        settings.carry_over_old_skin_names();
+        let number = |key: &str| settings.get(key).and_then(|v| v.parse::<f64>().ok());
+        let zoom = options
+            .zoom
+            .or(number("zoom").map(|z| z as i32))
+            .unwrap_or(1)
+            .max(1);
+        // kept as a part of one before it was kept in percent
+        let opacity = match number("opacity") {
+            Some(part) if part <= 1.0 => (part * 100.0).round() as i32,
+            Some(percent) => percent as i32,
+            None => 100,
+        };
+        let mut app = App {
+            player: Rc::new(RefCell::new(player)),
+            presets: Presets::default(),
+            skin: None,
+            resources: resources.to_path_buf(),
+            fonts: Rc::new(Fonts::new(&resources.join("fonts"))),
+            config,
+            screens: vec![Area::new(0, 0, screen.0.max(1), screen.1.max(1))],
+            view: Area::new(0, 0, screen.0.max(1), screen.1.max(1)),
+            before: Vec::new(),
+            unsettled: false,
+            zoom,
+            on_top: settings.get("ontop") == Some("1"),
+            opacity: if opacity >= 20 { opacity.min(100) } else { 100 },
+            vis_open: false,
+            worn: None,
+            main_corner: None,
+            requests: Vec::new(),
+            menu_handler: None,
+            effects_loaded: false,
+            own: BTreeSet::new(),
+            started: false,
+            waiting: Vec::new(),
+            playlist_due: 0,
+            wheel_rows: 0.0,
+            wheel_volume: 0.0,
+            followed: None,
+            key_anchor: None,
+            pressed_at: None,
+            release: None,
+            settings,
+            options,
+        };
+        {
+            let mut player = app.player.borrow_mut();
+            let volume = app.options.volume.or(number_of(&app.settings, "volume"));
+            if let Some(volume) = volume {
+                player.set_volume(volume.clamp(0, 255));
+            }
+            if let Some(state) = app.settings.get("player") {
+                player.restore(state);
+            }
+        }
+        // the plug-ins are loaded at the start only when one was left on, so it is heard at once
+        let left_on = app.settings.get("effects").is_some_and(|state| {
+            state
+                .lines()
+                .any(|line| line.split('\t').nth(1) == Some("1"))
+        });
+        if left_on {
+            app.load_effects();
+        }
+        for id in app.options.effects.clone() {
+            app.switch_on(&id);
+        }
+        app
+    }
+
+    /// Wears the first skin. The playlist comes back at the second [`App::step`] after it, so
+    /// the skin shows before the songs are read.
+    pub fn start(&mut self) {
+        let builtin = self.builtin(if self.options.modern {
+            MODERN_SKIN
+        } else {
+            DEFAULT_SKIN
+        });
+        let last = || {
+            let kept = PathBuf::from(self.settings.get("skin")?);
+            if kept.exists() {
+                return Some(kept);
+            }
+            // a skin that came with the app when it was called Andamp, kept as a path into
+            // that app: the same skin under its name now
+            let name = kept.file_name()?.to_str()?;
+            let name = name.strip_prefix(settings::OLD_SKIN_PREFIX)?;
+            Some(self.builtin(&format!("{}{name}", settings::SKIN_PREFIX))).filter(|f| f.exists())
+        };
+        let skin = self
+            .options
+            .skin
+            .clone()
+            .or_else(|| if self.options.modern { None } else { last() })
+            .unwrap_or_else(|| builtin.clone());
+        if !self.wear(&skin) && skin != builtin {
+            // the skin asked for does not open: the app still shows itself
+            self.wear(&builtin);
+        }
+        self.started = true;
+        // the songs are read after the first step, so the skin shows before them
+        self.playlist_due = 2;
+        if self.options.show_vis {
+            self.request(Request::Vis(true));
+        }
+        if self.options.show_effects {
+            self.request(Request::Effects);
+        }
+        if self.options.show_prefs {
+            self.request(Request::Preferences);
+        }
+        self.request(Request::Menu);
+    }
+
+    /// Puts the playlist back: the songs the command line names play, else those the system
+    /// asked to open, else the playlist is as it was left, at the song it was at, not playing.
+    fn put_back_playlist(&mut self) {
+        let waiting = std::mem::take(&mut self.waiting);
+        if !self.options.songs.is_empty() {
+            self.open(&self.options.songs.clone());
+        } else if !waiting.is_empty() {
+            self.open(&waiting);
+        } else {
+            let songs = self.settings.get("songs").unwrap_or("").to_string();
+            let mut player = self.player.borrow_mut();
+            for song in songs.lines() {
+                let location = Path::new(song);
+                if is_url(song) || location.exists() {
+                    player.add_location(location);
+                }
+            }
+            player.select(number_of(&self.settings, "song").unwrap_or(0).max(0) as usize);
+        }
+    }
+
+    /// A file that comes with the app's skins, by its name.
+    fn builtin(&self, name: &str) -> PathBuf {
+        self.resources.join("skins").join(name)
+    }
+
+    /// The skins that come with the app: their file names, in order.
+    pub fn builtin_skins(&self) -> Vec<String> {
+        skins_in(&self.resources.join("skins"))
+    }
+
+    /// Where the listener's own skins are kept: in the app's folder, beside its settings.
+    /// A skin file put there is in the menu the next time the menu is made.
+    pub fn skins_folder(&self) -> Option<PathBuf> {
+        self.config.as_ref().map(|config| config.join("Skins"))
+    }
+
+    /// The listener's own skins, from [`App::skins_folder`]: their file names, in order. One
+    /// with the name of a skin that comes with the app is left out, and no more are named
+    /// than the menu has numbers for.
+    pub fn own_skins(&self) -> Vec<String> {
+        let builtin = self.builtin_skins();
+        let mut names = self
+            .skins_folder()
+            .map(|folder| skins_in(&folder))
+            .unwrap_or_default();
+        names.retain(|name| !builtin.contains(name));
+        names.truncate(command::SKINS.saturating_sub(builtin.len()));
+        names
+    }
+
+    /// The skins the menu offers, in its order: those that come with the app, then the
+    /// listener's own.
+    pub fn skins(&self) -> Vec<String> {
+        let mut names = self.builtin_skins();
+        names.extend(self.own_skins());
+        names
+    }
+
+    /// The file of the skin the menu offers as `name`.
+    pub(super) fn skin_file(&self, name: &str) -> Option<PathBuf> {
+        if self.builtin_skins().iter().any(|file| file == name) {
+            return Some(self.builtin(name));
+        }
+        let folder = self.skins_folder()?;
+        self.own_skins()
+            .iter()
+            .any(|file| file == name)
+            .then(|| folder.join(name))
+    }
+
+    fn request(&mut self, request: Request) {
+        // one is enough of those that only say something changed
+        let again = matches!(request, Request::Skin | Request::Look | Request::Menu);
+        if !(again && self.requests.contains(&request)) {
+            self.requests.push(request);
+        }
+    }
+
+    /// What the app asked of the shell since the last call, in order.
+    pub fn take_requests(&mut self) -> Vec<Request> {
+        std::mem::take(&mut self.requests)
+    }
+
+    // the look
+
+    /// Points to a layout pixel: 2 is Winamp's double size.
+    pub fn zoom(&self) -> i32 {
+        self.zoom
+    }
+
+    /// Whether the windows stay above other apps' windows.
+    pub fn on_top(&self) -> bool {
+        self.on_top
+    }
+
+    /// How much of the windows shows over what is behind them, in percent: 20 to 100.
+    pub fn opacity(&self) -> i32 {
+        self.opacity
+    }
+
+    /// Sets how many points a layout pixel is. The main window's corner stays where it is.
+    pub fn set_zoom(&mut self, zoom: i32) {
+        if zoom == self.zoom || zoom < 1 {
+            return;
+        }
+        let corner = self.main_place();
+        self.zoom = zoom;
+        let (w, h) = self.viewport();
+        let (ox, oy) = self.origin();
+        if let Some(skin) = self.skin.as_mut() {
+            skin.set_viewport(w, h);
+            // the engine first puts its windows where they fit the screen now
+            skin.step();
+            if let (Some(main), Some((x, y))) = (skin.runtime.main_window(), corner) {
+                let rect = skin.runtime.window_rect(main);
+                skin.move_windows(
+                    pixel(x - ox, zoom) - rect.left,
+                    pixel(y - oy, zoom) - rect.top,
+                );
+            }
+        }
+        // twice as large, a window can reach past what the screens show
+        self.unsettled = true;
+        self.tell_switches();
+        self.request(Request::Look);
+        self.request(Request::Menu);
+    }
+
+    /// Keeps the windows above other apps' windows, or not.
+    pub fn set_on_top(&mut self, on_top: bool) {
+        self.on_top = on_top;
+        self.tell_switches();
+        self.request(Request::Look);
+        self.request(Request::Menu);
+    }
+
+    /// Sets how much of the windows shows over what is behind them, in percent: 20 to 100.
+    pub fn set_opacity(&mut self, percent: i32) {
+        self.opacity = percent.clamp(20, 100);
+        self.request(Request::Look);
+        self.request(Request::Menu);
+    }
+
+    /// The screens are now `screens`: the part of each that the windows move on, on the
+    /// desktop, the main screen first. A shell says so before the start and whenever a screen
+    /// comes, goes, moves or changes its size. At the next [`App::step`] every window that no
+    /// screen shows any more comes back into view, a group docked together as one. An empty
+    /// list changes nothing.
+    pub fn set_screens(&mut self, screens: &[Area]) {
+        let screens: Vec<Area> = screens
+            .iter()
+            .copied()
+            .filter(|s| s.w > 0 && s.h > 0)
+            .collect();
+        if screens.is_empty() || screens == self.screens {
+            return;
+        }
+        let before = std::mem::replace(&mut self.screens, screens);
+        if self.skin.is_none() {
+            self.view = self.screens[0];
+            return;
+        }
+        // the windows were last kept in view on the screens of before the first change
+        if self.before.is_empty() {
+            self.before = before;
+        }
+        self.unsettled = true;
+    }
+
+    /// The screens, as the shell last said: the main one first.
+    pub fn screens(&self) -> &[Area] {
+        &self.screens
+    }
+
+    /// Where the viewport's top left corner is on the desktop, in points: a window the engine
+    /// has at `x`, `y` in layout pixels is at `origin + (x, y) * zoom`. It is the top left of
+    /// the screen the main window is on, on a whole layout pixel of the desktop, and moves
+    /// when the main window goes to another screen.
+    pub fn origin(&self) -> (i32, i32) {
+        let up = |v: i32| (v + self.zoom - 1).div_euclid(self.zoom) * self.zoom;
+        (up(self.view.x), up(self.view.y))
+    }
+
+    // between runs
+
+    /// Keeps what the next run starts from, and writes the settings file.
+    pub fn save(&mut self) {
+        let worn = self
+            .worn
+            .as_ref()
+            .map(|file| file.to_string_lossy().into_owned());
+        self.settings.set("skin", worn.as_deref());
+        self.settings.set("zoom", Some(&self.zoom.to_string()));
+        self.settings
+            .set("ontop", Some(if self.on_top { "1" } else { "0" }));
+        self.settings
+            .set("opacity", Some(&self.opacity.to_string()));
+        {
+            let player = self.player.borrow();
+            let songs: Vec<String> = player
+                .entries()
+                .iter()
+                .map(|e| e.path.to_string_lossy().into_owned())
+                .collect();
+            self.settings
+                .set("volume", Some(&player.volume().to_string()));
+            self.settings.set("songs", Some(&songs.join("\n")));
+            self.settings.set("song", Some(&player.index().to_string()));
+            self.settings.set("player", Some(&player.state()));
+        }
+        self.keep_places();
+        self.keep_switches();
+        self.keep_skin_state();
+        self.keep_effects();
+        if let Err(message) = self.settings.save() {
+            eprintln!("alpaca: {message}");
+        }
+    }
+
+    /// What the app would keep for the next run, in a line: for `--quit-after`.
+    pub fn summary(&self) -> String {
+        let player = self.player.borrow();
+        let status = match player.status() {
+            Status::Stopped => 0,
+            Status::Playing => 1,
+            Status::Paused => 2,
+        };
+        let mut windows: Vec<String> = self
+            .places()
+            .iter()
+            .map(|(_, (x, y))| format!("{x},{y}"))
+            .collect();
+        windows.sort();
+        format!(
+            "skin {} zoom {} on top {} opacity {} volume {} songs {} at {} status {status} position {} ms windows {windows:?}",
+            self.skin_name(),
+            self.zoom,
+            self.on_top,
+            self.opacity,
+            player.volume(),
+            player.entries().len(),
+            player.index(),
+            player.position_ms(),
+        )
+    }
+}
+
+/// `points` as whole layout pixels of `zoom` points each, the nearest.
+fn pixel(points: i32, zoom: i32) -> i32 {
+    (f64::from(points) / f64::from(zoom)).round() as i32
+}
+
+/// The whole number kept under `key`.
+fn number_of(settings: &Settings, key: &str) -> Option<i32> {
+    settings.get(key).and_then(|v| v.parse().ok())
+}
+
+/// Whether `location` is the address of a radio stream.
+fn is_url(location: &str) -> bool {
+    let lower = location.to_ascii_lowercase();
+    lower.starts_with("http://") || lower.starts_with("https://")
+}
+
+/// The skin files in `folder`: their names, ordered as a file browser has them.
+fn skins_in(folder: &Path) -> Vec<String> {
+    let mut names: Vec<String> = std::fs::read_dir(folder)
+        .map(|entries| {
+            entries
+                .flatten()
+                .map(|e| e.file_name().to_string_lossy().into_owned())
+                .collect()
+        })
+        .unwrap_or_default();
+    names.retain(|name| {
+        !name.starts_with('.') && location_kind(Path::new(name)) == LocationKind::Skin
+    });
+    names.sort_by(|a, b| crate::vis::by_name(a, b));
+    names
+}

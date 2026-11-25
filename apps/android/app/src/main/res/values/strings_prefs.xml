@@ -1,0 +1,483 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AndroidAutoPrefs.kt -->
+    <string name="prefs_android_auto_skin_section">Skin</string>
+    <!-- The Android Auto row's line: what the page holds. -->
+    <string name="prefs_android_auto_summary">Status, skin, playlist and versions</string>
+    <string name="prefs_android_auto_skin_note">In Android Auto the main window wears this skin. Default keeps the one you picked for the player.</string>
+    <string name="prefs_android_auto_skin_heading">Skin in Android Auto</string>
+    <string name="prefs_android_auto_list_section">Playlist</string>
+    <string name="prefs_android_auto_status_section">Status</string>
+    <string name="prefs_android_auto_versions_section">Versions</string>
+    <string name="prefs_android_auto_protocol">Protocol %1$d</string>
+    <string name="prefs_android_auto_companion_name" translatable="false">Autoamp</string>
+    <string name="prefs_android_auto_from_play">Android Auto will show it in the car</string>
+    <string name="prefs_android_auto_not_from_play">Android Auto won\'t show it in a car</string>
+    <string name="prefs_android_auto_not_from_play_about">Android Auto shows Autoamp in a car only when Google Play installed it.</string>
+    <string name="prefs_android_auto_matches">Compatible with this Alpaca</string>
+    <string name="prefs_android_auto_older">Update Autoamp</string>
+    <string name="prefs_android_auto_older_about">It is older than this Alpaca, so some things may not work in the car.</string>
+    <string name="prefs_android_auto_newer">Update Alpaca</string>
+    <string name="prefs_android_auto_newer_about">It is newer than this Alpaca, so some things may not work in the car.</string>
+
+    <!-- EffectsPage.kt -->
+    <string name="prefs_effects_unavailable_summary">This playback backend does not run effects.</string>
+    <!-- The Effects row's line: what the page holds. -->
+    <string name="prefs_effects_summary">Effect chain, plug-ins and peak limiter</string>
+    <string name="prefs_effects_unavailable">This playback backend doesn\'t run effects.</string>
+    <string name="prefs_effects_input_label">Input · before all effects</string>
+    <string name="prefs_effects_label">Effects</string>
+    <string name="prefs_effects_order_note">Audio flows top to bottom — the order changes the sound.</string>
+    <string name="prefs_effects_output_label">Output · after all effects</string>
+    <string name="prefs_effects_manage_plugins">Manage plug-ins</string>
+    <!-- Under Manage plug-ins: what its page holds. -->
+    <string name="prefs_effects_manage_plugins_summary">Plug-ins you added, and adding more</string>
+
+    <!-- LicencesPage.kt -->
+    <string name="prefs_licences_note">Alpaca is built on other people\'s work. Each entry links to its source, where the full license text lives.</string>
+
+    <!-- LimiterCard.kt -->
+    <string name="prefs_limiter_title">Peak limiter</string>
+    <string name="prefs_limiter_clipped">Peaks cut off just now</string>
+    <string name="prefs_limiter_clipped_off">Peaks cut off just now · turn on to prevent</string>
+    <!-- The gain reduction, already written as a number with one decimal. -->
+    <string name="prefs_limiter_holding">Holding peaks · %1$s dB</string>
+    <string name="prefs_limiter_quiet">Keeps loud peaks under −1 dB</string>
+    <string name="prefs_limiter_off">Off · loud peaks are cut off</string>
+
+    <!-- ListPrefs.kt -->
+    <string name="prefs_lists_font_title">List font</string>
+    <string name="prefs_lists_font_skin_about">The skin\'s own pixel letters, like the song title in the main window. A title in a script the skin has no letters for keeps the regular font.</string>
+    <string name="prefs_lists_font_regular_about">A regular font, drawn smooth, with small and capital letters.</string>
+    <string name="prefs_lists_font_skin">Skin</string>
+    <string name="prefs_lists_font_regular">Regular</string>
+    <string name="prefs_lists_row_height_title">Row height</string>
+    <string name="prefs_lists_row_height_classic_about">Rows as tight as Winamp\'s. Pick a taller one if they are hard to tap.</string>
+    <string name="prefs_lists_row_height_taller_about">Taller rows in the playlist, the library and the skin list, with more room for a finger.</string>
+    <string name="prefs_lists_row_classic">Classic</string>
+    <string name="prefs_lists_row_roomy">Roomy</string>
+    <string name="prefs_lists_row_large">Large</string>
+    <!-- ListPrefs.kt: the mark of a row's source in the playlist, offered with more than one source -->
+    <string name="prefs_lists_marks_title">Source in the playlist</string>
+    <string name="prefs_lists_marks_off_about">Playlist rows do not say which source plays them.</string>
+    <string name="prefs_lists_marks_before_about">Each row shows its source\'s mark between its number and its title.</string>
+    <string name="prefs_lists_marks_after_about">Each row shows its source\'s mark in front of its length.</string>
+    <string name="prefs_lists_marks_off">Off</string>
+    <string name="prefs_lists_marks_before">Before</string>
+    <string name="prefs_lists_marks_after">After</string>
+    <string name="prefs_rows_preview_section">Preview</string>
+    <!-- The Song rows row's line: what the page holds. -->
+    <string name="prefs_rows_summary">What a song row shows, and in what order</string>
+    <string name="prefs_rows_blocks_section">What a row shows</string>
+    <string name="prefs_rows_blocks_about">Hold a block to drag it. When a song lacks a field, the text after that field is left out with it.</string>
+    <string name="prefs_rows_before">Text before</string>
+    <string name="prefs_rows_between">Text between</string>
+    <string name="prefs_rows_after">Text after</string>
+    <string name="prefs_rows_add_section">Add a block</string>
+    <string name="prefs_rows_add_about">Fields the library has for at least one song.</string>
+    <string name="prefs_rows_reset">Back to artist - title</string>
+    <string name="prefs_rows_remove">Remove %1$s</string>
+    <string name="prefs_rows_field_artist">Artist</string>
+    <string name="prefs_rows_field_title">Title</string>
+    <string name="prefs_rows_field_album">Album</string>
+    <string name="prefs_rows_field_number">Track number</string>
+    <string name="prefs_rows_field_year">Year</string>
+    <string name="prefs_rows_field_genre">Genre</string>
+
+    <!-- MilkdropScreen.kt -->
+    <string name="prefs_milkdrop_presets_section">Presets</string>
+    <string name="prefs_milkdrop_pack_loading">The pack is loading, or the plug-in window is closed.</string>
+    <!-- The search field over the preset list. -->
+    <string name="prefs_milkdrop_search_hint">Search presets and folders</string>
+    <string name="prefs_milkdrop_search_clear">Clear the search</string>
+    <!-- What was typed, when no preset has every word of it. -->
+    <string name="prefs_milkdrop_search_none">No preset matches “%1$s”.</string>
+    <!-- How many presets match the search, and how many the list holds. -->
+    <plurals name="prefs_milkdrop_search_count">
+        <item quantity="one">%1$d of %2$d preset matches.</item>
+        <item quantity="other">%1$d of %2$d presets match.</item>
+    </plurals>
+    <!-- The tab beside Presets, with the plug-in's settings. -->
+    <string name="prefs_milkdrop_settings_tab">Settings</string>
+    <!-- The source chip that plays the favorites; how many there are. -->
+    <string name="prefs_milkdrop_favorites_chip">Favorites (%1$d)</string>
+    <plurals name="prefs_milkdrop_favorites_count">
+        <item quantity="one">%1$d favorite, from any pack. Next and Shuffle stay among them.</item>
+        <item quantity="other">%1$d favorites, from any pack. Next and Shuffle stay among them.</item>
+    </plurals>
+    <!-- The plug-in's idle visual, named as its menu does. -->
+    <string name="prefs_milkdrop_idle_playing">The %1$s is playing. Pick your favorites or a pack above.</string>
+    <!-- The plug-in's idle visual, named as its menu does. -->
+    <string name="prefs_milkdrop_idle_no_favorites">The %1$s is playing. Pick a pack above, or import one under Settings.</string>
+    <!-- How many presets, and the pack they are in. -->
+    <plurals name="prefs_milkdrop_pack_count">
+        <item quantity="one">%1$d preset in %2$s. Tap a star to add a preset to your favorites.</item>
+        <item quantity="other">%1$d presets in %2$s. Tap a star to add a preset to your favorites.</item>
+    </plurals>
+
+    <!-- Notices.kt -->
+    <string name="prefs_notice_projectm_what">The Milkdrop visualizer engine, rendering .milk presets.</string>
+    <!-- The pinned projectM version, twice. -->
+    <string name="prefs_notice_projectm_obligation">Alpaca links projectM %1$s dynamically, as a separate library in the app, so it can be replaced. The source for that exact revision is tag v%1$s at the address above, and the glue Alpaca builds around it is in its own repository. No changes were made to projectM.</string>
+    <string name="prefs_notice_avs_what">Winamp\'s visualizer, reimplemented in Kotlin from Nullsoft\'s released source.</string>
+    <string name="prefs_notice_avs_decoder_what">The .avs preset format\'s framing and field layouts, as the preset reader follows them.</string>
+    <string name="prefs_notice_projectm_eval_what">Evaluates the expressions AVS presets are scripted in, built into the AVS library.</string>
+    <string name="prefs_notice_milkdrop_what">Ryan Geiss\'s original, whose .milk presets projectM renders.</string>
+    <string name="prefs_notice_webamp_what">Its sprite maps are the ground truth for every coordinate in the skinned windows. Its transcription of std.mi lists the script calls the modern-skin engine answers, and its description of the script bytecode is the layout the engine reads.</string>
+    <string name="prefs_notice_liberation_sans_what">Stands in for Arial, metric-compatible: the playlist font that PLEDIT.TXT names, and in Winamp modern skins.</string>
+    <string name="prefs_notice_liberation_sans_obligation">Bundled unmodified, under a name the license permits.</string>
+    <string name="prefs_notice_dejavu_what">Stands in for the Windows fonts that Winamp modern skins name without carrying them.</string>
+    <string name="prefs_notice_dejavu_obligation">Bundled unmodified, with its license text.</string>
+    <string name="prefs_notice_luaj_what">Runs the .lua files that describe effects, in a sandbox.</string>
+    <string name="prefs_notice_androidx_what">The UI toolkit, navigation, lifecycle, and Media3 for local playback.</string>
+    <string name="prefs_notice_kotlin_what">The language and its concurrency library.</string>
+    <string name="prefs_notice_material_what">Its color engine grows the modern screens\' palette from the loaded skin.</string>
+    <string name="prefs_notice_coil_what">Loads and caches the skin museum\'s thumbnails.</string>
+    <string name="prefs_notice_okhttp_what">The one HTTP client, for the skin museum and for radio streams.</string>
+    <!-- The licenses screen: what walkit, the modern skin engine in native code, does here. -->
+    <string name="prefs_notice_walkit_what">The modern skin engine, in native code: it runs the skins, written in Rust.</string>
+
+    <!-- Store.kt (storePlay) -->
+    <string name="prefs_notice_play_billing_what">Takes the tips on the Support Alpaca page, through Google Play.</string>
+    <string name="prefs_notice_play_billing_obligation">This library is not open source. Alpaca\'s license carries an additional permission to combine Alpaca with it and to distribute the result.</string>
+
+    <!-- OverlayPrefs.kt -->
+    <string name="prefs_overlay_grant">Allow drawing over other apps</string>
+    <!-- The opacity Android caps the floating window at, as a whole percentage. -->
+    <string name="prefs_overlay_cap_note">Android may show the floating window at %1$d%% opacity.</string>
+
+    <!-- PackPrefs.kt -->
+    <string name="prefs_pack_uninstalled">Uninstalled, and its tracks are skipped</string>
+    <string name="prefs_pack_not_installed">Not installed - see More sources below</string>
+    <string name="prefs_pack_too_old">Installed, but too old for this version of Alpaca</string>
+    <string name="prefs_pack_too_new">Installed, but made for a newer version of Alpaca</string>
+    <string name="prefs_pack_not_signed_in">Not signed in</string>
+    <!-- The source's name. -->
+    <string name="prefs_pack_notice_outdated">%1$s is set up for an older Alpaca and is not asked to play anything. A newer one puts its tracks back.</string>
+    <string name="prefs_pack_notice_ahead">%1$s is set up for a newer Alpaca and is not asked to play anything. Updating Alpaca puts its tracks back.</string>
+    <string name="prefs_pack_update">Update %1$s</string>
+
+    <!-- PalettePrefs.kt -->
+    <string name="prefs_palette_title">Match wallpaper colors</string>
+    <string name="prefs_palette_on">Alpaca Dark and Alpaca Light take their colors from your wallpaper, like the rest of the phone.</string>
+    <string name="prefs_palette_off">Alpaca Dark and Alpaca Light keep their own colors.</string>
+
+    <!-- PlayerPage.kt -->
+    <string name="prefs_player_windows_section">Windows</string>
+    <string name="prefs_player_lists_section">Lists</string>
+    <string name="prefs_player_touch_section">Touch</string>
+    <string name="prefs_player_colors_section">Colors</string>
+    <!-- The heading of the last section on Preferences > Player, over the modern skins switch. -->
+    <string name="prefs_player_skins_section">Skins</string>
+    <!-- The Player row's line: what the page holds. -->
+    <string name="prefs_player_summary_all_skins">Windows, lists, touch, colors and skins</string>
+    <!-- As prefs_player_summary_all_skins, on a phone that cannot take colors from the wallpaper. -->
+    <string name="prefs_player_summary_no_colors_skins">Windows, lists, touch and skins</string>
+
+    <!-- ModernSkinPrefs.kt: the Skins section on Preferences > Player -->
+    <!-- The switch that lets Winamp modern skins be added and worn. -->
+    <string name="prefs_modern_skins_title">Modern skins (beta)</string>
+    <!-- Under the modern skins switch while it is on. -->
+    <string name="prefs_modern_skins_on">Winamp modern skins (.wal) can be added and worn, as well as classic ones. Some may look or work a little differently than in Winamp. Press and hold a modern skin to open Alpaca\'s menu. Switching this off puts your last classic skin back on.</string>
+    <!-- Under the modern skins switch while it is off. -->
+    <string name="prefs_modern_skins_off">Only classic skins (.wsz) can be added. Switch this on to add and wear Winamp modern skins (.wal) too. Modern skins you added before stay hidden until then.</string>
+    <!-- A note under the modern skins switch: what wears a modern skin and what keeps a classic one. -->
+    <string name="prefs_modern_skins_note">Only the player wears a modern skin. The menus, Media Library, Skin Browser, widget and Android Auto keep your last classic skin, unless you picked another one for the widget or Android Auto. While a modern skin is worn, Playlist Editor, Equalizer, Double Size and Visualization options are grayed out in the menu, because the skin draws the player\'s windows and visualizer.</string>
+    <!-- The switch under the modern skins switch, shown while that one is on: modern skins shown at an in-between size are drawn with hard edges. "An in-between size" in the two texts below means a size that is not a whole number of times the skin's size, such as 2.5 times rather than exactly 2 or 3 times; it does not mean an odd number. "Uneven in width" means some strokes come out thicker than others. -->
+    <string name="prefs_sharp_pixels_title">Sharp pixels</string>
+    <!-- Under the sharp pixels switch while it is on. -->
+    <string name="prefs_sharp_pixels_on">Crisp edges, but some letters and lines come out uneven in width. This changes only modern skins that Alpaca shows at an in-between size, such as 2.5 times, to fit your screen.</string>
+    <!-- Under the sharp pixels switch while it is off. -->
+    <string name="prefs_sharp_pixels_off">Smooth, but slightly blurred. Switch this on for crisp edges; some letters and lines then come out uneven in width. This changes only modern skins that Alpaca shows at an in-between size, such as 2.5 times, to fit your screen.</string>
+    <string name="prefs_windows_apart_title">Windows apart</string>
+    <string name="prefs_windows_apart_on">Each window of a modern skin sits where you put it, as on a desktop: drag a window by its title bar, and it docks to the others and to the edges as it does in Winamp.</string>
+    <string name="prefs_windows_apart_off">The windows of a modern skin sit in one stack under the main window. Switch this on to put each window where you like, as on a desktop.</string>
+
+    <!-- PluginsSection.kt -->
+    <string name="prefs_plugins_intro">Lua audio plug-ins. Alpaca keeps its own copy, so the original file can be moved or deleted.</string>
+    <string name="prefs_plugins_adding">Adding…</string>
+    <string name="prefs_plugins_add">Add plug-in</string>
+    <string name="prefs_plugins_builtin_always">The effects that come with Alpaca are always in the rack.</string>
+    <string name="prefs_plugins_none">No plug-ins added</string>
+    <string name="prefs_plugins_none_hint">The effects that come with Alpaca are already in the rack. Add a .lua file for more.</string>
+    <!-- The remove button's spoken name; the plug-in's name. -->
+    <string name="prefs_plugins_remove_named">Remove %1$s</string>
+    <string name="prefs_plugins_cannot_run">Can\'t run on this track\'s audio format.</string>
+    <string name="prefs_plugins_remove_question">Remove %1$s?</string>
+    <string name="prefs_plugins_remove_body">Its saved settings will be deleted too.</string>
+    <string name="prefs_plugins_removed">%1$s removed</string>
+    <string name="prefs_plugins_remove">Remove</string>
+    <string name="prefs_plugins_cancel">Cancel</string>
+    <string name="prefs_plugins_refused_title">Can\'t add that plug-in</string>
+    <string name="prefs_plugins_ok">OK</string>
+    <string name="prefs_plugins_added_title">Plug-in added</string>
+    <string name="prefs_plugins_added_body">It is at the end of the rack in Effects, switched off.</string>
+    <string name="prefs_plugins_updated_title">Plug-in updated</string>
+    <string name="prefs_plugins_updated_body">It keeps its place in the rack and its settings.</string>
+    <!-- The version it replaces. -->
+    <string name="prefs_plugins_updated_body_replacing">Replaces version %1$s. It keeps its place in the rack and its settings.</string>
+    <string name="prefs_plugins_unchanged_title">Already added</string>
+    <string name="prefs_plugins_unchanged_body">This exact file is already installed. Nothing changed.</string>
+    <string name="prefs_plugins_offer_title">Add this plug-in?</string>
+    <!-- Where a link-offered plug-in came from. -->
+    <string name="prefs_plugins_offer_from">From %1$s</string>
+    <string name="prefs_plugins_offer_add">Add</string>
+    <string name="prefs_plugins_replace_question">Replace %1$s?</string>
+    <!-- The installed plug-in's name and its version in brackets, then the incoming file's name and its version in brackets. -->
+    <string name="prefs_plugins_replace_body">%1$s %2$s is installed. This file is %3$s %4$s — it takes over the same place in the rack, settings included.</string>
+    <string name="prefs_plugins_replace">Replace</string>
+    <string name="prefs_plugins_credit_version">version %1$s</string>
+    <string name="prefs_plugins_credit_by">by %1$s</string>
+    <string name="prefs_plugins_credit_none">no version declared</string>
+    <string name="prefs_plugins_more_title">More effects</string>
+    <string name="prefs_plugins_more_summary">Effect plug-ins to install from Alpaca\'s site</string>
+
+    <!-- PreferencesScreen.kt -->
+    <string name="prefs_page_effects">Effects</string>
+    <string name="prefs_page_plugins">Plug-ins</string>
+    <string name="prefs_page_visualizer">Visualizer</string>
+    <string name="prefs_page_player">Player</string>
+    <string name="prefs_page_rows">Song rows</string>
+    <string name="prefs_page_widget">Home screen widget</string>
+    <string name="prefs_page_android_auto">Android Auto</string>
+    <string name="prefs_page_support">Support Alpaca</string>
+    <string name="prefs_page_about">About Alpaca</string>
+    <string name="prefs_page_licences">Open-source licenses</string>
+    <!-- The licenses row's line: what the page holds. -->
+    <string name="prefs_about_licences_summary">The projects Alpaca is built on, and their licenses</string>
+    <!-- The About row's line: what the page holds. -->
+    <string name="prefs_about_summary">Version and open-source licenses</string>
+    <string name="prefs_title">Preferences</string>
+    <string name="prefs_sound_section">Sound</string>
+    <string name="prefs_look_section">Look &amp; feel</string>
+    <string name="prefs_about_note">Alpaca %1$s — a Winamp 2.8 replica, not affiliated with Winamp or its owners.</string>
+
+    <!-- PrefsTopBar.kt -->
+    <string name="prefs_top_back">Back to preferences</string>
+    <string name="prefs_back_to_player">Back to the player</string>
+
+    <!-- RackControls.kt -->
+    <!-- The info mark's spoken name; the control's name. -->
+    <string name="prefs_rack_about_control">About %1$s</string>
+
+    <!-- RackDigest.kt -->
+    <string name="prefs_rack_default_settings">Default settings</string>
+    <!-- The named controls, with more left unnamed. -->
+    <string name="prefs_rack_digest_more">%1$s …</string>
+
+    <!-- RackSection.kt -->
+    <!-- The badge of the input stage, where the effects carry their number. -->
+    <string name="prefs_rack_input_badge">In</string>
+    <string name="prefs_rack_hide_controls">Hide controls</string>
+    <string name="prefs_rack_show_controls">Show controls</string>
+    <string name="prefs_rack_drag_to_move">Drag to move %1$s</string>
+    <string name="prefs_rack_undo">Undo</string>
+    <string name="prefs_rack_more_for">More for %1$s</string>
+    <string name="prefs_rack_move_up">Move up</string>
+    <string name="prefs_rack_move_down">Move down</string>
+    <string name="prefs_rack_save_settings">Save settings</string>
+    <string name="prefs_rack_settings_saved">%1$s settings saved</string>
+    <string name="prefs_rack_restore_settings">Restore saved settings</string>
+    <string name="prefs_rack_settings_restored">%1$s settings restored</string>
+    <string name="prefs_rack_reset">Reset to defaults</string>
+    <string name="prefs_rack_reset_done">%1$s reset to defaults</string>
+
+    <!-- ShadePrefs.kt -->
+    <string name="prefs_shade_title">Keep windows open</string>
+    <string name="prefs_shade_on">Windows stay their full size. The small button beside the close button, and tapping a title bar twice, no longer fold them away.</string>
+    <string name="prefs_shade_off">A window can fold down to a thin bar. Switch this on if that keeps happening when you did not mean it to.</string>
+
+    <!-- SkinPick.kt -->
+    <string name="prefs_skin_default">Default</string>
+    <string name="prefs_skin_own">The player\'s own skin</string>
+    <string name="prefs_skin_instead">Instead of the player\'s own skin</string>
+    <string name="prefs_skin_close">Close</string>
+
+    <!-- SourcesPrefs.kt -->
+    <string name="prefs_sources_section">Music sources</string>
+    <string name="prefs_sources_more_title">More sources</string>
+    <string name="prefs_sources_more_summary">Other places Alpaca can play music from, and how to add them</string>
+    <!-- The permission's name, as the phone calls it. -->
+    <string name="prefs_phone_permission_off">%1$s permission is off</string>
+    <string name="prefs_phone_allow">Allow %1$s to show the music on this phone</string>
+    <!-- The phone row's line while the music can be read: what the page holds. -->
+    <string name="prefs_phone_summary">Access, library and scanning</string>
+    <string name="prefs_phone_counting">Counting…</string>
+    <string name="prefs_phone_access_section">Access</string>
+    <string name="prefs_phone_library_section">Library</string>
+    <string name="prefs_phone_tracks">Tracks</string>
+    <string name="prefs_phone_artists">Artists</string>
+    <string name="prefs_phone_albums">Albums</string>
+    <string name="prefs_phone_playing_time">Playing time</string>
+    <string name="prefs_phone_on_storage">On storage</string>
+    <string name="prefs_phone_scan_section">Scan</string>
+    <string name="prefs_phone_scan_note">Android keeps track of the music on this phone by itself, but not always straight away. A scan asks it to look through the music folders now, so music you have just copied over shows up.</string>
+    <string name="prefs_phone_scan_now">Scan now</string>
+    <string name="prefs_phone_scanning">Scanning…</string>
+    <string name="prefs_source_settings_section">Settings</string>
+    <!-- The source's name. -->
+    <string name="prefs_source_settings_title">%1$s settings</string>
+    <string name="prefs_source_settings_summary">Account and other options, in the source\'s app</string>
+    <!-- A source's row line: what its page holds while it plays and asks nothing of the listener. -->
+    <string name="prefs_source_summary">Account and settings</string>
+    <!-- A source's row line, when its page shows the skin and no update check. -->
+    <string name="prefs_source_summary_skin">Account, settings and skin</string>
+    <!-- A source's row line, when its page shows the update check and no skin. -->
+    <string name="prefs_source_summary_updates">Account, settings and updates</string>
+    <!-- A source's row line, when its page shows the skin and the update check. -->
+    <string name="prefs_source_summary_skin_updates">Account, settings, skin and updates</string>
+    <string name="prefs_source_skin_section">Skin</string>
+    <string name="prefs_source_updates_section">Updates</string>
+    <string name="prefs_source_skin_note">While a track from %1$s is playing, the player wears this skin. Default keeps the one you picked for the player.</string>
+    <string name="prefs_source_skin_heading">Skin for %1$s</string>
+    <string name="prefs_updates_checking">Looking for a newer version…</string>
+    <string name="prefs_updates_current">Version %1$s, the newest there is.</string>
+    <string name="prefs_updates_available">Version %1$s is out.</string>
+    <!-- The newest version, then the installed one. -->
+    <string name="prefs_updates_available_over">Version %1$s is out (this is %2$s).</string>
+    <string name="prefs_updates_how">Its download page opens in your browser; install it the way you installed this one.</string>
+    <string name="prefs_updates_open">Open download page</string>
+    <string name="prefs_updates_failed">Could not check for a newer version.</string>
+    <string name="prefs_updates_retry">Try again</string>
+
+    <!-- SupportPrefs.kt -->
+    <string name="prefs_support_intro">Alpaca is free and has no ads. If you enjoy it, you can leave a tip. A tip unlocks nothing: everything in Alpaca stays free, with or without one.</string>
+    <!-- The Support row's line in a build that points to the website instead. -->
+    <string name="prefs_support_summary_outside">How to support Alpaca on its website</string>
+    <!-- The Support row's line where Google Play sells the tips: what the page holds. -->
+    <string name="prefs_support_summary">What a tip is for, and how to give one</string>
+    <string name="prefs_support_closed">Tips are not available on this phone right now.</string>
+    <string name="prefs_support_play_note">Google Play takes the payment. A tip can be given more than once.</string>
+    <string name="prefs_support_given">You have supported Alpaca. Thank you.</string>
+    <string name="prefs_support_outside_intro">Alpaca is free and has no ads. If you enjoy it, you can support it on its website. That unlocks nothing: everything in Alpaca stays free, with or without it.</string>
+    <!-- The site's host name. -->
+    <string name="prefs_support_open_site">Open %1$s</string>
+    <string name="prefs_support_note_thanks">Thank you! Your tip arrived.</string>
+    <string name="prefs_support_note_waiting">Thank you! Your tip arrives when the payment has finished.</string>
+    <string name="prefs_support_note_failed">The tip did not go through. Please try again later.</string>
+
+    <!-- TapAssistPrefs.kt -->
+    <string name="prefs_tap_assist_title">Tap assist</string>
+    <string name="prefs_tap_assist_on">Hold a small button and a magnified view opens above your finger. Slide to the one you meant and let go.</string>
+    <string name="prefs_tap_assist_off">Buttons answer a plain tap only. Switch this on if the small ones are hard to hit.</string>
+
+    <!-- VisualizerPrefs.kt -->
+    <string name="prefs_visualizer_favorites">Favorites</string>
+    <string name="prefs_visualizer_favorites_none">The presets you star, from any pack, played as one. None yet.</string>
+    <plurals name="prefs_visualizer_favorites_summary">
+        <item quantity="one">%1$d preset you starred, from any pack</item>
+        <item quantity="other">%1$d presets you starred, from any pack</item>
+    </plurals>
+    <string name="prefs_visualizer_plugin_section">Plug-in</string>
+    <!-- The Visualizer row's line: what the page holds. -->
+    <string name="prefs_visualizer_summary">Plug-in, preset packs, favorites, presets and shuffle</string>
+    <string name="prefs_visualizer_avs_blurb">Winamp\'s own visualizer, rebuilt. Runs real .avs presets you import.</string>
+    <string name="prefs_visualizer_milkdrop_blurb">libprojectM. Runs real .milk presets you import.</string>
+    <string name="prefs_visualizer_packs_section">Preset packs</string>
+    <!-- The file's name. -->
+    <string name="prefs_visualizer_import_empty">\"%1$s\" held no presets.</string>
+    <!-- The file's name and how many files are written so far. -->
+    <string name="prefs_visualizer_importing">Importing %1$s... %2$d files</string>
+    <string name="prefs_visualizer_packs_note_avs">Packs are .zip files of .avs presets. They are copied into the app, because AVS opens presets by path.</string>
+    <string name="prefs_visualizer_packs_note_milkdrop">Packs are .zip files of .milk presets. They are copied into the app, because projectM opens presets by path.</string>
+    <string name="prefs_visualizer_import">Import pack...</string>
+    <string name="prefs_visualizer_idle_avs">This app\'s own. No import needed.</string>
+    <string name="prefs_visualizer_idle_milkdrop">The one built into libprojectM. No import needed.</string>
+    <string name="prefs_visualizer_pack_presets">%1$d presets</string>
+    <string name="prefs_visualizer_remove">Remove</string>
+    <string name="prefs_visualizer_browse">Browse presets</string>
+    <string name="prefs_visualizer_browse_count">Browse %1$d presets</string>
+    <string name="prefs_visualizer_shuffle_title">Shuffle presets</string>
+    <string name="prefs_visualizer_shuffle_summary">Otherwise they run in the order they are on disk.</string>
+
+    <!-- VolumePrefs.kt -->
+    <string name="prefs_volume_title">Independent volume</string>
+    <string name="prefs_volume_own">The slider is Alpaca\'s alone and the phone\'s volume stays put</string>
+    <string name="prefs_volume_device">The slider moves the phone\'s media volume, like the rocker</string>
+
+    <!-- WidgetPrefs.kt -->
+    <string name="prefs_widget_vis_analyzer">Bars that move with the music, on a short loop</string>
+    <string name="prefs_widget_vis_oscilloscope">A wavy line that moves with the music, on a short loop</string>
+    <string name="prefs_widget_vis_off">Nothing moves, and nothing is spent on it</string>
+    <string name="prefs_widget_visualizer_title">Visualizer</string>
+    <!-- The widget row's line: what the page holds. -->
+    <string name="prefs_widget_summary">Visualizer, refresh rate, size, taps and skin</string>
+    <string name="prefs_widget_refresh_title">Refresh rate</string>
+    <string name="prefs_widget_size_title">Size</string>
+    <string name="prefs_widget_logo_title">Only the logo opens Alpaca</string>
+    <string name="prefs_widget_logo_summary">Tapping the player does nothing, so a near miss on a button stays on the home screen.</string>
+    <string name="prefs_widget_volume_title">Volume control</string>
+    <string name="prefs_widget_volume_summary">Lets the volume slider be tapped. It sits close to the seek bar and is easy to hit by mistake.</string>
+    <string name="prefs_widget_skin_section">Skin</string>
+    <string name="prefs_widget_skin_note">The widget wears this skin, even while the player wears a music source\'s skin. Default follows the player.</string>
+    <string name="prefs_widget_skin_heading">Skin for the widget</string>
+    <string name="prefs_widget_limits_title">Good to know</string>
+    <string name="prefs_widget_limit_corners_title">The corners are trimmed</string>
+    <string name="prefs_widget_limit_corners_body">Android rounds off the corners of every widget, from every app, and there is no way to turn that off. A smaller player would leave room to spare, but it would also make the buttons harder to hit, so it keeps its size.</string>
+    <string name="prefs_widget_limit_icon_title">It can be replaced by an icon</string>
+    <string name="prefs_widget_limit_icon_body">To save battery, Android sometimes stops apps it thinks you are done with. When that happens the home screen shows an Alpaca icon in place of the player - one tap brings it back. It should not happen often.</string>
+    <string name="prefs_widget_limit_loop_title">The bars are on a loop</string>
+    <string name="prefs_widget_limit_loop_body">About half a second of the music is turned into pictures, and the home screen plays those round and round until a fresh half second replaces them. So the bars move with the music without ever being quite in step with it. Keeping up beat for beat would mean sending new pictures many times a second, which is what flattens a battery.</string>
+    <string name="prefs_widget_limit_running_title">The bars need the player running</string>
+    <string name="prefs_widget_limit_running_body">Tapping the position or volume bar tells the player to move, so if Android has cleared Alpaca from memory there is nothing to tell it and the tap does nothing. The buttons still work: pressing one starts the player again, and the bars follow.</string>
+
+    <!-- WidgetSettings.kt -->
+    <string name="prefs_widget_size_fill">Fill</string>
+    <string name="prefs_widget_size_fill_summary">Grows to the edge of the space. The art is scaled to an in-between size, so it looks slightly softer.</string>
+    <string name="prefs_widget_size_largest">Largest</string>
+    <string name="prefs_widget_size_largest_summary">The largest size that keeps the art perfectly sharp. Leaves a little space around it.</string>
+    <string name="prefs_widget_refresh_low">Low</string>
+    <string name="prefs_widget_refresh_low_summary">Kindest to the battery. The time moves in jumps, and the visualizer catches up with the song now and then.</string>
+    <!-- With the visualizer off, when the clock is all that moves. -->
+    <string name="prefs_widget_refresh_low_time_only">Kindest to the battery. The time moves in jumps rather than ticking.</string>
+    <string name="prefs_widget_refresh_medium">Medium</string>
+    <string name="prefs_widget_refresh_medium_summary">A fair balance. The time ticks along, and the visualizer catches up with the song every few seconds.</string>
+    <string name="prefs_widget_refresh_high">High</string>
+    <string name="prefs_widget_refresh_high_summary">Uses the most battery. The time ticks, and the visualizer catches up with the song as often as a widget can.</string>
+    <!-- Medium and High with the visualizer off: both step the clock every second. -->
+    <string name="prefs_widget_refresh_ticking_time_only">The time ticks along, second by second.</string>
+
+    <!-- PresetDetailsPage.kt: the page about one preset -->
+    <string name="preset_details_open">About this preset</string>
+    <string name="preset_details_back">Back to the list</string>
+    <string name="preset_details_reading">Reading the preset…</string>
+    <!-- The author, as the preset's file name gives it. -->
+    <string name="preset_details_by">by %1$s</string>
+    <string name="preset_details_play">Play</string>
+    <string name="preset_details_forget">Stop skipping it</string>
+    <string name="preset_details_file_section">File</string>
+    <string name="preset_details_pack">Pack</string>
+    <string name="preset_details_folder">Folder</string>
+    <string name="preset_details_size">Size</string>
+    <string name="preset_details_sha256">SHA-256</string>
+    <string name="preset_details_milkdrop_section">Milkdrop</string>
+    <string name="preset_details_version">Preset version</string>
+    <string name="preset_details_shader_model">Pixel shader model</string>
+    <!-- The two shaders' models, each a number or the word for none. -->
+    <string name="preset_details_shader_model_value">warp %1$s, composite %2$s</string>
+    <string name="preset_details_warp">Warp shader</string>
+    <string name="preset_details_comp">Composite shader</string>
+    <string name="preset_details_per_frame">Per-frame equations</string>
+    <string name="preset_details_per_pixel">Per-pixel equations</string>
+    <string name="preset_details_waves">Custom waves</string>
+    <string name="preset_details_shapes">Custom shapes</string>
+    <string name="preset_details_q">q variables</string>
+    <string name="preset_details_none">None</string>
+    <string name="preset_details_textures_section">Textures</string>
+    <string name="preset_details_texture_found">In the pack</string>
+    <string name="preset_details_texture_missing">Not in the pack</string>
+    <!-- A shader that asks for a random picture gets one of the pack's. -->
+    <string name="preset_details_texture_random">A random one from the pack</string>
+    <string name="preset_details_settings_section">Settings in the file</string>
+    <string name="preset_details_avs_section">AVS</string>
+    <string name="preset_details_clears">Starts each frame from black</string>
+    <string name="preset_details_yes">Yes</string>
+    <string name="preset_details_no">No</string>
+    <string name="preset_details_components">Components</string>
+    <string name="preset_details_not_shown">Not shown</string>
+    <string name="preset_details_unparsed">This file could not be read as a preset.</string>
+    <plurals name="preset_details_lines">
+        <item quantity="one">%1$d line</item>
+        <item quantity="other">%1$d lines</item>
+    </plurals>
+</resources>

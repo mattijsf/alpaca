@@ -1,0 +1,120 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package nl.mattix.alpaca.wal
+
+/**
+ * A button action Winamp answered outside the skin, as [nl.mattix.walkit.SkinHost.hostAction]
+ * passes it on, sorted by what it asks of the host. Which window a [Show] or [Toggle] can reach,
+ * and what the host does for each action, is the host's.
+ */
+internal sealed interface HostAction {
+    /**
+     * The main menu: the skin's menu button, whose param names the part of the menu bar it opens
+     * ([section], as `wa5:options`), and the system and control menu buttons, which name none.
+     */
+    data class Menu(
+        val section: String?,
+    ) : HostAction
+
+    /** The main window's close button. */
+    data object Close : HostAction
+
+    /** The main window's minimize button. */
+    data object Minimize : HostAction
+
+    /** The visualizer's menu. */
+    data object VisualizationMenu : HostAction
+
+    /** The visualizer or the video in full screen. */
+    data object Fullscreen : HostAction
+
+    /** The visualizer's next preset. */
+    data object NextPreset : HostAction
+
+    /** The visualizer's previous preset. */
+    data object PreviousPreset : HostAction
+
+    /** The file info of the song playing. */
+    data object TrackInfo : HostAction
+
+    /** The about box: a classic skin's Winamp logo, bottom right of the main window. */
+    data object About : HostAction
+
+    /** Always On Top on or off: a classic skin's clutter bar A. */
+    data object AlwaysOnTop : HostAction
+
+    /** Double Size: a classic skin's clutter bar D, which fills the screen with the skin here. */
+    data object DoubleSize : HostAction
+
+    /** The equalizer's PRESETS button: its menu of presets to load, save and delete. */
+    data object EqPresets : HostAction
+
+    /** A pick from a classic playlist's bottom-button menus ([pick], as `add_dir` or `sort`). */
+    data class Playlist(
+        val pick: String,
+    ) : HostAction
+
+    /** A long press on a classic playlist's [row], which is in the selection now: Winamp's item menu for it. */
+    data class PlaylistMenu(
+        val row: Int,
+    ) : HostAction
+
+    /** The classic playlist's selected [rows], from a press with Ctrl or Shift held, which the picks act on. */
+    data class PlaylistSelection(
+        val rows: List<Int>,
+    ) : HostAction
+
+    /** The classic playlist's selected [row], or null for none, which the picks act on. */
+    data class PlaylistSelect(
+        val row: Int?,
+    ) : HostAction
+
+    /** Shows the [window] named (`avs`, `video`, `ml`), whatever the skin's own view of it. */
+    data class Show(
+        val window: String,
+    ) : HostAction
+
+    /** Shows the [window] named if hidden, else hides it. */
+    data class Toggle(
+        val window: String,
+    ) : HostAction
+
+    companion object {
+        /** The action [action] (uppercase) with [param] stands for, or null for one the host does not answer. */
+        fun of(
+            action: String,
+            param: String?,
+        ): HostAction? =
+            when (action) {
+                "MENU" -> Menu(param)
+                "SYSMENU", "CONTROLMENU" -> Menu(null)
+                "CLOSE" -> Close
+                "MINIMIZE" -> Minimize
+                "VIS_MENU" -> VisualizationMenu
+                "VIS_FS", "VID_FS" -> Fullscreen
+                "VIS_NEXT" -> NextPreset
+                "VIS_PREV" -> PreviousPreset
+                "TRACKINFO" -> TrackInfo
+                "ABOUT" -> About
+                "ALWAYS_ON_TOP" -> AlwaysOnTop
+                "DOUBLESIZE" -> DoubleSize
+                "EQ_PRESETS" -> EqPresets
+                "PLAYLIST", "PLAYLIST_SELECT", "PLAYLIST_SELECTION", "PLAYLIST_MENU" -> playlist(action, param)
+                "SHOW" -> param?.let(::Show)
+                "TOGGLE" -> param?.let(::Toggle)
+                else -> null
+            }
+
+        /** A classic playlist's pick, selection or row menu. */
+        private fun playlist(
+            action: String,
+            param: String?,
+        ): HostAction? =
+            when (action) {
+                "PLAYLIST" -> param?.let(::Playlist)
+                "PLAYLIST_SELECT" -> PlaylistSelect(param?.toIntOrNull())
+                "PLAYLIST_SELECTION" -> PlaylistSelection(param.orEmpty().split(',').mapNotNull { it.trim().toIntOrNull() })
+                else -> param?.toIntOrNull()?.let(::PlaylistMenu)
+            }
+    }
+}

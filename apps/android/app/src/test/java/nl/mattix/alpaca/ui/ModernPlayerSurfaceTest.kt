@@ -1,0 +1,523 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package nl.mattix.alpaca.ui
+
+import android.app.Application
+import android.os.Looper
+import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.IntRect
+import androidx.test.core.app.ApplicationProvider
+import nl.mattix.alpaca.R
+import nl.mattix.alpaca.skin.BundledSkins
+import nl.mattix.alpaca.skin.Skin
+import nl.mattix.alpaca.skin.SkinLoader
+import nl.mattix.alpaca.state.AmpMenuItem
+import nl.mattix.alpaca.state.LibraryAccess
+import nl.mattix.alpaca.state.MenuAnchor
+import nl.mattix.alpaca.state.SkinLibrary
+import nl.mattix.alpaca.state.WinampState
+import nl.mattix.alpaca.state.WinampViewModel
+import nl.mattix.alpaca.state.WindowStore
+import nl.mattix.alpaca.state.addModern
+import nl.mattix.alpaca.ui.menu.menuAnchorBounds
+import nl.mattix.alpaca.ui.menu.widgetMenu
+import nl.mattix.alpaca.ui.window.BIG_WINDOW
+import nl.mattix.alpaca.ui.window.MAIN_H
+import nl.mattix.alpaca.ui.window.PlaylistMenuActions
+import nl.mattix.alpaca.ui.window.testViewModel
+import nl.mattix.alpaca.wal.FakeWalSurface
+import nl.mattix.alpaca.wal.WalGate
+import nl.mattix.alpaca.wal.WalPlacement
+import nl.mattix.alpaca.wal.WalSurface
+import nl.mattix.alpaca.wal.hidesModernSkin
+import nl.mattix.alpaca.wal.stackOf
+import nl.mattix.alpaca.wal.switchModernSkinsOn
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import java.io.File
+
+/**
+ * The player with a modern skin worn: the skin stands in for the main window, the equalizer and the
+ * playlist, and the classic skin still draws the rest. Most cases use a skin with no engine behind
+ * it; the app's screen and the widget menu cases wear a modern skin that loads.
+ *
+ * The screen is 900 by 1600 pixels at three to a virtual pixel, with no insets, so the skin is
+ * fitted into 900 by 1599 from the top. The clock is driven by hand, because the skin's clock asks
+ * for a frame every frame.
+ */
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE) // the classic skin decodes through BitmapFactory
+@Config(sdk = [35], qualifiers = BIG_WINDOW)
+class ModernPlayerSurfaceTest {
+    @get:Rule
+    val compose = createAndroidComposeRule<ComponentActivity>()
+
+    private lateinit var skin: Skin
+
+    /**
+     * The player's view model, wearing the classic skin. Made at first use, so a test that makes one
+     * wearing a modern skin has the only view model listening to the modern skins switch.
+     */
+    private val vm by lazy { testViewModel().apply { welcome.seen = true } }
+    private val surface = FakeWalSurface().apply { layoutFor = stackOf(300, 100, 2f) }
+    private val box = IntRect(0, 0, 900, 1599)
+
+    /** What the playlist's pickers were asked for. */
+    private val picked = mutableListOf<String>()
+
+    /** View models made with a modern skin worn, whose looks are let go after the test. */
+    private val wearing = mutableListOf<WinampViewModel>()
+
+    @Before
+    fun setUp() {
+        skin = SkinLoader.loadBase(ApplicationProvider.getApplicationContext<Application>())
+    }
+
+    @After
+    fun tearDown() {
+        wearing.forEach { it.skinOps.wal?.release(save = false) }
+        if (wearing.isNotEmpty()) WalGate.clear(ApplicationProvider.getApplicationContext<Application>())
+        WalGate.forget()
+    }
+
+    /**
+     * A view model wearing a modern skin that loads (one window with a play button), chosen before
+     * the view model is made, as at a start with that skin worn. Modern skins are switched on
+     * first.
+     */
+    private fun wearingModern(): WinampViewModel {
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        switchModernSkinsOn(app)
+        app
+            .getSharedPreferences("skins", 0)
+            .edit()
+            .clear()
+            .commit()
+        File(app.filesDir, "skins").deleteRecursively()
+        val library = SkinLibrary(app)
+        library.choose(library.addModern(app, "Loads", loads = true))
+        val made = testViewModel().also { wearing += it }
+        made.welcome.seen = true
+        until("the modern skin is worn") { made.skinOps.wal != null && made.skin != null }
+        return made
+    }
+
+    /**
+     * Runs the main looper, which the skin's engine posts its frames to, and the frame clock, until
+     * [condition] holds, for up to 10 s.
+     */
+    private fun until(
+        what: String,
+        condition: () -> Boolean,
+    ) {
+        val deadline = System.currentTimeMillis() + 10_000
+        do {
+            Snapshot.sendApplyNotifications()
+            shadowOf(Looper.getMainLooper()).idle()
+            if (compose.mainClock.autoAdvance.not()) compose.mainClock.advanceTimeByFrame()
+            if (condition()) return
+            Thread.sleep(10)
+        } while (System.currentTimeMillis() < deadline)
+        fail(what)
+    }
+
+    private fun frames(n: Int = FRAMES) =
+        repeat(n) {
+            Snapshot.sendApplyNotifications()
+            compose.mainClock.advanceTimeByFrame()
+        }
+
+    /** Waits until a skin still loading has the classic main window stand in for it. */
+    private fun standIn() {
+        compose.mainClock.advanceTimeBy(nl.mattix.alpaca.wal.COMPANION_AFTER_MS)
+        frames()
+    }
+
+    private fun show(
+        wal: WalSurface? = surface,
+        compact: Boolean = false,
+    ) {
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            Box(Modifier.fillMaxSize().testTag(SCREEN)) {
+                PlayerSurface(
+                    vm,
+                    skin,
+                    PlaylistMenuActions(addFile = { picked += "file" }, addFileThenPlay = { picked += "file to play" }),
+                    LibraryAccessHandle(LibraryAccess.GRANTED, request = {}),
+                    onPickSkin = {},
+                    onPreferences = {},
+                    onMuseum = {},
+                    onExit = {},
+                    onMinimize = {},
+                    onOverlaySettings = {},
+                    wal = wal,
+                    compact = compact,
+                )
+            }
+        }
+        frames()
+    }
+
+    private fun screen() = compose.onNodeWithTag(SCREEN)
+
+    private fun placed() = WalPlacement.of(box, surface.layout!!, 3)
+
+    /** [anchor] pops a menu at [press], a point on the screen, to within half a virtual pixel. */
+    private fun assertPopsAt(
+        message: String,
+        press: Offset,
+        anchor: MenuAnchor?,
+    ) {
+        val at = menuAnchorBounds(anchor, 3, 900, 1600, vm.state.windowRects).topLeft
+        assertTrue(
+            "$message: $at, not $press",
+            kotlin.math.abs(at.x - press.x) <= 1.5f && kotlin.math.abs(at.y - press.y) <= 1.5f,
+        )
+    }
+
+    private fun longPress(at: Offset) {
+        screen().performTouchInput { down(at) }
+        frames(1)
+        compose.mainClock.advanceTimeBy(android.view.ViewConfiguration.getLongPressTimeout() + 50L)
+        screen().performTouchInput { up() }
+        frames()
+    }
+
+    @Test
+    fun `the skin stands in for the main window, the equalizer and the playlist`() {
+        vm.state.eqVisible = true
+        vm.state.plVisible = true
+
+        show()
+
+        assertEquals("the rect is the skin's stack", placed().window, vm.state.windowRects[WindowStore.MAIN])
+        assertNull(vm.state.windowRects[WindowStore.EQ])
+        assertNull(vm.state.windowRects[WindowStore.PLAYLIST])
+        assertTrue("the windows stay open for the classic skin", vm.state.eqVisible && vm.state.plVisible)
+    }
+
+    @Test
+    fun `the library opens over the skin and takes the touches inside it`() {
+        // the stack fills the whole box, so the library is over it wherever it opens
+        surface.layoutFor = stackOf(450, 799, 2f)
+        show()
+        vm.state.setWindowOpen(WindowStore.LIBRARY, true) { vm.state.libraryOpen = it }
+        frames()
+        val library = vm.state.windowRects[WindowStore.LIBRARY]!!
+        val inLibrary = IntRect(library.left * 3, library.top * 3, library.right * 3, library.bottom * 3)
+
+        screen().performTouchInput {
+            down(Offset(inLibrary.center.x.toFloat(), inLibrary.center.y.toFloat()))
+            up()
+        }
+        frames()
+        assertEquals("the skin under the library hears nothing", emptyList<String>(), surface.pointerCalls)
+
+        val beside =
+            listOf(Offset(10f, 10f), Offset(890f, 10f), Offset(10f, 1590f), Offset(890f, 1590f)).first {
+                !inLibrary.contains(
+                    androidx.compose.ui.unit
+                        .IntOffset(it.x.toInt(), it.y.toInt()),
+                )
+            }
+        screen().performTouchInput {
+            down(beside)
+            up()
+        }
+        frames()
+        assertEquals("beside the library the skin hears it", "down", surface.pointerCalls.first().substringBefore(' '))
+    }
+
+    @Test
+    fun `a long press opens the main menu at the press, with the classic windows grayed`() {
+        show()
+        val press = Offset(450f, 100f)
+
+        longPress(press)
+
+        val menu = vm.state.activeMenu!!
+        assertPopsAt("it pops at the press", press, menu.anchor)
+        for (classic in listOf(R.string.menu_playlist_editor, R.string.menu_equalizer)) {
+            val entry = menu.items.filterIsInstance<AmpMenuItem.Action>().first { it.label == vm.words.get(classic) }
+            assertFalse("${entry.label} is grayed", entry.enabled)
+        }
+        assertEquals("the skin's press was cancelled", listOf("down 150,50", "cancel"), surface.pointerCalls)
+    }
+
+    @Test
+    fun `a long press on a skin menu opens it, with no main menu`() {
+        surface.menuUnderEveryPress = true
+        show()
+
+        longPress(Offset(450f, 100f))
+
+        assertEquals(listOf(1), surface.rightClicks)
+        assertNull(vm.state.activeMenu)
+    }
+
+    @Test
+    fun `a long press beside the skin's menus opens the main menu, starting at Play`() {
+        show()
+
+        longPress(Offset(450f, 100f))
+
+        val menu = vm.state.activeMenu!!
+        assertEquals(vm.words.get(R.string.menu_winamp), menu.title)
+        assertEquals(vm.words.get(R.string.menu_play), (menu.items[0] as AmpMenuItem.Submenu).label)
+        assertTrue("no right click", surface.rightClicks.isEmpty())
+    }
+
+    @Test
+    fun `the skin's menu buttons and file requests reach the player through the sink it installs`() {
+        show()
+        assertNotNull("the surface holding the turn installed its sink", surface.sink)
+        val sink = surface.sink!!
+
+        screen().performTouchInput {
+            down(Offset(450f, 100f))
+            up()
+        }
+        frames()
+        sink.hostAction("SYSMENU", null)
+
+        val menu = vm.state.activeMenu!!
+        assertEquals(vm.words.get(R.string.menu_winamp), menu.title)
+        assertPopsAt("it pops at the press", Offset(450f, 100f), menu.anchor)
+
+        sink.openFile(andPlay = false)
+        sink.openFile(andPlay = true)
+        assertEquals(listOf("file", "file to play"), picked)
+    }
+
+    @Test
+    fun `while a skin loads nothing shows for a moment, then the classic main window stands in`() {
+        show(FakeWalSurface())
+        assertNull("no classic flash before the skin", vm.state.windowRects[WindowStore.MAIN])
+        standIn()
+        assertNotNull(vm.state.windowRects[WindowStore.MAIN])
+    }
+
+    @Test
+    fun `a skin that animates from its first frame on takes over the rect from the classic main window`() {
+        val waiting = FakeWalSurface()
+        show(waiting)
+        standIn()
+        val classic = vm.state.windowRects[WindowStore.MAIN]
+        assertNotNull("the classic main window stands in", classic)
+
+        // the first frame comes while an animation loops, and it loops on
+        waiting.layout = stackOf(300, 100, 2f)(waiting.fits.last()).copy(animating = true)
+        waiting.frames.intValue++
+        frames()
+
+        val stack = WalPlacement.of(box, waiting.layout!!, 3).window
+        assertTrue("the stack's rect is not the classic one", stack != classic)
+        assertEquals(stack, vm.state.windowRects[WindowStore.MAIN])
+    }
+
+    @Test
+    fun `the floating player fits the skin compact`() {
+        show(compact = true)
+
+        assertTrue(surface.fits.isNotEmpty() && surface.fits.all { it.compact })
+    }
+
+    @Test
+    fun `the app's screen fits the skin to the band`() {
+        show()
+
+        assertTrue(surface.fits.isNotEmpty() && surface.fits.none { it.compact })
+    }
+
+    @Test
+    fun `Back hides the player even with a skin window open over the main one`() {
+        surface.layoutFor = { fit -> stackOf(300, 100, 2f)(fit).copy(windowOpen = true) }
+        compose.mainClock.autoAdvance = false
+        compose.setContent { WinampScreen(vm, wal = surface) }
+        frames()
+
+        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        frames()
+
+        assertTrue("the player leaves at once", compose.activity.isFinishing)
+        assertFalse("and the skin heard nothing", surface.calls.any { "close" in it })
+    }
+
+    @Test
+    fun `the plug-in window docks under a skin's stack taller than the classic main window`() {
+        surface.layoutFor = stackOf(300, 300, 2f)
+        vm.state.milkdropOn = true
+
+        show()
+
+        val stack = vm.state.windowRects[WindowStore.MAIN]!!
+        val plugin = vm.state.windowRects[WindowStore.MILKDROP]!!
+        assertTrue("the stack is taller than the classic main window: $stack", stack.height > MAIN_H)
+        assertEquals("it docks under the stack", stack.bottom, plugin.top)
+    }
+
+    @Test
+    fun `under a stack that fills the screen the plug-in window docks as low as it fits`() {
+        surface.layoutFor = stackOf(450, 799, 2f)
+        vm.state.milkdropOn = true
+
+        show()
+
+        val plugin = vm.state.windowRects[WindowStore.MILKDROP]!!
+        assertEquals("its bottom is the screen's safe bottom", vm.state.safeBottom, plugin.bottom)
+    }
+
+    @Test
+    fun `a fullscreen Milkdrop over a modern skin rests it`() {
+        show()
+        assertTrue("shown, the skin is awake", surface.awake)
+
+        vm.state.milkdropOn = true
+        vm.state.milkdropFullscreen = true
+        frames()
+        val ticks = surface.ticks
+        frames()
+
+        assertFalse("under the fullscreen visualizer it rests", surface.awake)
+        assertEquals("and gets no ticks", ticks, surface.ticks)
+
+        vm.state.milkdropFullscreen = false
+        frames()
+        assertTrue("the visualizer in its window leaves it awake", surface.awake)
+    }
+
+    @Test
+    fun `the Library or the Skin Browser over the whole stack rests the skin, and one beside it does not`() {
+        val s = WinampState()
+        s.windowRects[WindowStore.MAIN] = IntRect(50, 0, 250, 67)
+        assertFalse("nothing over it", hidesModernSkin(s))
+
+        s.libraryOpen = true
+        s.windowRects[WindowStore.LIBRARY] = IntRect(40, 0, 260, 200)
+        assertTrue("the Library over all of it", hidesModernSkin(s))
+        s.windowRects[WindowStore.LIBRARY] = IntRect(60, 0, 260, 200)
+        assertFalse("the Library over part of it", hidesModernSkin(s))
+        s.libraryOpen = false
+        s.windowRects[WindowStore.LIBRARY] = IntRect(0, 0, 300, 300)
+        assertFalse("a closed Library's last rect counts for nothing", hidesModernSkin(s))
+
+        s.skinManagerOpen = true
+        s.windowRects[WindowStore.SKINS] = IntRect(50, 0, 250, 67)
+        assertTrue("the Skin Browser just as large", hidesModernSkin(s))
+        s.windowRects.remove(WindowStore.MAIN)
+        assertFalse("no stack placed yet", hidesModernSkin(s))
+    }
+
+    @Test
+    fun `with a modern skin laid out and no classic window open the classic clocks rest`() {
+        show()
+        val before = vm.state.marqueeStep
+
+        compose.mainClock.advanceTimeBy(2_000)
+
+        assertEquals("nothing shows the classic title", before, vm.state.marqueeStep)
+    }
+
+    @Test
+    fun `the Library's search caret blinks over a modern skin`() {
+        show()
+        vm.state.setWindowOpen(WindowStore.LIBRARY, true) { vm.state.libraryOpen = it }
+        frames()
+        val before = vm.state.marqueeStep
+
+        compose.mainClock.advanceTimeBy(1_000)
+
+        assertTrue("the clock the caret blinks by steps: ${vm.state.marqueeStep}", vm.state.marqueeStep > before)
+    }
+
+    @Test
+    fun `the app's screen shows the worn modern skin, and with no skin drawn a placeholder holds the player's place`() {
+        val vm = wearingModern()
+        val look = vm.skinOps.wal!!
+        vm.state.eqVisible = true
+        vm.state.plVisible = true
+        compose.mainClock.autoAdvance = false
+        compose.setContent { WinampScreen(vm) }
+
+        until("the skin's stack takes the main window's place") {
+            val layout = look.layout
+            layout != null && vm.state.windowRects[WindowStore.MAIN] == WalPlacement.of(box, layout, 3).window
+        }
+        assertTrue("its engine runs", Thread.getAllStackTraces().keys.any { it.name == "wal-${look.id}" })
+        assertNull(vm.state.windowRects[WindowStore.EQ])
+        assertNull(vm.state.windowRects[WindowStore.PLAYLIST])
+
+        vm.skinOps.apply(BundledSkins.LIGHT.id)
+
+        until("the skin is let go") { vm.skinOps.wal == null && look.released }
+        frames(5)
+        assertEquals("the placeholder", 275, vm.state.windowRects[WindowStore.MAIN]!!.width)
+        assertNull(vm.state.windowRects[WindowStore.EQ])
+        assertNull(vm.state.windowRects[WindowStore.PLAYLIST])
+    }
+
+    @Test
+    fun `the widget menu leaves the classic windows unticked while a modern skin is worn`() {
+        fun ticked(
+            vm: WinampViewModel,
+            label: Int,
+        ): Boolean {
+            val menu =
+                widgetMenu(
+                    vm,
+                    onWidgetSettings = {},
+                    onPickSkin = {},
+                    onOpenFile = {},
+                    onOpenFolder = {},
+                    onOpen = {},
+                    onExit = {},
+                )
+            return menu.items
+                .filterIsInstance<AmpMenuItem.Action>()
+                .first { it.label == vm.words.get(label) }
+                .checked
+        }
+        val vm = wearingModern()
+        vm.state.plVisible = true
+        vm.state.eqVisible = true
+
+        assertFalse(ticked(vm, R.string.menu_playlist_editor))
+        assertFalse(ticked(vm, R.string.menu_equalizer))
+
+        vm.skinOps.apply(BundledSkins.LIGHT.id)
+        until("the classic skin is worn") { vm.skinOps.wal == null }
+
+        assertTrue(
+            "with the classic skin they are ticked",
+            ticked(vm, R.string.menu_playlist_editor) && ticked(vm, R.string.menu_equalizer),
+        )
+    }
+
+    private companion object {
+        const val FRAMES = 6
+        const val SCREEN = "screen"
+    }
+}

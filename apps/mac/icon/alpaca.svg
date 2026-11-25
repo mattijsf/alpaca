@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Alpaca's icon, as the Android app has it: a background and the mark over it, on the 108
+     units of an Android launcher icon, of which the middle 72 show. tools/icon.sh makes the
+     Mac's icon from it. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="1080" height="1080">
+<defs>
+<linearGradient id="g0" gradientUnits="userSpaceOnUse" x1="54.0" y1="0.0" x2="54.0" y2="108.0"><stop offset="0.0" stop-color="#3A4048"/><stop offset="1.0" stop-color="#22262C"/></linearGradient>
+<linearGradient id="g1" gradientUnits="userSpaceOnUse" x1="30.0" y1="24.0" x2="78.0" y2="84.0"><stop offset="0.0" stop-color="#FFD95C"/><stop offset="1.0" stop-color="#EF7F1F"/></linearGradient>
+<linearGradient id="g13" gradientUnits="userSpaceOnUse" x1="30.0" y1="30.0" x2="78.0" y2="78.0"><stop offset="0.0" stop-color="#F2F4F6"/><stop offset="1.0" stop-color="#98A0A8"/></linearGradient>
+<linearGradient id="g15" gradientUnits="userSpaceOnUse" x1="34.0" y1="20.0" x2="72.0" y2="88.0"><stop offset="0.0" stop-color="#FFD95C"/><stop offset="1.0" stop-color="#F08721"/></linearGradient>
+<linearGradient id="g16" gradientUnits="userSpaceOnUse" x1="36.0" y1="21.0" x2="60.0" y2="59.0"><stop offset="0.0" stop-color="#FFE58A"/><stop offset="1.0" stop-color="#FFC63A"/></linearGradient>
+<linearGradient id="g17" gradientUnits="userSpaceOnUse" x1="49.0" y1="47.0" x2="71.0" y2="87.0"><stop offset="0.0" stop-color="#F9A82C"/><stop offset="1.0" stop-color="#E4761A"/></linearGradient>
+</defs>
+<path d="M0,0 L108,0 L108,108 L0,108 Z" fill="url(#g0)"/>
+<path d="M43.77,25.88 L45.68,27.74 L45.41,30.40 L43.50,28.54 Z" fill="url(#g1)"/>
+<path d="M55.08,23.06 L55.93,24.81 L54.96,26.50 L54.12,24.74 Z" fill="url(#g1)"/>
+<path d="M66.89,27.56 L66.85,30.60 L64.48,32.51 L64.53,29.47 Z" fill="url(#g1)"/>
+<path d="M76.88,33.40 L76.27,35.05 L74.58,35.47 L75.18,33.82 Z" fill="url(#g1)"/>
+<path d="M81.55,42.87 L79.90,44.65 L77.49,44.51 L79.13,42.73 Z" fill="url(#g1)"/>
+<path d="M83.97,62.59 L81.85,62.97 L80.25,61.52 L82.37,61.15 Z" fill="url(#g1)"/>
+<path d="M75.68,74.94 L72.93,74.01 L71.91,71.29 L74.67,72.22 Z" fill="url(#g1)"/>
+<path d="M66.54,82.16 L65.15,81.05 L65.25,79.26 L66.64,80.38 Z" fill="url(#g1)"/>
+<path d="M52.96,83.82 L51.92,81.47 L53.12,79.18 L54.15,81.55 Z" fill="url(#g1)"/>
+<path d="M39.42,81.41 L39.47,79.40 L41.12,78.23 L41.07,80.24 Z" fill="url(#g1)"/>
+<path d="M31.01,73.29 L32.17,70.80 L34.83,70.09 L33.66,72.58 Z" fill="url(#g1)"/>
+<path d="M25.59,43.66 L27.66,43.40 L29.07,44.93 L27.00,45.19 Z" fill="url(#g1)"/>
+<path d="M67.42,34.10 A24.0,24.0 0 0 1 47.38,77.07" fill="none" stroke="url(#g13)" stroke-width="4.0" stroke-linecap="round"/>
+<path d="M40.58,73.90 A24.0,24.0 0 0 1 60.62,30.93" fill="none" stroke="url(#g13)" stroke-width="4.0" stroke-linecap="round"/>
+<path d="M61.02,23.58 L37.62,58.68 L49.71,58.68 L46.20,84.42 L71.16,46.98 L57.90,46.98 Z" fill="url(#g15)"/>
+<path d="M61.02,23.58 L37.62,58.68 L49.71,58.68 L57.90,46.98 Z" fill="url(#g16)"/>
+<path d="M57.90,46.98 L71.16,46.98 L46.20,84.42 L49.71,58.68 Z" fill="url(#g17)"/>
+</svg>

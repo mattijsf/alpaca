@@ -1,0 +1,31 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Builds the alpaca-core static library for the architectures Xcode builds (ARCHS; this Mac's
+# own when run by hand) and puts one library for all of them at target/macos/libalpaca_core.a,
+# where the Xcode project links it from. Xcode runs it before compiling the Swift sources.
+set -eu
+cd "$(dirname "$0")"
+
+# a build phase gets a short PATH: rustup's cargo lives in ~/.cargo/bin
+export PATH="$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+# the C sources among the crates (the Lua interpreter) are compiled against the macOS SDK,
+# whatever SDK Xcode is building the app for
+SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
+export SDKROOT
+
+libs=""
+for arch in ${ARCHS:-$(uname -m)}; do
+    case "$arch" in
+        arm64) target=aarch64-apple-darwin ;;
+        x86_64) target=x86_64-apple-darwin ;;
+        *) echo "build.sh: no Rust target for $arch" >&2; exit 1 ;;
+    esac
+    # ALPACA_CORE_FEATURES names cargo features to build with, such as portable-output
+    cargo build --release --target "$target" ${ALPACA_CORE_FEATURES:+--features "$ALPACA_CORE_FEATURES"}
+    libs="$libs target/$target/release/libalpaca_core.a"
+done
+
+mkdir -p target/macos
+# shellcheck disable=SC2086 # one path per architecture
+lipo -create $libs -output target/macos/libalpaca_core.a

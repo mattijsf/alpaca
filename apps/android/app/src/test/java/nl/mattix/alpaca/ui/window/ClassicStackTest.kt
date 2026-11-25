@@ -1,0 +1,140 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package nl.mattix.alpaca.ui.window
+
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import nl.mattix.alpaca.ui.SIDEWAYS_STACK_H
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+/**
+ * Where the windows start, and what counts as the stack the playlist hangs under: every
+ * attached window. A window that is open but dragged away reserves no place, so the
+ * playlist, which follows the stack until it is given a size of its own, does not follow a
+ * gap.
+ */
+class ClassicStackTest {
+    private val top = 20
+    private val mainH = 116
+    private val eqH = 116
+    private val pluginH = 90
+    private val screen = WindowScreen(width = 275, height = 800, safeTop = top, safeBottom = 780)
+
+    private fun eq(
+        placed: Boolean = false,
+        at: Int? = null,
+    ) = ClassicStack.Member(height = eqH, top = at, placed = placed)
+
+    private fun plugin(
+        placed: Boolean = false,
+        at: Int? = null,
+    ) = ClassicStack.Member(height = pluginH, top = at, placed = placed)
+
+    private fun layout(
+        eq: ClassicStack.Member? = eq(),
+        vis: ClassicStack.Member? = plugin(),
+        sideways: Boolean = false,
+    ) = ClassicStack.layout(ClassicStack.Ask(screen, sideways, mainH, eq, vis))
+
+    @Test
+    fun `an untouched stack is one column, the playlist under the sum of what is in it`() {
+        val places = layout()
+
+        assertEquals(IntOffset(0, top), places.main)
+        assertEquals(IntOffset(0, top + mainH), places.eq)
+        assertEquals(IntOffset(0, top + mainH + eqH), places.vis)
+        assertEquals(IntOffset(0, top + mainH + eqH + pluginH), places.playlist)
+        assertEquals(PlaylistLayout.segmentsThatFit(780 - (top + mainH + eqH + pluginH)), places.playlistSegments)
+    }
+
+    @Test
+    fun `a window that is not open is not in it`() {
+        val places = layout(eq = null)
+
+        assertEquals("the plug-in window moves up", IntOffset(0, top + mainH), places.vis)
+        assertEquals(IntOffset(0, top + mainH + pluginH), places.playlist)
+    }
+
+    @Test
+    fun `a window dragged away stops holding a place in the stack`() {
+        val places = layout(vis = plugin(placed = true, at = top + 600))
+
+        assertEquals("a window that left reserves no height", IntOffset(0, top + mainH + eqH), places.playlist)
+    }
+
+    @Test
+    fun `a window dragged back against the stack is in it again`() {
+        val places = layout(vis = plugin(placed = true, at = top + mainH + eqH))
+
+        assertEquals(IntOffset(0, top + mainH + eqH + pluginH), places.playlist)
+    }
+
+    @Test
+    fun `the daylight a snap leaves behind still counts as attached`() {
+        val places = layout(vis = plugin(placed = true, at = top + mainH + eqH + 2))
+
+        assertEquals(IntOffset(0, top + mainH + eqH + pluginH), places.playlist)
+    }
+
+    @Test
+    fun `what is left closes up behind what left`() {
+        // the equalizer is off floating; a plug-in window that never moved sits
+        // directly under the player
+        val places = layout(eq = eq(placed = true, at = top + 900))
+
+        assertEquals(IntOffset(0, top + mainH), places.vis)
+        assertEquals(IntOffset(0, top + mainH + pluginH), places.playlist)
+    }
+
+    @Test
+    fun `a window that has never been laid out is trusted to be where it says`() {
+        // first frame: rectangles do not exist yet, and a window with a place
+        // of its own counts as detached
+        val places = layout(eq = eq(placed = true, at = null), vis = null)
+
+        assertEquals(IntOffset(0, top + mainH), places.playlist)
+    }
+
+    @Test
+    fun `sideways, the playlist stands beside the stack, as tall as the player and the equalizer`() {
+        val wide = WindowScreen(width = 600, height = 300, safeTop = top, safeBottom = 280)
+
+        val places = ClassicStack.layout(ClassicStack.Ask(wide, sideways = true, mainH, eq(), vis = null))
+
+        assertEquals(IntOffset(25, top), places.main)
+        assertEquals(IntOffset(25, top + mainH), places.eq)
+        assertEquals(IntOffset(25 + MAIN_W, top), places.playlist)
+        assertEquals(PlaylistLayout.segmentsThatFit(SIDEWAYS_STACK_H), places.playlistSegments)
+    }
+
+    @Test
+    fun `with no modern skin column to dock against, the stack is the classic one`() {
+        val sideways = WindowScreen(width = 800, height = 400, safeTop = top, safeBottom = 380)
+        val ask = ClassicStack.Ask(sideways, sideways = true, mainH, eq(), plugin())
+        val places = ClassicStack.layout(ask)
+
+        val left = (800 - 2 * MAIN_W) / 2
+        assertEquals(IntOffset(left, top), places.main)
+        assertEquals(IntOffset(left, top + mainH), places.eq)
+        assertEquals(IntOffset(left, top + mainH + eqH), places.vis)
+        assertEquals(IntOffset(left + MAIN_W, top), places.playlist)
+        assertEquals(places, ClassicStack.layout(ask.copy(dock = null)))
+    }
+
+    @Test
+    fun `a modern skin's left column moves only the plug-in window across`() {
+        val sideways = WindowScreen(width = 800, height = 400, safeTop = top, safeBottom = 380)
+        val ask = ClassicStack.Ask(sideways, sideways = true, mainH, eq(), plugin())
+        val classic = ClassicStack.layout(ask)
+
+        val docked = ClassicStack.layout(ask.copy(dock = IntRect(40, top, 340, 200)))
+        assertEquals("from the column's left edge", IntOffset(40, classic.vis.y), docked.vis)
+        assertEquals(classic.copy(vis = docked.vis), docked)
+
+        val narrow = ClassicStack.layout(ask.copy(dock = IntRect(200, top, 400, 200)))
+        assertEquals("wider than the column: it ends where the column ends", 400 - MILKDROP_W, narrow.vis.x)
+        val offScreen = ClassicStack.layout(ask.copy(dock = IntRect(10, top, 110, 200)))
+        assertEquals("never left of the screen", 0, offScreen.vis.x)
+    }
+}

@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      The device's audio library. MediaStore uris stay readable across restarts
+      on this one permission, where a document picker's grants are per item and
+      capped.
+    -->
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!--
+      The floating player. Off by default, and unused until the listener grants
+      it on the system screen; see ui/overlay/PlayerOverlay.
+    -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!--
+      Internet radio streams, the online skin museum and its thumbnails, plug-in
+      install links, and update checks for installed sources.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+      How a separately installed source is found. Since Android 11 a package
+      sees only what it declares an interest in. QUERY_ALL_PACKAGES would show
+      every installed app, which is more than is needed, so the two actions a
+      source's pack exposes are named here: the service the player binds to and
+      the settings screen it opens. The actions name no particular source: a
+      pack for any source answers them.
+    -->
+    <queries>
+        <intent>
+            <action android:name="nl.mattix.andamp.source.BIND" />
+        </intent>
+        <intent>
+            <action android:name="nl.mattix.andamp.source.SETTINGS" />
+        </intent>
+        <!-- the app Android Auto talks to; Preferences offers the Android Auto page when it is here -->
+        <package android:name="${applicationId}.androidauto" />
+    </queries>
+
+    <!--
+      usesCleartextTraffic: most legacy Shoutcast/Icecast stations still stream
+      over plain http, which the platform blocks by default since API 28.
+      Stations are user-entered urls, so it is allowed for every host.
+    -->
+    <application
+        android:name=".AlpacaApp"
+        android:label="${appLabel}"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:enableOnBackInvokedCallback="true"
+        android:theme="@style/Theme.Alpaca"
+        android:usesCleartextTraffic="true">
+
+        <!--
+          The version of the window's interface this app speaks, RemoteWindowLink.PROTOCOL,
+          which Autoamp reads to tell whether the two match. A test keeps the two equal.
+        -->
+        <meta-data
+            android:name="nl.mattix.andamp.window.PROTOCOL"
+            android:value="2" />
+
+        <!--
+          screenOrientation="user": the player turns with the phone when auto-rotate is on,
+          and stays put when it is off. Asked for explicitly because the activity is
+          translucent (see values-v28/themes.xml): a translucent activity that asks for
+          nothing takes the orientation of whatever is behind it, and most launchers do
+          not turn.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:screenOrientation="user"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
+        <!--
+          The launcher entry, under the class name MainActivity had when the app was named
+          Andamp. A launcher keeps a home screen icon by that name and drops it when the
+          name is gone.
+        -->
+        <activity-alias
+            android:name="nl.mattix.andamp.MainActivity"
+            android:targetActivity=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!--
+          A Winamp skin opened or shared from another app: classic (.wsz) or modern (.wal).
+          Some apps name a skin's type (the types Winamp registered); most hand a skin over as
+          application/octet-stream or a zip type, so the second filter takes those only on a path
+          ending in .wsz or .wal, and only to open, so Alpaca stays out of the share sheet of
+          every zip. See SkinImportActivity for why this is not MainActivity.
+        -->
+        <activity
+            android:name=".SkinImportActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter android:label="@string/import_add_to_alpaca">
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="interface/x-winamp-skin" />
+                <data android:mimeType="interface/x-winamp3-skin" />
+                <data android:mimeType="application/x-winamp-skin" />
+            </intent-filter>
+            <intent-filter android:label="@string/import_add_to_alpaca">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:host="*" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:pathPattern=".*\\.wsz" />
+                <data android:pathPattern=".*\\..*\\.wsz" />
+                <data android:pathPattern=".*\\..*\\..*\\.wsz" />
+                <data android:pathPattern=".*\\.wal" />
+                <data android:pathPattern=".*\\..*\\.wal" />
+                <data android:pathPattern=".*\\..*\\..*\\.wal" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          A .lua plug-in opened or shared from another app. Android has no type
+          for .lua: MediaStore files one as application/octet-stream, and a file
+          manager passes that on, so the second filter matches that type (and
+          text/plain) only on a path ending in .lua. Apps that do name the type
+          use one of the first filter's. See PluginImportActivity for why this
+          is not MainActivity.
+        -->
+        <activity
+            android:name=".PluginImportActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter android:label="@string/import_add_to_alpaca">
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/x-lua" />
+                <data android:mimeType="application/x-lua" />
+                <data android:mimeType="text/x-lua-source" />
+            </intent-filter>
+            <intent-filter android:label="@string/import_add_to_alpaca">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:host="*" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="text/plain" />
+                <data android:pathPattern=".*\\.lua" />
+                <data android:pathPattern=".*\\..*\\.lua" />
+                <data android:pathPattern=".*\\..*\\..*\\.lua" />
+            </intent-filter>
+            <!--
+              The Install button on Alpaca's site: a plain link to the .lua, which
+              Android gives to Alpaca once the site's /.well-known/assetlinks.json
+              names this app. Only .lua files under the plug-ins path, so the page
+              listing them still opens in the browser. What arrives is offered,
+              not installed; see PluginLinks. One filter per host, because the
+              hosts and paths of one filter combine and each host has its own path.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="andamp.nl" />
+                <data android:pathPattern="/extensions/plugins/.*\\.lua" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="mattix.nl" />
+                <data android:pathPattern="/andamp/extensions/plugins/.*\\.lua" />
+            </intent-filter>
+        </activity>
+        <!--
+          The way into Preferences from outside: the "Additional settings in the app" button on
+          the phone's App info page, and the Android Auto page that the app Android Auto talks
+          to opens. See SettingsEntryActivity.
+        -->
+        <activity
+            android:name=".SettingsEntryActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="nl.mattix.andamp.window.SETTINGS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name="nl.mattix.andamp.widget.MainWindowWidget"
+            android:label="${appLabel}"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_main_info" />
+        </receiver>
+        <activity
+            android:name=".widget.WidgetMenuActivity"
+            android:theme="@style/Theme.Alpaca.WidgetMenu"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:launchMode="singleTop"
+            android:exported="false" />
+        <!--
+          The main window on a surface another app lends: a car's screen, through the app
+          Android Auto talks to (:androidauto). The service checks who is calling; see
+          RemoteWindowTrust.
+        -->
+        <service
+            android:name=".ui.remote.RemoteWindowService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="nl.mattix.andamp.window.BIND" />
+            </intent-filter>
+        </service>
+
+    </application>
+
+</manifest>

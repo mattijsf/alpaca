@@ -1,0 +1,78 @@
+[package]
+name = "alpaca-core"
+description = "Alpaca for the desktop, less what only a system can do: the app, the player and the walkit skin engine's host, as a crate and behind a C interface"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+publish = false
+rust-version = "1.85"
+
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+walkit = { version = "0.10.4", features = ["truetype"] }
+image = { version = "0.25.10", default-features = false, features = ["png", "bmp", "gif", "jpeg"] }
+zip = { version = "2.6.1", default-features = false, features = ["deflate"] }
+# the audio: decoding, the output unit, the ring between them, and the visualizer's spectrum
+symphonia = { version = "0.5.5", default-features = false, features = ["mp3", "aac", "isomp4", "alac", "flac", "ogg", "vorbis", "wav", "pcm", "aiff"] }
+rtrb = "0.4.1"
+rustfft = "6.4.1"
+# internet radio: the stream over HTTP
+ureq = "3"
+# effect plug-ins are Lua files: the interpreter, built from its own sources
+mlua = { version = "0.10", features = ["lua54", "vendored"] }
+
+# walkit main after 0.10.4, until the next release is on crates.io. Needed for playlist
+# scrolling and keys, frame dividers, cursor shapes, window focus, slider snap, hover, app focus
+# loss and tooltips. Remove once released and bump the version above.
+[patch.crates-io]
+walkit = { git = "https://github.com/mattijsf/walkit", rev = "579197eec87a2fefa1eba1bd92832bc28f1f42b9" }
+
+# the audio device: the Mac's own output unit there, the cpal crate everywhere else
+[target.'cfg(target_os = "macos")'.dependencies]
+coreaudio-rs = { version = "0.14.2", default-features = false, features = ["audio_unit", "core_audio"] }
+cpal = { version = "0.16", optional = true }
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+cpal = "0.16"
+
+# clippy's pedantic set, as in walkit, less the ones that fight code written in i32 layout
+# pixels, bytes and samples
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+cast_possible_truncation = "allow"
+cast_possible_wrap = "allow"
+cast_sign_loss = "allow"
+cast_precision_loss = "allow"
+cast_lossless = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+too_many_lines = "allow"
+struct_excessive_bools = "allow"
+many_single_char_names = "allow"
+similar_names = "allow"
+unreadable_literal = "allow"
+map_unwrap_or = "allow"
+redundant_closure_for_method_calls = "allow"
+format_push_string = "allow"
+format_collect = "allow"
+match_same_arms = "allow"
+float_cmp = "allow"
+assert_is_empty = "allow"
+# the inner loops of the renderer, the equalizer and the effects are measured with it
+inline_always = "allow"
+
+[features]
+# the portable audio device on a Mac too, to build, run and measure it there
+portable-output = ["dep:cpal"]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+# a panic in the engine unwinds to the C boundary, where the app reports it as the skin's failure
+panic = "unwind"
+debug = "line-tables-only"

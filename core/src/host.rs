@@ -1,0 +1,434 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+//! The host: the skin's pictures, decoded with the `image` crate, and its text, measured and
+//! drawn by the engine's
+//! `truetype` module, as Windows draws it. The engine reads them through [`Host`]; the renderer reads the same
+//! [`Assets`], so each picture and font is decoded once. Arial and Tahoma lie under the skin's
+//! files as `fonts/LiberationSans.ttf` and the like: the system's own where it has them, else
+//! the free fonts that stand in for them ([`crate::fonts`]).
+
+use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
+use std::rc::Rc;
+
+use walkit::draw::{FontDef, Gamma};
+use walkit::files::SkinFiles;
+use walkit::gdi::FontFace;
+use walkit::host::{ActionFrom, MenuItem, SkinHost, SkinMenu};
+use walkit::truetype::{em, Font, Style};
+
+/// The font for text that names none, and the one a missing font falls back to: Arial or its
+/// stand-in, read from the skin's files, else a font of the system.
+const DEFAULT_FONT: &str = "fonts/LiberationSans.ttf";
+/// Fonts of the system to fall back to when the app brought none, the first that is there.
+#[cfg(target_os = "macos")]
+const SYSTEM_FONTS: &[&str] = &["/System/Library/Fonts/Helvetica.ttc"];
+#[cfg(target_os = "windows")]
+const SYSTEM_FONTS: &[&str] = &[
+    "C:\\Windows\\Fonts\\arial.ttf",
+    "C:\\Windows\\Fonts\\segoeui.ttf",
+];
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+const SYSTEM_FONTS: &[&str] = &[
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    "/usr/share/fonts/liberation-sans/LiberationSans-Regular.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/TTF/DejaVuSans.ttf",
+];
+
+/// Its bold cut.
+const DEFAULT_BOLD_FONT: &str = "fonts/LiberationSans-Bold.ttf";
+
+/// A decoded picture: its size and its pixels as ARGB, rows top first.
+pub struct Picture {
+    /// Its width in pixels.
+    pub w: i32,
+    /// Its height in pixels.
+    pub h: i32,
+    /// Its pixels, `0xAARRGGBB`, rows top first.
+    pub argb: Vec<u32>,
+    /// Whether every pixel is opaque: such a picture is copied, not blended.
+    pub opaque: bool,
+}
+
+impl Picture {
+    /// The pixel at `x`, `y`, or `None` outside the picture.
+    pub fn at(&self, x: i32, y: i32) -> Option<u32> {
+        if x < 0 || y < 0 || x >= self.w || y >= self.h {
+            return None;
+        }
+        Some(self.argb[(y * self.w + x) as usize])
+    }
+}
+
+/// The font a run of text draws in, and whether the renderer thickens it for bold.
+pub struct TextFace {
+    /// The font.
+    pub font: Rc<Font>,
+    /// Whether the renderer thickens the letters, for bold text in a font with no bold cut.
+    pub fake_bold: bool,
+}
+
+/// The skin's files, and the pictures and fonts read from them so far.
+pub struct Assets {
+    files: Box<dyn SkinFiles>,
+    pictures: HashMap<String, Option<Rc<Picture>>>,
+    /// Pictures in a color theme's tint, by the name the draw list gives and the tint.
+    tinted: HashMap<Gamma, HashMap<String, Option<Rc<Picture>>>>,
+    fonts: HashMap<String, Option<Rc<Font>>>,
+}
+
+impl Assets {
+    /// The pictures and fonts of the skin whose files are `files`; nothing is decoded until asked for.
+    pub fn new(files: Box<dyn SkinFiles>) -> Self {
+        Assets {
+            files,
+            pictures: HashMap::new(),
+            tinted: HashMap::new(),
+            fonts: HashMap::new(),
+        }
+    }
+
+    /// The picture at `file`, decoded the first time it is asked for. Paths are looked up
+    /// without regard to case.
+    pub fn picture(&mut self, file: &str) -> Option<Rc<Picture>> {
+        // the name as the draw list spells it, which is the same every frame
+        if let Some(p) = self.pictures.get(file) {
+            return p.clone();
+        }
+        let key = file.to_lowercase();
+        let decoded = match self.pictures.get(&key) {
+            Some(p) => p.clone(),
+            // a picture the skin's XML asks to be made: a box of one color
+            None => match walkit::generated::solid_spec(file) {
+                Some((w, h, argb)) => Some(Rc::new(Picture {
+                    w,
+                    h,
+                    argb: vec![argb; (w.max(0) * h.max(0)) as usize],
+                    opaque: (argb >> 24) == 0xff,
+                })),
+                None => self.files.read(file).and_then(|b| decode(&b)).map(Rc::new),
+            },
+        };
+        self.pictures.insert(file.to_string(), decoded.clone());
+        self.pictures.insert(key, decoded.clone());
+        decoded
+    }
+
+    /// The picture at `file` in the color theme's `tint`, tinted the first time it is asked
+    /// for; the picture as it is without one.
+    pub fn picture_tinted(&mut self, file: &str, tint: Option<Gamma>) -> Option<Rc<Picture>> {
+        let Some(tint) = tint else {
+            return self.picture(file);
+        };
+        if let Some(p) = self.tinted.get(&tint).and_then(|by_name| by_name.get(file)) {
+            return p.clone();
+        }
+        let made = self.picture(file).map(|p| {
+            Rc::new(Picture {
+                w: p.w,
+                h: p.h,
+                argb: p
+                    .argb
+                    .iter()
+                    .map(|argb| crate::render::tinted(*argb, tint))
+                    .collect(),
+                opaque: p.opaque,
+            })
+        });
+        self.tinted
+            .entry(tint)
+            .or_default()
+            .insert(file.to_string(), made.clone());
+        made
+    }
+
+    /// The font `font` draws in, `bold` or not, in `style`, as the engine names its face;
+    /// `None` only when not even the default font loads.
+    pub fn face(&mut self, font: Option<&FontDef>, bold: bool, style: Style) -> Option<TextFace> {
+        // smoothed bold is the regular letters drawn twice, even where a bold cut exists
+        if style == Style::Modern && bold {
+            let face = self.face(font, false, style)?;
+            return Some(TextFace {
+                font: face.font,
+                fake_bold: true,
+            });
+        }
+        let face = FontFace::of(font, bold);
+        let (found, fake_bold) = match &face {
+            // a Windows font the skin names without a file: the free font standing in for it
+            FontFace::StandIn { .. } => {
+                let file = face.file().unwrap_or_default();
+                (self.skin_font(&file), false)
+            }
+            FontFace::SkinFile { font, fake_bold } => {
+                let found = self.skin_font(&font.file);
+                (found, *fake_bold)
+            }
+            FontFace::Default { fake_bold } => (None, *fake_bold),
+        };
+        if let Some(font) = found {
+            return Some(TextFace { font, fake_bold });
+        }
+        // the default font, in its own bold cut
+        let file = if fake_bold {
+            DEFAULT_BOLD_FONT
+        } else {
+            DEFAULT_FONT
+        };
+        let font = self
+            .skin_font(file)
+            .or_else(|| SYSTEM_FONTS.iter().find_map(|path| self.system_font(path)))?;
+        Some(TextFace {
+            font,
+            fake_bold: false,
+        })
+    }
+
+    /// The bytes of `file` among the skin's files.
+    pub fn read(&self, file: &str) -> Option<Rc<[u8]>> {
+        self.files.read(file)
+    }
+
+    /// A TrueType file among the skin's files.
+    fn skin_font(&mut self, file: &str) -> Option<Rc<Font>> {
+        if file.is_empty() {
+            return None;
+        }
+        let key = format!("skin:{}", file.to_lowercase());
+        if let Some(f) = self.fonts.get(&key) {
+            return f.clone();
+        }
+        let font = self.files.read(file).and_then(Font::parse);
+        self.fonts.insert(key, font.clone());
+        font
+    }
+
+    /// A font file of the system.
+    fn system_font(&mut self, path: &str) -> Option<Rc<Font>> {
+        if let Some(f) = self.fonts.get(path) {
+            return f.clone();
+        }
+        let font = std::fs::read(path)
+            .ok()
+            .and_then(|b| Font::parse(Rc::from(b)));
+        self.fonts.insert(path.to_string(), font.clone());
+        font
+    }
+}
+
+/// Decodes a PNG, BMP, GIF or JPEG into ARGB.
+fn decode(bytes: &[u8]) -> Option<Picture> {
+    let rgba = image::load_from_memory(bytes).ok()?.to_rgba8();
+    let (w, h) = rgba.dimensions();
+    let argb: Vec<u32> = rgba
+        .pixels()
+        .map(|p| {
+            let [r, g, b, a] = p.0;
+            (u32::from(a) << 24) | (u32::from(r) << 16) | (u32::from(g) << 8) | u32::from(b)
+        })
+        .collect();
+    let opaque = argb.iter().all(|p| (p >> 24) == 0xff);
+    Some(Picture {
+        w: w as i32,
+        h: h as i32,
+        argb,
+        opaque,
+    })
+}
+
+/// Something a button of the skin asks of the app, as Winamp answered it outside the skin:
+/// `CLOSE`, `MINIMIZE`, `DOUBLESIZE`, `MENU` and the like.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HostAction {
+    /// The action, uppercase.
+    pub name: String,
+    /// Its param or window name.
+    pub param: Option<String>,
+    /// Where on the viewport a menu for it opens: under the thing that sent it.
+    pub at: Option<(i32, i32)>,
+}
+
+/// Shows a menu, given as text ([`menu_text`]), and gives the id the listener picked, 0 for none.
+pub type MenuHandler = Box<dyn Fn(&str) -> i32>;
+
+/// What the app and the host share besides pictures: what the skin asked for, the app's
+/// switches the skin shows, and how a menu is shown.
+#[derive(Default)]
+pub struct Desk {
+    /// Actions not yet taken by the app.
+    pub actions: RefCell<Vec<HostAction>>,
+    /// The app's switches a skin's buttons light up for: "doublesize", "ontop" and the like.
+    pub switches: RefCell<HashMap<String, bool>>,
+    /// Shows a skin's popup menu.
+    pub menu: RefCell<Option<MenuHandler>>,
+}
+
+/// A menu as lines of text, for the app to build its own from: `C`, the id, 1 when checked, 1
+/// when disabled and the text, with tabs between, for a command; `S` for a separator; `>` and
+/// the text where a submenu starts and `<` where it ends.
+pub fn menu_text(menu: &SkinMenu) -> String {
+    fn walk(menu: &SkinMenu, out: &mut String) {
+        for item in &menu.items {
+            match item {
+                MenuItem::Command {
+                    id,
+                    text,
+                    checked,
+                    disabled,
+                } => {
+                    let text = text.replace(['\t', '\n'], " ");
+                    out.push_str(&format!(
+                        "C\t{id}\t{}\t{}\t{text}\n",
+                        u8::from(*checked),
+                        u8::from(*disabled)
+                    ));
+                }
+                MenuItem::Separator => out.push_str("S\n"),
+                MenuItem::Submenu { text, menu } => {
+                    out.push_str(&format!(">\t{}\n", text.replace(['\t', '\n'], " ")));
+                    walk(menu, out);
+                    out.push_str("<\n");
+                }
+            }
+        }
+    }
+    let mut out = String::new();
+    walk(menu, &mut out);
+    out
+}
+
+/// What the engine asks of the app. It shares [`Assets`] with the renderer, and raises
+/// `redraw` when the engine asks for a frame.
+pub struct Host {
+    /// The skin's pictures and fonts.
+    pub assets: Rc<RefCell<Assets>>,
+    /// Raised when the engine asks for a frame.
+    pub redraw: Rc<Cell<bool>>,
+    /// What the skin asked of the app, and the app's switches it shows.
+    pub desk: Rc<Desk>,
+}
+
+impl Host {
+    /// How wide `text` draws in layout pixels in `style`: Winamp draws a font at three
+    /// quarters of the skin's size ([`em`]).
+    fn measure(
+        &mut self,
+        text: &str,
+        font: Option<&FontDef>,
+        size: i32,
+        bold: bool,
+        style: Style,
+    ) -> f32 {
+        let face = self.assets.borrow_mut().face(font, bold, style);
+        match face {
+            Some(face) => {
+                let bold = i32::from(face.fake_bold);
+                face.font.width(text, style, em(style, size), bold) as f32
+            }
+            None => text.chars().count() as f32 * size as f32 * 0.6,
+        }
+    }
+
+    /// The font's line in `style`.
+    fn line(
+        &mut self,
+        font: Option<&FontDef>,
+        size: i32,
+        bold: bool,
+        style: Style,
+    ) -> Option<(f32, f32)> {
+        let face = self.assets.borrow_mut().face(font, bold, style)?;
+        Some(face.font.line(style, em(style, size)))
+    }
+}
+
+impl SkinHost for Host {
+    fn image_size(&mut self, file: &str) -> Option<(i32, i32)> {
+        let p = self.assets.borrow_mut().picture(file)?;
+        Some((p.w, p.h))
+    }
+
+    fn pixel(&mut self, file: &str, x: i32, y: i32) -> Option<u32> {
+        self.assets.borrow_mut().picture(file)?.at(x, y)
+    }
+
+    fn pixels(&mut self, file: &str, x: i32, y: i32, w: i32, h: i32) -> Option<Vec<u32>> {
+        let p = self.assets.borrow_mut().picture(file)?;
+        let mut out = Vec::with_capacity((w.max(0) * h.max(0)) as usize);
+        for row in y..y + h {
+            for col in x..x + w {
+                out.push(p.at(col, row)?);
+            }
+        }
+        Some(out)
+    }
+
+    fn text_width(&mut self, text: &str, font: Option<&FontDef>, size: i32, bold: bool) -> i32 {
+        self.measure(text, font, size, bold, Style::Classic).ceil() as i32
+    }
+
+    fn text_advance(&mut self, text: &str, font: Option<&FontDef>, size: i32, bold: bool) -> f32 {
+        self.measure(text, font, size, bold, Style::Classic)
+    }
+
+    fn smooth_text_advance(
+        &mut self,
+        text: &str,
+        font: Option<&FontDef>,
+        size: i32,
+        bold: bool,
+    ) -> Option<f32> {
+        Some(self.measure(text, font, size, bold, Style::Modern))
+    }
+
+    fn line_metrics(
+        &mut self,
+        font: Option<&FontDef>,
+        size: i32,
+        bold: bool,
+    ) -> Option<(f32, f32)> {
+        self.line(font, size, bold, Style::Classic)
+    }
+
+    fn smooth_line_metrics(
+        &mut self,
+        font: Option<&FontDef>,
+        size: i32,
+        bold: bool,
+    ) -> Option<(f32, f32)> {
+        self.line(font, size, bold, Style::Modern)
+    }
+
+    fn font_file(&mut self, file: &str) -> Option<Rc<[u8]>> {
+        self.assets.borrow().read(file)
+    }
+
+    fn log(&mut self, message: &str) {
+        eprintln!("skin: {message}");
+    }
+
+    fn invalidate(&mut self) {
+        self.redraw.set(true);
+    }
+
+    fn window_open(&mut self, kind: &str) -> Option<bool> {
+        self.desk.switches.borrow().get(kind).copied()
+    }
+
+    fn choose_from_menu(&mut self, menu: &SkinMenu) -> Option<i32> {
+        match &*self.desk.menu.borrow() {
+            Some(show) => Some(show(&menu_text(menu))),
+            None => Some(0),
+        }
+    }
+
+    fn host_action(&mut self, action: &str, param: Option<&str>, from: Option<ActionFrom>) {
+        self.desk.actions.borrow_mut().push(HostAction {
+            name: action.to_string(),
+            param: param.map(str::to_string),
+            at: from.map(|f| (f.rect.left, f.rect.bottom())),
+        });
+        self.redraw.set(true);
+    }
+}

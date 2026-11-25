@@ -1,0 +1,191 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package nl.mattix.alpaca.widget
+
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.IntRect
+import androidx.lifecycle.ViewModelProvider
+import nl.mattix.alpaca.MainActivity
+import nl.mattix.alpaca.R
+import nl.mattix.alpaca.state.AppViewModels
+import nl.mattix.alpaca.state.CurrentSkin
+import nl.mattix.alpaca.state.WinampViewModel
+import nl.mattix.alpaca.state.displayNameOf
+import nl.mattix.alpaca.ui.Screen
+import nl.mattix.alpaca.ui.StatusBarIcons
+import nl.mattix.alpaca.ui.menu.AmpContextMenu
+import nl.mattix.alpaca.ui.menu.AmpModals
+import nl.mattix.alpaca.ui.menu.widgetMenu
+import nl.mattix.alpaca.ui.prefs.WIDGET_PAGE
+import nl.mattix.alpaca.ui.theme.rememberSkinColorScheme
+
+/**
+ * The player's menu, opened from the widget's own top-left button.
+ *
+ * A widget can show nothing of its own, so the menu is an activity. It shows the app's own menu,
+ * rendered by [AmpModals] and acting on the same view model the player uses, which [AppViewModels]
+ * holds for the process. See [widgetMenu] for the entries a home screen cannot offer.
+ */
+class WidgetMenuActivity : ComponentActivity() {
+    private val player: WinampViewModel by lazy {
+        ViewModelProvider(
+            AppViewModels,
+            ViewModelProvider.AndroidViewModelFactory.getInstance(application),
+        )[WinampViewModel::class.java]
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // the window reaches under the system bars on every Android version, as it does from 15,
+        // so the home screen shows behind them too
+        enableEdgeToEdge()
+        val skin = CurrentSkin.cached(this)
+        // an activity result launcher has to be registered before the activity starts, so it is
+        // made here and the menu is given a way to fire it
+        val skinPicker = registerForActivityResult(ActivityResultContracts.OpenDocument(), ::skinPicked)
+        // Winamp's Play file... and Play directory... No permission is asked first: what is picked
+        // is granted by the picker itself
+        val filePicker =
+            registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                picking = false
+                uri?.let { player.playlistFiles.playAudio(it) }
+                finish()
+            }
+        val folderPicker =
+            registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+                picking = false
+                uri?.let { player.playlistFiles.playFolder(it) }
+                finish()
+            }
+
+        fun build() =
+            widgetMenu(
+                vm = player,
+                onWidgetSettings = { open(Screen.PREFERENCES, page = WIDGET_PAGE) },
+                onPickSkin = {
+                    picking = true
+                    skinPicker.launch(arrayOf("*/*"))
+                },
+                onOpenFile = {
+                    picking = true
+                    filePicker.launch(arrayOf("audio/*"))
+                },
+                onOpenFolder = {
+                    picking = true
+                    folderPicker.launch(null)
+                },
+                onOpen = { where -> open(where) },
+                onExit = {
+                    player.exit()
+                    finish()
+                },
+            )
+        menu = build()
+        setContent {
+            // the menu is built once, and lastPlayed is filled in after onCreate, so the menu is
+            // rebuilt when it arrives
+            val heard = player.state.lastPlayed
+            LaunchedEffect(heard) {
+                if (heard != null && menu != null) menu = build()
+            }
+            // a worn modern skin's look can also be set after onCreate, on a cold start: the classic
+            // windows it does not show read unticked once it is, and as they are when it goes
+            val modern = player.skinOps.wal != null
+            LaunchedEffect(modern) {
+                if (menu != null) menu = build()
+            }
+            // closes when nothing is showing: the menu, a modal it opened, a picker in front, or
+            // a picked skin still loading
+            val showing = picking || importing || menu != null || player.state.showingAModal()
+            LaunchedEffect(showing) { if (!showing) finish() }
+            // the status bar sits on the wallpaper here, as it does over a floating player
+            StatusBarIcons(onPlayer = true, dark = false)
+            // the menu is this window's own state and not WinampState.activeMenu, which every host
+            // of AmpModals draws; the dialogs stay shared
+            MaterialTheme(colorScheme = skin?.let { rememberSkinColorScheme(it) } ?: darkColorScheme()) {
+                menu?.let { open ->
+                    AmpContextMenu(open, IntRect(ANCHOR_X, ANCHOR_Y, ANCHOR_X, ANCHOR_Y)) { menu = null }
+                }
+            }
+            AmpModals(
+                player.state,
+                anchorBounds = { IntRect(ANCHOR_X, ANCHOR_Y, ANCHOR_X, ANCHOR_Y) },
+                skin = skin,
+                // an added modern skin shows in the player, not in this window, so the player opens
+                onModernOfferTaken = { open(Screen.PLAYER) },
+            )
+        }
+    }
+
+    /**
+     * The skin picker's answer. The window stays until the load is done, so a notice or an offer
+     * about the pick has a window to show in; it closes once nothing shows.
+     */
+    internal fun skinPicked(uri: Uri?) {
+        picking = false
+        // a window made again while the picker was in front has built its menu anew
+        menu = null
+        val stream = uri?.let { contentResolver.openInputStream(it) }
+        if (uri == null || stream == null) {
+            finish()
+            return
+        }
+        importing = true
+        player.skinOps
+            .load(stream, displayNameOf(uri) ?: getString(R.string.skin_picked_name))
+            .invokeOnCompletion { importing = false }
+    }
+
+    /** Closes the menu on the way out, so returning here does not reopen it. */
+    private fun open(
+        where: String?,
+        page: String? = null,
+    ) {
+        menu = null
+        startActivity(
+            Intent(this, MainActivity::class.java)
+                .putExtra(MainActivity.SHOW_THE_APP, true)
+                .putExtra(MainActivity.GO_TO, where)
+                .putExtra(MainActivity.GO_TO_PAGE, page)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT),
+        )
+        finish()
+    }
+
+    /** True while the document picker is in front, waiting for an answer. */
+    private var picking by mutableStateOf(false)
+
+    /** True while a picked skin is loading, which may end in a notice or an offer. */
+    private var importing by mutableStateOf(false)
+
+    /** This window's own menu, kept out of the state every other host draws. */
+    internal var menu by mutableStateOf<nl.mattix.alpaca.state.AmpMenu?>(null)
+        private set
+
+    override fun onPause() {
+        super.onPause()
+        // closed here, so it is not still open when the listener returns to the home screen
+        menu = null
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // leaving the window answers an offer to add a modern skin with Not now
+        if (!isChangingConfigurations) player.skinOps.declineOffer()
+    }
+}
+
+private const val ANCHOR_X = 48
+private const val ANCHOR_Y = 320

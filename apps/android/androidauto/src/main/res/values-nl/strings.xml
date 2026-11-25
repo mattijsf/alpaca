@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="no_player">Installeer Alpaca op deze telefoon, of werk de app bij, om de speler hier te zien.</string>
+    <string name="update_player">Werk Alpaca op je telefoon bij: voor sommige dingen hier is een nieuwere Alpaca nodig.</string>
+    <string name="update_this_app">Werk Autoamp op je telefoon bij: voor sommige dingen hier is een nieuwere Autoamp nodig.</string>
+    <string name="settings_need_player">Deze instellingen staan in Alpaca. Installeer eerst Alpaca op deze telefoon.</string>
+</resources>

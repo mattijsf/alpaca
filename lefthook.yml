@@ -1,20 +1,47 @@
 # Git hooks. One-time setup after clone: `lefthook install` (brew install lefthook)
+#
+# One file for the whole repository: the core and the desktop apps, and the Android app in
+# apps/android. Each hook runs only for the part a commit or push touches.
+#
+# pre-commit: fast format checks on what a commit touches. Nothing is rewritten: fix with
+# `(cd core && cargo fmt)` or `xcrun swift-format format -i -r apps/mac/Sources` and commit again.
+pre-commit:
+  parallel: true
+  commands:
+    rustfmt:
+      glob: "*.rs"
+      root: "core/"
+      run: cargo fmt -- --check
+    swift-format:
+      glob: "apps/mac/*.swift"
+      run: xcrun swift-format lint --strict {staged_files}
+    c-header:
+      glob: "{core/src/ffi/*.rs,core/include/*.h}"
+      run: tools/check-header.sh
+
 commit-msg:
   commands:
-    type:
-      # feat:, change: and fix: reach the release notes, so a commit of one of
-      # those types has to change something that ships.
-      run: python3 tools/commit-type.py {1}
+    conventional:
+      run: bash tools/check-commit-message.sh {1}
+    android-type:
+      # feat:, change: and fix: reach the Android app's release notes, so such a commit that
+      # touches apps/android has to change something that ships there
+      run: python3 apps/android/tools/commit-type.py {1}
+
 pre-push:
   commands:
-    verify:
-      # `gate` is defined in the root build.gradle.kts: formatting, detekt in
-      # every module, the JVM unit tests of every module that has tests - the
-      # shared contract suites among them - and the goldens. Assembling the
-      # app is not in it; that is the wider local gate in ENGINEERING.md.
+    gate:
+      # the core and the desktop: tools/gate.sh
+      glob: "{core/**,apps/mac/**,tools/**,vis/**,rust-toolchain.toml}"
+      run: tools/gate.sh
+    android-gate:
+      # `gate` is defined in apps/android/build.gradle.kts: formatting, detekt in every module,
+      # the JVM unit tests and the goldens (apps/android/ENGINEERING.md)
+      glob: "apps/android/**"
+      root: "apps/android/"
       run: ./gradlew gate
-    tools:
-      # unit tests of the release scripts - the version code, what fits in
-      # the store's notes, which commits reach the changelog - which Gradle
-      # does not run. Standard library only.
+    android-tools:
+      # the release scripts' own tests, which Gradle does not run
+      glob: "apps/android/tools/**"
+      root: "apps/android/"
       run: python3 -m unittest discover -s tools/tests -q
