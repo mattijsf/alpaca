@@ -7,7 +7,7 @@ Winamp skin files: the actual sprite sheets from `.wsz` skins, drawn at integer 
 nearest-neighbor filtering.
 
 <p align="center">
-  <img src="docs/screenshot.png" width="360" alt="Alpaca running its own dark skin" />
+  <img src="docs/screenshot.png" width="360" alt="Alpaca running a classic skin" />
 </p>
 
 ## Status
