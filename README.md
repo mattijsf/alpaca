@@ -1,68 +1,20 @@
-# Alpaca for macOS
+# Alpaca
 
-Winamp on the Mac's desktop, from real skin files: every window of a skin is a window of its
-own, dragged by the skin's title bar, docking and snapping as Winamp's do. It runs classic
-skins (`.wsz`) and modern ones (`.wal`) on the [walkit](https://github.com/mattijsf/walkit)
-engine, and plays your music through an equalizer and an effect rack.
+Winamp's skins as a music player: classic skins (`.wsz`) and modern ones (`.wal`) drawn by the
+[walkit](https://github.com/mattijsf/walkit) engine, with an equalizer and an effect rack.
+Formerly Andamp.
 
-It is early. [PLAN.md](PLAN.md) says what is done, what is not, and what comes next.
+| Folder | What |
+| --- | --- |
+| [`core/`](core) | The shared core, in Rust: the app, the player, the effects and the skin engine's host, behind a C interface. `core/resources/` is what every app brings: the built-in skins, fonts and effect plug-ins. |
+| [`apps/mac/`](apps/mac) | The Mac app, in Swift and AppKit, over the core. |
+| [`apps/android/`](apps/android) | The Android app, in Kotlin, on Google Play's internal testing. It does not use the core yet. |
+| [`apps/web/`](apps/web) | The web app, on the core built for WebAssembly. Not started. |
+| [`tools/`](tools) | The gate and the scripts around it. |
 
-## What works
-
-- The skin's windows on the desktop, see-through where the skin is, at Winamp's size or
-  double. Alpaca Dark, Light and Spot come with the app; a skin of your own opens from the
-  File menu, from Finder, or by dropping it on a window, and one put in the app's `Skins`
-  folder (Preferences shows it) is in the Skins menu from then on.
-- MP3, AAC, ALAC, FLAC, Ogg Vorbis, WAV and AIFF files, folders of them and `.m3u`, `.m3u8`
-  and `.pls` playlists, and internet radio streams by their address. The playlist window's
-  menus select, remove, crop and sort, drop dead files and duplicates, show a file's info
-  and write the list as a web page.
-- Preferences (Command and comma): the skin, the size, shuffle and repeat, the time shown,
-  what the skin's visualizer shows and how, and the Milkdrop window's presets and pace.
-- The ten-band equalizer, balance and volume, and the skin's spectrum and oscilloscope.
-- Effects: Alpaca's `.lua` plug-ins. Six come with the app (View > Effects…), and you can
-  add your own.
-- Milkdrop: the Visualizer window draws `.milk` presets with libprojectM, once that library
-  is built (`vis/build-projectm.sh`; it needs CMake and a projectM checkout).
-- The Mac's media keys and Now Playing. Winamp's keys: Z X C V B, the arrows for volume and
-  for five seconds back and on.
-- It keeps the skin, its size and places, the volume, the playlist and the effects between
-  runs.
-
-## Build and run
-
-It needs Xcode, Rust (rustup's `cargo` in `~/.cargo/bin`) and
-[XcodeGen](https://github.com/yonaskolb/XcodeGen).
-
-```sh
-(cd apps/mac && xcodegen generate)
-xcodebuild -project apps/mac/Alpaca.xcodeproj -scheme Alpaca -configuration Release \
-  -derivedDataPath build build
-open build/Build/Products/Release/Alpaca.app
-```
-
-From a terminal the app takes a skin and songs to start with:
-
-```sh
-APP=build/Build/Products/Release/Alpaca.app/Contents/MacOS/Alpaca
-$APP ~/Music/album                 # a folder, a playlist file or songs: played at once
-$APP skin.wal --wasabi base.zip    # a modern skin over a wasabi base of your own
-$APP --dump out                    # writes every window as a PNG after two seconds, and quits
-$APP --bench 10 song.flac          # what ten seconds of playing cost
-```
-
-## How it is built
-
-`core/` is Rust: the skin engine's host, a renderer that draws each window into its own
-buffer of pixels, the player (decoding, the output, the equalizer), the effect engine and
-the app itself (its menu, its commands, what it keeps between runs), behind a C interface.
-`apps/mac/` is Swift and AppKit: it shows the windows, draws the menu the core describes, opens
-the file pickers the core asks for, and has the Mac's media keys.
-[ENGINEERING.md](ENGINEERING.md) has the architecture, its rules and the commands;
-[PLAN.md](PLAN.md) the order of work and where it stands.
-
-The core is written to be the same on Windows and Linux, and compiles for both;
-[PORTING.md](PORTING.md) says what a shell for another system has to do.
+[ENGINEERING.md](ENGINEERING.md) has the commands, the architecture and its rules;
+[PLAN.md](PLAN.md) the order of work and where it stands; [PORTING.md](PORTING.md) what a new
+app on the core has to do.
 
 ## License
 

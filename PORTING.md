@@ -101,3 +101,30 @@ second shell builds its own.
   (`fonts.rs` lists the folders; Linux has no Tahoma of its own) and draws the stand-ins that
   come with the app, as on the Mac, for what it does not find; `host.rs` lists where a system
   keeps Liberation Sans and DejaVu Sans for when even those are missing.
+
+## Android
+
+`apps/android/` is the Android app, in Kotlin, older than the core: it has its own player,
+effect rack and skin host, on the walkit engine's Android library. It does not use `core/` yet.
+The effect plug-ins are the same files and keep the same ids (`nl.mattix.andamp.*`) on both,
+so a rack saved on one names the same plug-ins on the other. Moving it onto the core, as a
+shell over the C interface or a JNI layer of its own, is a later step (PLAN.md).
+
+## The web
+
+`apps/web/` is kept for a shell in the browser, on the core built for WebAssembly. Nothing is
+built there yet. What is known:
+
+- **It does not compile yet.** `cargo check --lib --target wasm32-unknown-unknown` stops at the
+  first crate that needs the system: `getrandom` under `ring`, under `rustls`, under `ureq`,
+  which is internet radio. The browser fetches streams itself, so the radio's HTTP belongs
+  behind a feature the web build leaves out. What fails after that is not known; the Lua
+  interpreter is C (`mlua`, vendored), which wants a C compiler for WebAssembly or the
+  `wasm32-unknown-emscripten` target.
+- **Windows**: one canvas for all of the skin's windows, as on Wayland
+  (`Presentation::free_windows` off); the core's BGRA with the alpha multiplied in goes to
+  `putImageData` after a swap of red and blue, or to a WebGL texture.
+- **Audio**: Web Audio, through `cpal`'s `wasm-bindgen` backend or an `AudioWorklet` the core
+  fills, the same four lines as the other devices.
+- **Files and settings**: dropped and picked files instead of paths; the settings file in
+  `localStorage` or the origin's private file system.
