@@ -104,9 +104,11 @@ def build():
               radius=R_CHAMFER, edge=P.card_edge)
 
     # The "about" hit target at 253,91,13,15 is Winamp's clickable logo. It
-    # holds Alpaca's mark, a bolt through a broken ring, drawn bare at the full
-    # 13px width in `ink_dim`.
+    # holds Alpaca's mark, the alpaca in profile, drawn bare at the full
+    # 13px width in `edge`. Not `ink_dim`: the mark is ninety pixels, and in
+    # that colour it outweighs the accent the app seeds its theme from
+    # (SkinColorsTest), where `edge` is a gray the seed passes over.
     from .. import art as icons
-    draw.icon(c, 253, 92, 13, 13, icons.BRAND_MARK, P.ink_dim)
+    draw.icon(c, 253, 92, 13, 13, icons.BRAND_MARK, P.edge)
 
     return c

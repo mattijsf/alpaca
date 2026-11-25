@@ -20,8 +20,8 @@ import java.net.URLEncoder
  * ```
  * #EXTM3U
  * #ALPACA-CURRENT:0
- * #EXTINF:5,Andamp Whippin' Intro
- * #ALPACA:id=llama;artist=;title=Andamp+Whippin%27+Intro;ms=5329;kbps=56;khz=22
+ * #EXTINF:5,Alpaca Whippin' Intro
+ * #ALPACA:id=llama;artist=;title=Alpaca+Whippin%27+Intro;ms=5329;kbps=56;khz=22
  * asset:///audio/andamp-intro.mp3
  * ```
  */

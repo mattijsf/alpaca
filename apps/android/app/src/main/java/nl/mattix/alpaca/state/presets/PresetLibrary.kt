@@ -59,6 +59,31 @@ class PresetLibrary(
     fun delete(pack: InstalledPack): Boolean = pack.dir.deleteRecursively()
 
     /**
+     * Moves the pack [old] to [new], its version stamp with it, and gives each file at its
+     * top level the name [renamed] returns. Nothing moves when there is no [old], or already a
+     * [new]. A pack the listener deleted has only its stamp left, and the stamp moves too,
+     * so it stays deleted. Returns whether a pack moved.
+     */
+    fun rename(
+        old: String,
+        new: String,
+        renamed: (String) -> String,
+    ): Boolean {
+        val from = File(root, sanitize(old))
+        val to = File(root, sanitize(new))
+        val oldStamp = File(root, ".${sanitize(old)}-version")
+        val newStamp = File(root, ".${sanitize(new)}-version")
+        if (to.exists() || newStamp.exists()) return false
+        if (oldStamp.exists()) oldStamp.renameTo(newStamp)
+        if (!from.isDirectory || !from.renameTo(to)) return false
+        to.listFiles { file -> file.isFile }?.forEach { file ->
+            val name = renamed(file.name)
+            if (name != file.name) file.renameTo(File(to, name))
+        }
+        return true
+    }
+
+    /**
      * Extracts a `.zip` of presets into a directory named [name].
      *
      * @param onProgress called with the number of files written so far; a large pack is

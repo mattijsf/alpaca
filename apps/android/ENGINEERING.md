@@ -170,9 +170,10 @@ The app was called Andamp. The code and what a listener reads say Alpaca; a name
 - **What a launcher stores:** the launcher entry is an `activity-alias` named
   `nl.mattix.andamp.MainActivity`; the widget provider stays in `nl/mattix/andamp/widget/`.
 - **What is stored on a phone:** effect plug-in ids (also the Mac's), the bundled skin ids
-  `andamp-light`/`andamp-spot`, the AVS pack folder `AndAmp` and its preset files, the pack
-  launcher's prefs file, and the intro track. Playlists are written with `#ALPACA` markers
-  and the old `#ANDAMP` ones are still read (`PlaylistCodecTest`).
+  `andamp-light`/`andamp-spot`, the pack launcher's prefs file, and the intro track's file.
+  Playlists are written with `#ALPACA` markers and the old `#ANDAMP` ones are still read
+  (`PlaylistCodecTest`). The AVS pack installed as `AndAmp` is moved to `Alpaca` once, its
+  files and favorites with it (`PresetOpsPluginTest`).
 - **The SDK's Maven group** `nl.mattix.andamp`, which source extensions resolve.
 - **Addresses:** `andamp.nl`, `mattix.nl/andamp`, and `github.com/mattijsf/andamp` until the
   repository and the sites move.
@@ -458,7 +459,7 @@ edits the playlist. A car can be the first thing in the process to ask for the s
 **With its own window, through `:androidauto`.** Android Auto gives a drawing surface to
 navigation apps only, and Play's review of a car app turns down a music player that says it
 is one. So the player stays a media app in every build, and the screen is a separate app,
-Autoamp, installed beside it, whose id is the player's with `.androidauto` after it. Android
+Alpaca Auto, installed beside it, whose id is the player's with `.androidauto` after it. Android
 Auto shows such an app in a car only when the phone records Google Play as its installer;
 its "Unknown sources" switch covers media apps, not these. The Desktop Head Unit shows it
 however it was installed.
@@ -466,7 +467,7 @@ however it was installed.
 `:androidauto` has one screen. `LentSurface` hands Android Auto's surface to the player over
 `IRemoteWindow` and passes on taps and drags. Both apps' manifests say which version of that
 interface they speak (`RemoteWindowLink.PROTOCOL`); when they differ, the window still
-shows, and Autoamp says once in the car which app to update. In the player,
+shows, and Alpaca Auto says once in the car which app to update. In the player,
 `RemoteWindowService` takes the calls of an app signed with the player's key, or of the app
 whose id is the player's with `.androidauto` after it, whatever key signed that one
 (`RemoteWindowTrust`), and `RemoteWindow` puts a virtual display over the surface with a

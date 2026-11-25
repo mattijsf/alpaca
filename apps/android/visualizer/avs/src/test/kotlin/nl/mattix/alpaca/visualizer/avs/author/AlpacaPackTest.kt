@@ -23,10 +23,16 @@ class AlpacaPackTest {
     fun `the pack ships twelve presets, all avs files`() {
         assertEquals(12, files.size)
         files.keys.forEach { name ->
-            // the prefix is the app's old name: the files are kept in the preset library under it
-            assertTrue("'$name' carries the pack's own prefix", name.startsWith("andamp - "))
+            assertTrue("'$name' carries the pack's own prefix", name.startsWith("alpaca - "))
             assertTrue("'$name' is an avs file", name.endsWith(".avs"))
         }
+    }
+
+    @Test
+    fun `a file of the pack as it was installed under the old name is given its name now`() {
+        assertEquals("alpaca - dynamo.avs", AlpacaPack.renamed("andamp - dynamo.avs"))
+        assertTrue(AlpacaPack.renamed("andamp - dynamo.avs") in files)
+        assertEquals("a file the listener put there keeps its name", "mine.avs", AlpacaPack.renamed("mine.avs"))
     }
 
     @Test

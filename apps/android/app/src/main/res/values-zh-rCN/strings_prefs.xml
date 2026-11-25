@@ -11,9 +11,9 @@
     <string name="prefs_android_auto_protocol">协议 %1$d</string>
     <string name="prefs_android_auto_from_play">Android Auto 会在汽车中显示它</string>
     <string name="prefs_android_auto_not_from_play">Android Auto 不会在汽车中显示它</string>
-    <string name="prefs_android_auto_not_from_play_about">只有通过 Google Play 安装时，Android Auto 才会在汽车中显示 Autoamp。</string>
+    <string name="prefs_android_auto_not_from_play_about">只有通过 Google Play 安装时，Android Auto 才会在汽车中显示 Alpaca Auto。</string>
     <string name="prefs_android_auto_matches">与此 Alpaca 兼容</string>
-    <string name="prefs_android_auto_older">请更新 Autoamp</string>
+    <string name="prefs_android_auto_older">请更新 Alpaca Auto</string>
     <string name="prefs_android_auto_older_about">它比此 Alpaca 旧，因此在汽车中可能有些功能无法使用。</string>
     <string name="prefs_android_auto_newer">请更新 Alpaca</string>
     <string name="prefs_android_auto_newer_about">它比此 Alpaca 新，因此在汽车中可能有些功能无法使用。</string>

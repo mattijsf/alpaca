@@ -6,8 +6,9 @@ import nl.mattix.alpaca.core.model.Track
 
 /**
  * The track a fresh install starts with: the backing track of Winamp's llama intro with a
- * re-recorded vocal that names Alpaca. The entry has no artist, so its display name is the
- * title alone. NOTICE.md records whose music it is.
+ * re-recorded vocal, which names the app by its old name, Andamp, as does the file. The
+ * entry has no artist, so its display name is the title alone. NOTICE.md records whose
+ * music it is.
  */
 object DefaultTracks {
     val tracks: List<Track> =
@@ -15,7 +16,7 @@ object DefaultTracks {
             Track(
                 id = "llama",
                 artist = "",
-                title = "Andamp Whippin' Intro",
+                title = "Alpaca Whippin' Intro",
                 durationMs = 5329,
                 bitrateKbps = 56,
                 sampleRateKhz = 22,

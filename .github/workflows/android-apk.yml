@@ -5,7 +5,7 @@
 # down, and its support page opens the website. Direct downloads, Obtainium and app catalogs that
 # read GitHub releases all take this one file.
 #
-# A second, small APK goes with it: Autoamp, the app Android Auto talks to (:androidauto), which
+# A second, small APK goes with it: Alpaca Auto, the app Android Auto talks to (:androidauto), which
 # lends the car's screen to Alpaca. Both are signed with the same key.
 #
 # release-please.yml calls this when it has made a release, which is a draft at that point: a
@@ -117,9 +117,9 @@ jobs:
             fi
           }
           named app/build/outputs/apk/release/app-release.apk "alpaca-$version.apk"
-          named androidauto/build/outputs/apk/release/androidauto-release.apk "alpaca-autoamp-$version.apk"
+          named androidauto/build/outputs/apk/release/androidauto-release.apk "alpaca-auto-$version.apk"
           echo "file=alpaca-$version.apk" >> "$GITHUB_OUTPUT"
-          echo "auto=alpaca-autoamp-$version.apk" >> "$GITHUB_OUTPUT"
+          echo "auto=alpaca-auto-$version.apk" >> "$GITHUB_OUTPUT"
 
       - name: Attach them to the release, then publish the release
         if: env.TAG != ''

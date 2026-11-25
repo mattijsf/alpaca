@@ -2,6 +2,6 @@
 <resources>
     <string name="no_player">Installiere oder aktualisiere Alpaca auf diesem Smartphone, um es hier zu sehen.</string>
     <string name="update_player">Aktualisiere Alpaca auf deinem Smartphone: Manches hier braucht ein neueres Alpaca.</string>
-    <string name="update_this_app">Aktualisiere Autoamp auf deinem Smartphone: Manches hier braucht ein neueres Autoamp.</string>
+    <string name="update_this_app">Aktualisiere Alpaca Auto auf deinem Smartphone: Manches hier braucht ein neueres Alpaca Auto.</string>
     <string name="settings_need_player">Diese Einstellungen sind in Alpaca. Installiere zuerst Alpaca auf diesem Smartphone.</string>
 </resources>

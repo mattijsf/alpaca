@@ -217,5 +217,5 @@ like the rest of the code. No Nullsoft skin art is in this repository.
 [Cream of the Crop](https://github.com/projectM-visualizer/presets-cream-of-the-crop)) and
 `.avs` presets, including Winamp's own, carry their authors' terms and are not in this
 repository. The app loads them at runtime from storage the user chooses. The one pack the
-app ships, the "AndAmp" AVS pack, is this project's own: its presets are written in code
+app ships, the "Alpaca" AVS pack, is this project's own: its presets are written in code
 (`visualizer/avs/.../author/AlpacaPack.kt`).

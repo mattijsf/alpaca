@@ -151,41 +151,78 @@ class PresetLibraryTest {
 
         assertTrue(
             "the first install reports a new pack",
-            library.install("AndAmp", mapOf("a.avs" to byteArrayOf(1)), 1),
+            library.install("Alpaca", mapOf("a.avs" to byteArrayOf(1)), 1),
         )
-        assertFalse("the same version again reports no new pack", library.install("AndAmp", mapOf("a.avs" to byteArrayOf(1)), 1))
-        assertEquals(1, checkNotNull(library.pack("AndAmp")).avsCount)
+        assertFalse("the same version again reports no new pack", library.install("Alpaca", mapOf("a.avs" to byteArrayOf(1)), 1))
+        assertEquals(1, checkNotNull(library.pack("Alpaca")).avsCount)
     }
 
     @Test
     fun `a version bump rewrites the bundled pack without re-announcing it`() {
         val library = library()
-        library.install("AndAmp", mapOf("old.avs" to byteArrayOf(1)), 1)
+        library.install("Alpaca", mapOf("old.avs" to byteArrayOf(1)), 1)
 
         assertFalse(
             "an upgrade reports no new pack",
-            library.install("AndAmp", mapOf("new.avs" to byteArrayOf(2)), 2),
+            library.install("Alpaca", mapOf("new.avs" to byteArrayOf(2)), 2),
         )
-        val files = checkNotNull(library.pack("AndAmp")).dir.listFiles()!!.map { it.name }
+        val files = checkNotNull(library.pack("Alpaca")).dir.listFiles()!!.map { it.name }
         assertEquals(listOf("new.avs"), files.filter { it.endsWith(".avs") })
     }
 
     @Test
     fun `a deleted bundled pack stays deleted`() {
         val library = library()
-        library.install("AndAmp", mapOf("a.avs" to byteArrayOf(1)), 1)
-        library.delete(checkNotNull(library.pack("AndAmp")))
+        library.install("Alpaca", mapOf("a.avs" to byteArrayOf(1)), 1)
+        library.delete(checkNotNull(library.pack("Alpaca")))
 
-        assertFalse(library.install("AndAmp", mapOf("a.avs" to byteArrayOf(1)), 1))
+        assertFalse(library.install("Alpaca", mapOf("a.avs" to byteArrayOf(1)), 1))
         assertFalse(
             "a deleted pack stays deleted across an upgrade",
             library.install(
-                "AndAmp",
+                "Alpaca",
                 mapOf("a.avs" to byteArrayOf(1)),
                 2,
             ),
         )
-        assertEquals(null, library.pack("AndAmp"))
+        assertEquals(null, library.pack("Alpaca"))
+    }
+
+    @Test
+    fun `a pack renamed moves with its stamp and its files renamed`() {
+        val library = library()
+        library.install("Old", mapOf("old - a.avs" to byteArrayOf(1), "b.avs" to byteArrayOf(2)), 1)
+
+        assertTrue(library.rename("Old", "New") { it.replace("old - ", "new - ") })
+
+        assertEquals(null, library.pack("Old"))
+        val files =
+            checkNotNull(library.pack("New"))
+                .dir
+                .listFiles()!!
+                .map { it.name }
+                .sorted()
+        assertEquals(listOf("b.avs", "new - a.avs"), files)
+        assertFalse(
+            "the stamp moved too, so the same version is not written again",
+            library.install(
+                "New",
+                mapOf("x.avs" to byteArrayOf(3)),
+                1,
+            ),
+        )
+        assertFalse("a second rename finds nothing to move", library.rename("Old", "New") { it })
+    }
+
+    @Test
+    fun `a deleted pack renamed stays deleted under its new name`() {
+        val library = library()
+        library.install("Old", mapOf("a.avs" to byteArrayOf(1)), 1)
+        library.delete(checkNotNull(library.pack("Old")))
+
+        assertFalse(library.rename("Old", "New") { it })
+        assertFalse(library.install("New", mapOf("a.avs" to byteArrayOf(1)), 1))
+        assertEquals(null, library.pack("New"))
     }
 
     @Test

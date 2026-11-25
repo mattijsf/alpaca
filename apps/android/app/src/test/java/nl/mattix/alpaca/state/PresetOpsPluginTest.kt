@@ -7,6 +7,10 @@ import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import nl.mattix.alpaca.state.presets.Favorite
+import nl.mattix.alpaca.state.presets.FavoriteStore
+import nl.mattix.alpaca.state.presets.PresetLibrary
+import nl.mattix.alpaca.visualizer.avs.author.AlpacaPack
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -58,8 +62,26 @@ class PresetOpsPluginTest {
             ops.start()
             advanceUntilIdle()
 
-            assertEquals("AndAmp", state.presetPack)
-            assertEquals(File(root(), "AndAmp"), ops.activeAvsDir)
+            assertEquals("Alpaca", state.presetPack)
+            assertEquals(File(root(), "Alpaca"), ops.activeAvsDir)
+        }
+
+    @Test
+    fun `the pack installed while the app was Andamp moves to Alpaca with its favorites`() =
+        runTest {
+            PresetLibrary(root().apply { mkdirs() })
+                .install("AndAmp", mapOf("andamp - dynamo.avs" to byteArrayOf(1)), AlpacaPack.VERSION)
+            FavoriteStore(context).save(listOf(Favorite(VisPlugin.Avs, "AndAmp", "andamp - dynamo.avs")))
+            val ops = PresetOps(context, WinampState(), this, io = UnconfinedTestDispatcher(testScheduler))
+
+            ops.start()
+            advanceUntilIdle()
+
+            assertEquals(listOf("Alpaca"), ops.packs.map { it.name })
+            assertEquals(
+                listOf(Favorite(VisPlugin.Avs, "Alpaca", "alpaca - dynamo.avs")),
+                FavoriteStore(context).load(),
+            )
         }
 
     @Test
@@ -140,8 +162,8 @@ class PresetOpsPluginTest {
             advanceUntilIdle()
 
             assertNull("the import finishes without a failure", ops.importing)
-            assertEquals("the import leaves the selection on Alpaca", "AndAmp", state.presetPack)
-            assertEquals(listOf("AndAmp", "Milk pack"), ops.packs.map { it.name })
+            assertEquals("the import leaves the selection on Alpaca", "Alpaca", state.presetPack)
+            assertEquals(listOf("Alpaca", "Milk pack"), ops.packs.map { it.name })
         }
 
     private fun zipOf(vararg names: String): java.io.ByteArrayInputStream {

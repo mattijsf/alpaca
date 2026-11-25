@@ -131,11 +131,11 @@ class WindowScreenTest {
     }
 
     @Test
-    fun `with a newer player the car is told to update Autoamp`() {
+    fun `with a newer player the car is told to update Alpaca Auto`() {
         installThePlayer(protocol = RemoteWindowLink.PROTOCOL + 1)
 
         assertEquals(
-            listOf("Update Autoamp on your phone: some things here need a newer Autoamp."),
+            listOf("Update Alpaca Auto on your phone: some things here need a newer Alpaca Auto."),
             toastsOnStart(WindowScreen(car)),
         )
     }

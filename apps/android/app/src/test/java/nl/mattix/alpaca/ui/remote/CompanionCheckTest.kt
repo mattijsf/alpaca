@@ -18,7 +18,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
-/** What Preferences > Android Auto checks about Autoamp. */
+/** What Preferences > Android Auto checks about Alpaca Auto. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class CompanionCheckTest {
