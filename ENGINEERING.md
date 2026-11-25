@@ -3,8 +3,10 @@
 Alpaca for the desktop is Winamp's player on macOS, and later Windows and Linux: classic and
 modern skins run by the walkit engine, each of a skin's windows a window of its own on the
 desktop, with a real player behind them. It is built in two parts. `core/` is a Rust crate
-that is the app, the same on every system. A shell is the part written for one system; `apps/mac/`
-is the Mac's, in Swift.
+that is the app, the same on every system. A shell is the part written for one system;
+`apps/mac/` is the Mac's, in Swift. `apps/android/` is the Android app, which has its own
+build and notes and does not use the core yet; `apps/web/` is kept for a shell on the core
+built for WebAssembly.
 
 Two things decide most questions here. Speed is the first measure: an idle player costs
 nothing, and a playing one a few percent of a core. And whatever a second shell would have to
@@ -19,9 +21,9 @@ what a shell for another system has to do.
 tools/gate.sh                         # the push gate: format, lints, docs, tests, header, Swift
 (cd core && cargo test --release)     # the tests alone
 (cd core && cargo fmt)                # format the Rust
-xcrun swift-format format -i -r apps/mac/Sources   # format the Swift
+xcrun swift-format format -i -r apps/mac/Sources  # format the Swift
 tools/cross-check.sh                  # the core type-checked for Windows and Linux (needs zig)
-(cd apps/mac && xcodegen generate)         # the Xcode project, after project.yml changes
+(cd apps/mac && xcodegen generate)    # the Xcode project, after project.yml changes
 xcodebuild -project apps/mac/Alpaca.xcodeproj -scheme Alpaca -configuration Release \
   -derivedDataPath build build        # the Mac's app; it builds the core itself (core/build.sh)
 build/Build/Products/Release/Alpaca.app/Contents/MacOS/Alpaca [skin] [songs...]
