@@ -102,7 +102,7 @@ What the two themes draw at 275x116:
   unclamped: a 14px strip is a slice of a 116px window, and a corner clamped
   to the strip's height would be a tighter arc inside the region's.
 - **Alpaca's mark in the corner.** The about target at `253,91,13x15` holds
-  the brand's mark, a bolt through a broken ring, at the full 13px the box
+  the brand's mark, the alpaca in profile, at the full 13px the box
   allows. It lives in `icons.py`, outside the two icon sets, because every
   theme draws the same one.
 - **Round playlist corners.** Winamp's `REGION.TXT` has four sections (Normal,
