@@ -304,22 +304,23 @@ MENU_ICONS = {
 }
 
 # --- brand mark --------------------------------------------------------------
-# Alpaca's mark: the alpaca in profile, facing left - the pom-pom of wool on
-# its head, two ears behind it, one eye and a woolly neck. It is defined here,
-# outside the two icon sets, because every theme draws the same mark. 13 wide
-# is what the about box gives (Winamp puts it at 13x15).
+# Alpaca's mark: the alpaca from the front - the cloud of wool over its head,
+# an ear standing out of it on each side, and below it the face with the
+# muzzle drawn as an outline and the nose in it. It is defined here, outside
+# the two icon sets, because every theme draws the same mark. 13 wide is what
+# the about box gives (Winamp puts it at 13x15).
 BRAND_MARK = [
-    "....###..#.#.",
-    "...#####.###.",
-    "..#########..",
-    "...########..",
-    "..##.######..",
-    ".##########..",
-    "..#########..",
-    "......#####..",
-    ".....######..",
-    "......#####..",
-    ".....######..",
-    "......#####..",
-    ".....######..",
+    ".#.........#.",
+    ".#...###...#.",
+    ".###########.",
+    "#############",
+    ".###########.",
+    ".###########.",
+    "..##.###.##..",
+    "..#.......#..",
+    "..#.#...#.#..",
+    "..#.#.#.#.#..",
+    "..#.#...#.#..",
+    "..#..###..#..",
+    "...#######...",
 ]

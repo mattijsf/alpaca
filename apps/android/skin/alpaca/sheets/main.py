@@ -104,7 +104,7 @@ def build():
               radius=R_CHAMFER, edge=P.card_edge)
 
     # The "about" hit target at 253,91,13,15 is Winamp's clickable logo. It
-    # holds Alpaca's mark, the alpaca in profile, drawn bare at the full
+    # holds Alpaca's mark, the alpaca from the front, drawn bare at the full
     # 13px width in `edge`. Not `ink_dim`: the mark is ninety pixels, and in
     # that colour it outweighs the accent the app seeds its theme from
     # (SkinColorsTest), where `edge` is a gray the seed passes over.
