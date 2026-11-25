@@ -156,9 +156,9 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 - [x] One repository for every app, named Alpaca (formerly Andamp): the core in `core/`, what
   every app brings in `core/resources/`, the Mac's app in `apps/mac/`, the Android app in
   `apps/android/`, `apps/web/` kept for a shell on the core in WebAssembly (PORTING.md, The
-  web). The repository is the Android one (`mattijsf/andamp`, to be renamed `alpaca`) with
-  its commits, tags, releases and pull requests as they were: one commit moves the app into
-  `apps/android/` (`git log --follow` goes past it), and the Mac's history is merged in.
+  web). The repository is the Android one (`mattijsf/andamp`, renamed `alpaca`) with its
+  commits, tags, releases and pull requests up to #210 as they were. The move, the rename and
+  the Mac's and the core's history came in as one squashed commit (#211).
 - [x] Renamed everywhere but where a name is a contract: the Mac's bundle id is
   `nl.mattix.alpaca.mac` and its folder `Application Support/Alpaca`; a first start moves the
   `Andamp` folder there, and the skin worn, places kept by the built-in skins' old names
@@ -175,11 +175,11 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   `android-apk.yml`, `release-please.yml` for the Android app (package `apps/android`).
 - [x] What Android has had since `v0.17.0` (the walkit renderer, #180–#209) was not
   released from the old layout. Release-please now reads only commits under
-  `apps/android/`, so the move commit lists those changes again in its body, one `feat:` or
-  `fix:` entry each, for the first release from here.
-- [ ] The owner's to do: rename the GitHub repository `andamp` to `alpaca` (GitHub sends the
-  old addresses on) and push; merge with a merge commit, never squash. Release PR #181 on
-  the old layout is then stale: close it.
+  `apps/android/`, so #211's description lists those changes again, one `feat:` or `fix:`
+  entry each, in a `BEGIN_COMMIT_OVERRIDE` block (an HTML comment), for the first release
+  from here.
+- [x] The GitHub repository `andamp` is renamed `alpaca`; GitHub sends the old addresses on.
+- [ ] Release PR #181, on the old layout, is stale once #211 is in: close it.
   `andamp-monorepo`, an older attempt with the brand, the site and the sources, is not part
   of this.
 - [ ] The CI workflows were moved and pointed at their folders, not run.
