@@ -1,0 +1,27 @@
+# Git hooks. One-time setup after clone: `lefthook install` (brew install lefthook)
+#
+# pre-commit: fast format checks on what a commit touches. Nothing is rewritten: fix with
+# `(cd core && cargo fmt)` or `xcrun swift-format format -i -r apps/mac/Sources` and commit again.
+pre-commit:
+  parallel: true
+  commands:
+    rustfmt:
+      glob: "*.rs"
+      root: "core/"
+      run: cargo fmt -- --check
+    swift-format:
+      glob: "apps/mac/*.swift"
+      run: xcrun swift-format lint --strict {staged_files}
+    c-header:
+      glob: "{core/src/ffi/*.rs,core/include/*.h}"
+      run: tools/check-header.sh
+
+commit-msg:
+  commands:
+    conventional:
+      run: bash tools/check-commit-message.sh {1}
+
+pre-push:
+  commands:
+    gate:
+      run: tools/gate.sh

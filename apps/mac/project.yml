@@ -1,0 +1,102 @@
+# The Xcode project, Alpaca.xcodeproj, is made from this file with XcodeGen
+# (`xcodegen generate` in this folder). The project itself is not committed.
+name: Alpaca
+options:
+  bundleIdPrefix: nl.mattix.alpaca
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+targets:
+  Alpaca:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources
+      - path: ../../core/include/alpaca_core.h
+        buildPhase: none
+      - path: ../../core/resources/skins
+        type: folder
+        buildPhase: resources
+      - path: ../../core/resources/fonts
+        type: folder
+        buildPhase: resources
+      - path: ../../core/resources/wasabi
+        type: folder
+        buildPhase: resources
+      - path: ../../core/resources/plugins
+        type: folder
+        buildPhase: resources
+      # the app's icon, made from icon/alpaca.svg by tools/icon.sh
+      - path: Resources/AppIcon.icns
+        buildPhase: resources
+    info:
+      # written by XcodeGen, not committed
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: Alpaca
+        CFBundleIconFile: AppIcon
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.music
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        NSHumanReadableCopyright: GPL-3.0-or-later
+        NSPrincipalClass: NSApplication
+        # Finder offers the app for songs, and for skins by their file name's ending
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Audio
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.audio]
+          - CFBundleTypeName: Winamp skin
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Default
+            LSItemContentTypes: [nl.mattix.alpaca.skin.classic, nl.mattix.alpaca.skin.modern]
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: nl.mattix.alpaca.skin.classic
+            UTTypeDescription: Classic Winamp skin
+            UTTypeConformsTo: [public.data]
+            UTTypeTagSpecification:
+              public.filename-extension: [wsz]
+          - UTTypeIdentifier: nl.mattix.alpaca.skin.modern
+            UTTypeDescription: Modern Winamp skin
+            UTTypeConformsTo: [public.data]
+            UTTypeTagSpecification:
+              public.filename-extension: [wal]
+    settings:
+      base:
+        PRODUCT_NAME: Alpaca
+        PRODUCT_BUNDLE_IDENTIFIER: nl.mattix.alpaca.mac
+        SWIFT_OBJC_BRIDGING_HEADER: ../../core/include/alpaca_core.h
+        LIBRARY_SEARCH_PATHS: $(PROJECT_DIR)/../../core/target/macos
+        # the Rust library and the system frameworks its audio output calls
+        OTHER_LDFLAGS: -lalpaca_core -framework AudioToolbox -framework AudioUnit -framework CoreAudio
+        # the Visualizer window draws with OpenGL, which Apple has deprecated and still ships
+        GCC_PREPROCESSOR_DEFINITIONS: GL_SILENCE_DEPRECATION=1
+        ONLY_ACTIVE_ARCH: YES
+    postBuildScripts:
+      # the Milkdrop engine, when vis/build-projectm.sh built it: a library of its own in the
+      # app's Frameworks folder, which the app loads when the Visualizer window opens
+      - name: Copy the Milkdrop engine
+        script: |
+          lib="$PROJECT_DIR/../../vis/lib/libprojectM-4.dylib"
+          if [ -f "$lib" ]; then
+            mkdir -p "$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH"
+            cp -f "$lib" "$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/"
+            codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY:--}" "$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/libprojectM-4.dylib"
+          fi
+        basedOnDependencyAnalysis: false
+    preBuildScripts:
+      - name: Build the alpaca-core library
+        script: exec "$PROJECT_DIR/../../core/build.sh"
+        basedOnDependencyAnalysis: false
+        outputFiles:
+          - $(PROJECT_DIR)/../../core/target/macos/libalpaca_core.a

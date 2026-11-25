@@ -1,0 +1,5 @@
+/build/
+/apps/mac/Alpaca.xcodeproj/
+/core/target/
+.DS_Store
+/apps/mac/Info.plist

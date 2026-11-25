@@ -1,0 +1,530 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+//! The way out: the system's default audio device ([`device`](super::device)), fed from the
+//! decoder's ring.
+//!
+//! The device asks for blocks of stereo samples at the song's own sample rate. What fills
+//! them runs on the audio thread: it takes no lock and allocates nothing. What the rest of the
+//! player sets (volume, balance, the equalizer) and reads (the last samples, the levels)
+//! crosses in atomics ([`Shared`]); a new stretch of audio crosses in a small ring of its own.
+//! Nothing in this file knows which system it runs on.
+
+use std::f32::consts::PI;
+use std::sync::atomic::{AtomicBool, AtomicI32, AtomicU32, AtomicU64, AtomicUsize, Ordering};
+use std::sync::Arc;
+
+use super::decode::Stream;
+use super::device::Device;
+use crate::dsp::rack::RackVoice;
+
+/// The equalizer's bands, as Winamp has them, in Hz.
+pub const EQ_BANDS: [f32; 10] = [
+    60.0, 170.0, 310.0, 600.0, 1000.0, 3000.0, 6000.0, 12000.0, 14000.0, 16000.0,
+];
+/// How far a band or the preamp goes either way, in dB.
+const EQ_RANGE_DB: f32 = 12.0;
+/// How wide a band is.
+const EQ_Q: f32 = 1.2;
+/// How many of the last samples the visualizer can read.
+pub const TAP_SAMPLES: usize = 2048;
+
+/// A float in an atomic.
+pub struct AtomicF32(AtomicU32);
+
+impl AtomicF32 {
+    /// An atomic that holds `v`.
+    pub fn new(v: f32) -> Self {
+        AtomicF32(AtomicU32::new(v.to_bits()))
+    }
+    /// The value now.
+    pub fn get(&self) -> f32 {
+        f32::from_bits(self.0.load(Ordering::Relaxed))
+    }
+    /// Sets the value.
+    pub fn set(&self, v: f32) {
+        self.0.store(v.to_bits(), Ordering::Relaxed);
+    }
+}
+
+/// The last samples heard, both channels mixed, for the visualizer. The audio thread writes,
+/// the main thread reads; a read that overlaps a write gets a sample or two out of place,
+/// which a spectrum does not show.
+pub struct Tap {
+    samples: Box<[AtomicU32]>,
+    at: AtomicUsize,
+}
+
+impl Tap {
+    fn new() -> Self {
+        Tap {
+            samples: (0..TAP_SAMPLES).map(|_| AtomicU32::new(0)).collect(),
+            at: AtomicUsize::new(0),
+        }
+    }
+
+    #[inline]
+    fn push(&self, at: &mut usize, v: f32) {
+        self.samples[*at % TAP_SAMPLES].store(v.to_bits(), Ordering::Relaxed);
+        *at = at.wrapping_add(1);
+    }
+
+    /// The last `n` samples, oldest first.
+    pub fn last(&self, n: usize) -> Vec<f32> {
+        let n = n.min(TAP_SAMPLES);
+        let end = self.at.load(Ordering::Relaxed);
+        (0..n)
+            .map(|i| {
+                let at = end.wrapping_sub(n).wrapping_add(i) % TAP_SAMPLES;
+                f32::from_bits(self.samples[at].load(Ordering::Relaxed))
+            })
+            .collect()
+    }
+
+    /// The samples heard since `cursor` was last here, oldest first, at most `max` of them (the
+    /// newest when there were more); `cursor` moves on to now. For a visualizer that wants
+    /// every sample once.
+    pub fn since(&self, cursor: &mut usize, max: usize) -> Vec<f32> {
+        let end = self.at.load(Ordering::Relaxed);
+        let fresh = end.wrapping_sub(*cursor).min(TAP_SAMPLES).min(max);
+        *cursor = end;
+        (0..fresh)
+            .map(|i| {
+                let at = end.wrapping_sub(fresh).wrapping_add(i) % TAP_SAMPLES;
+                f32::from_bits(self.samples[at].load(Ordering::Relaxed))
+            })
+            .collect()
+    }
+
+    /// Forgets what was heard.
+    pub fn clear(&self) {
+        for s in &self.samples {
+            s.store(0, Ordering::Relaxed);
+        }
+    }
+}
+
+/// What the player and the audio thread share.
+pub struct Shared {
+    /// Whether the output plays; false leaves the ring alone and puts out silence.
+    pub playing: AtomicBool,
+    /// The volume, 0..1.
+    pub volume: AtomicF32,
+    /// The balance as a gain for each side, 0..1.
+    pub left: AtomicF32,
+    /// The right side's gain.
+    pub right: AtomicF32,
+    /// The equalizer: on or off, ten bands and the preamp 0..255 with 128 in the middle, and a
+    /// count that goes up when any of them changes.
+    pub eq_on: AtomicBool,
+    /// The equalizer's ten bands, 0..255 with 128 in the middle.
+    pub eq_bands: [AtomicI32; 10],
+    /// The equalizer's preamp, 0..255 with 128 in the middle.
+    pub eq_preamp: AtomicI32,
+    /// A count that goes up when the equalizer changes, so the output works its filters out again.
+    pub eq_version: AtomicU32,
+    /// The last samples heard.
+    pub tap: Tap,
+    /// The loudest sample of each side in the last block, 0..1.
+    pub level_left: AtomicF32,
+    /// The right side's loudest sample in the last block.
+    pub level_right: AtomicF32,
+    /// Blocks in which the ring ran empty while the song went on.
+    pub underruns: AtomicU64,
+}
+
+impl Shared {
+    /// What a new player and its output share: full volume, nothing playing.
+    pub fn new() -> Arc<Shared> {
+        Arc::new(Shared {
+            playing: AtomicBool::new(false),
+            volume: AtomicF32::new(1.0),
+            left: AtomicF32::new(1.0),
+            right: AtomicF32::new(1.0),
+            eq_on: AtomicBool::new(false),
+            eq_bands: std::array::from_fn(|_| AtomicI32::new(128)),
+            eq_preamp: AtomicI32::new(128),
+            eq_version: AtomicU32::new(1),
+            tap: Tap::new(),
+            level_left: AtomicF32::new(0.0),
+            level_right: AtomicF32::new(0.0),
+            underruns: AtomicU64::new(0),
+        })
+    }
+}
+
+/// A band's or the preamp's value 0..255 as dB.
+pub fn eq_db(value: i32) -> f32 {
+    ((value - 128) as f32 / 127.0 * EQ_RANGE_DB).clamp(-EQ_RANGE_DB, EQ_RANGE_DB)
+}
+
+/// One band: a peaking filter and what it remembers of each side.
+#[derive(Clone, Copy, Default)]
+struct Band {
+    on: bool,
+    b0: f32,
+    b1: f32,
+    b2: f32,
+    a1: f32,
+    a2: f32,
+    z: [[f32; 2]; 2],
+}
+
+impl Band {
+    fn set(&mut self, hz: f32, db: f32, sample_rate: f32) {
+        // a flat band, or one above what the sample rate carries, does nothing
+        self.on = db.abs() > 0.05 && hz < sample_rate * 0.45;
+        if !self.on {
+            return;
+        }
+        let a = 10f32.powf(db / 40.0);
+        let w = 2.0 * PI * hz / sample_rate;
+        let alpha = w.sin() / (2.0 * EQ_Q);
+        let a0 = 1.0 + alpha / a;
+        self.b0 = (1.0 + alpha * a) / a0;
+        self.b1 = -2.0 * w.cos() / a0;
+        self.b2 = (1.0 - alpha * a) / a0;
+        self.a1 = self.b1;
+        self.a2 = (1.0 - alpha / a) / a0;
+    }
+
+    #[inline(always)]
+    fn run(&mut self, side: usize, x: f32) -> f32 {
+        let z = &mut self.z[side];
+        let y = self.b0 * x + z[0];
+        z[0] = self.b1 * x - self.a1 * y + z[1];
+        z[1] = self.b2 * x - self.a2 * y;
+        y
+    }
+}
+
+/// The ten bands and the preamp, as the audio thread runs them.
+pub struct Equalizer {
+    bands: [Band; 10],
+    preamp: f32,
+    version: u32,
+    sample_rate: f32,
+}
+
+impl Equalizer {
+    /// An equalizer for audio at `sample_rate`, flat until told otherwise.
+    pub fn new(sample_rate: u32) -> Self {
+        Equalizer {
+            bands: [Band::default(); 10],
+            preamp: 1.0,
+            version: 0,
+            sample_rate: sample_rate as f32,
+        }
+    }
+
+    /// Takes the bands and the preamp from `shared` when they changed.
+    fn follow(&mut self, shared: &Shared) {
+        let version = shared.eq_version.load(Ordering::Relaxed);
+        if version == self.version {
+            return;
+        }
+        self.version = version;
+        for (band, (hz, value)) in self
+            .bands
+            .iter_mut()
+            .zip(EQ_BANDS.iter().zip(&shared.eq_bands))
+        {
+            band.set(*hz, eq_db(value.load(Ordering::Relaxed)), self.sample_rate);
+        }
+        self.preamp = 10f32.powf(eq_db(shared.eq_preamp.load(Ordering::Relaxed)) / 20.0);
+    }
+
+    /// Forgets what the filters remember: a new song starts clean.
+    fn clear(&mut self) {
+        for band in &mut self.bands {
+            band.z = [[0.0; 2]; 2];
+        }
+    }
+
+    /// Runs `samples` (left and right in turn) through the preamp and the bands.
+    pub fn run(&mut self, samples: &mut [f32]) {
+        for frame in samples.chunks_exact_mut(2) {
+            for (side, sample) in frame.iter_mut().enumerate() {
+                let mut x = *sample * self.preamp;
+                for band in &mut self.bands {
+                    if band.on {
+                        x = band.run(side, x);
+                    }
+                }
+                *sample = x;
+            }
+        }
+    }
+
+    /// An equalizer with these bands and this preamp, for tests and offline use.
+    pub fn with(sample_rate: u32, bands: [i32; 10], preamp: i32) -> Self {
+        let shared = Shared::new();
+        for (slot, value) in shared.eq_bands.iter().zip(bands) {
+            slot.store(value, Ordering::Relaxed);
+        }
+        shared.eq_preamp.store(preamp, Ordering::Relaxed);
+        let mut eq = Equalizer::new(sample_rate);
+        eq.follow(&shared);
+        eq
+    }
+}
+
+/// A stretch of audio handed to the output: the stream and the end of its ring to read.
+pub struct Source {
+    /// The stream being decoded.
+    pub stream: Arc<Stream>,
+    /// The reading end of the ring the decoder fills.
+    pub ring: rtrb::Consumer<f32>,
+    /// Whether it follows the one playing, with no gap, instead of replacing it now.
+    pub follows: bool,
+}
+
+/// What the audio thread keeps between blocks.
+struct Voice {
+    shared: Arc<Shared>,
+    /// New sources arrive here; the ones they replace go back through `done`, so that a ring
+    /// is never freed on the audio thread.
+    incoming: rtrb::Consumer<Source>,
+    done: rtrb::Producer<Source>,
+    current: Option<Source>,
+    /// The next song, decoded ahead: it takes over in the block where the current one ends.
+    queued: Option<Source>,
+    eq: Equalizer,
+    /// The effects, after the equalizer.
+    rack: RackVoice,
+    tap_at: usize,
+}
+
+impl Voice {
+    /// Fills `out` (left and right in turn) with the next block.
+    fn render(&mut self, out: &mut [f32]) {
+        while let Ok(next) = self.incoming.pop() {
+            // full only if the player stopped collecting: then the ring is freed here
+            if next.follows {
+                if let Some(old) = self.queued.replace(next) {
+                    let _ = self.done.push(old);
+                }
+                continue;
+            }
+            for old in [self.current.replace(next), self.queued.take()]
+                .into_iter()
+                .flatten()
+            {
+                let _ = self.done.push(old);
+            }
+            self.eq.clear();
+        }
+        let shared = &*self.shared;
+        if self.current.is_none() || !shared.playing.load(Ordering::Relaxed) {
+            out.fill(0.0);
+            shared.level_left.set(0.0);
+            shared.level_right.set(0.0);
+            return;
+        }
+        let wanted = out.len();
+        let mut got = 0;
+        while let Some(source) = &mut self.current {
+            let (filled, _) = source.ring.pop_partial_slice(&mut out[got..]);
+            let n = filled.len() & !1;
+            source
+                .stream
+                .frames_played
+                .fetch_add((n / 2) as u64, Ordering::Relaxed);
+            got += n;
+            if got >= wanted {
+                break;
+            }
+            if !(source.stream.decoded_all.load(Ordering::Acquire) && source.ring.is_empty()) {
+                shared.underruns.fetch_add(1, Ordering::Relaxed);
+                break;
+            }
+            source.stream.ended.store(true, Ordering::Release);
+            // the next song, decoded ahead, goes on in this same block
+            match self.queued.take() {
+                Some(next) if !next.stream.cancel.load(Ordering::Acquire) => {
+                    if let Some(old) = self.current.replace(next) {
+                        let _ = self.done.push(old);
+                    }
+                }
+                Some(dropped) => {
+                    let _ = self.done.push(dropped);
+                    break;
+                }
+                None => break,
+            }
+        }
+        out[got..].fill(0.0);
+        let heard = &mut out[..got];
+        if shared.eq_on.load(Ordering::Relaxed) {
+            self.eq.follow(shared);
+            self.eq.run(heard);
+        }
+        self.rack.run(heard);
+        // the visualizer and the levels read what is heard before the volume
+        let (mut peak_left, mut peak_right) = (0f32, 0f32);
+        let mut at = self.tap_at;
+        for frame in heard.chunks_exact(2) {
+            shared.tap.push(&mut at, f32::midpoint(frame[0], frame[1]));
+            peak_left = peak_left.max(frame[0].abs());
+            peak_right = peak_right.max(frame[1].abs());
+        }
+        self.tap_at = at;
+        shared.tap.at.store(at, Ordering::Relaxed);
+        shared.level_left.set(peak_left);
+        shared.level_right.set(peak_right);
+        let volume = shared.volume.get();
+        let (left, right) = (volume * shared.left.get(), volume * shared.right.get());
+        if left != 1.0 || right != 1.0 {
+            for frame in heard.chunks_exact_mut(2) {
+                frame[0] *= left;
+                frame[1] *= right;
+            }
+        }
+    }
+}
+
+/// The output: the device, set to one sample rate, and the rings to its audio thread.
+pub struct Output {
+    device: Device,
+    sources: rtrb::Producer<Source>,
+    replaced: rtrb::Consumer<Source>,
+    /// The sample rate the device is asked for.
+    pub sample_rate: u32,
+    running: bool,
+}
+
+impl Output {
+    /// Opens the default output for stereo float at `sample_rate`, with `rack` as its effects.
+    pub fn new(sample_rate: u32, shared: Arc<Shared>, rack: RackVoice) -> Result<Output, String> {
+        let (sources, incoming) = rtrb::RingBuffer::new(8);
+        let (done, replaced) = rtrb::RingBuffer::new(8);
+        let mut voice = Voice {
+            shared,
+            incoming,
+            done,
+            current: None,
+            queued: None,
+            eq: Equalizer::new(sample_rate),
+            rack,
+            tap_at: 0,
+        };
+        let device = Device::open(
+            sample_rate,
+            Box::new(move |out: &mut [f32]| voice.render(out)),
+        )
+        .map_err(|e| format!("the audio output did not open: {e}"))?;
+        Ok(Output {
+            device,
+            sources,
+            replaced,
+            sample_rate,
+            running: false,
+        })
+    }
+
+    /// Hands the output a new stretch of audio, in place of the one it plays.
+    pub fn play(&mut self, source: Source) {
+        self.collect();
+        // full only when the device does not run and many seeks piled up: the newest wins later
+        let _ = self.sources.push(source);
+    }
+
+    /// Frees the stretches the audio thread is done with.
+    pub fn collect(&mut self) {
+        while self.replaced.pop().is_ok() {}
+    }
+
+    /// Starts the device; its callback runs from now on.
+    pub fn start(&mut self) {
+        if !self.running {
+            self.running = self.device.start();
+        }
+    }
+
+    /// Stops the device: no callback, no wakeups.
+    pub fn stop(&mut self) {
+        if self.running {
+            self.device.stop();
+            self.running = false;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
+    use std::sync::{Arc, Mutex};
+
+    use super::{Equalizer, RackVoice, Shared, Source, Stream, Voice};
+
+    /// A source whose decoder is done, holding `frames` frames of `value`.
+    fn source(frames: usize, value: f32, follows: bool) -> Source {
+        let (mut producer, ring) = rtrb::RingBuffer::new(frames * 2);
+        for _ in 0..frames * 2 {
+            producer.push(value).unwrap();
+        }
+        let stream = Arc::new(Stream {
+            frames_played: AtomicU64::new(0),
+            decoded_all: AtomicBool::new(true),
+            ended: AtomicBool::new(false),
+            cancel: AtomicBool::new(false),
+            sample_rate: AtomicU32::new(44_100),
+            news: Mutex::default(),
+        });
+        Source {
+            stream,
+            ring,
+            follows,
+        }
+    }
+
+    fn voice() -> (Voice, rtrb::Producer<Source>) {
+        let shared = Shared::new();
+        shared.playing.store(true, Ordering::Relaxed);
+        let (sources, incoming) = rtrb::RingBuffer::new(8);
+        let (done, _replaced) = rtrb::RingBuffer::new(8);
+        let voice = Voice {
+            shared,
+            incoming,
+            done,
+            current: None,
+            queued: None,
+            eq: Equalizer::new(44_100),
+            rack: RackVoice::empty(),
+            tap_at: 0,
+        };
+        (voice, sources)
+    }
+
+    #[test]
+    fn the_next_song_starts_in_the_same_block_the_current_one_ends() {
+        let (mut voice, mut sources) = voice();
+        let first = source(100, 0.25, false);
+        let second = source(1000, 0.5, true);
+        let (a, b) = (first.stream.clone(), second.stream.clone());
+        sources.push(first).unwrap();
+        sources.push(second).unwrap();
+        let mut out = vec![0.0; 512];
+        voice.render(&mut out);
+        assert!(out[..200].iter().all(|s| *s == 0.25));
+        assert!(
+            out[200..].iter().all(|s| *s == 0.5),
+            "no silence between the songs"
+        );
+        assert!(a.ended.load(Ordering::Relaxed));
+        assert_eq!(a.frames_played.load(Ordering::Relaxed), 100);
+        assert_eq!(b.frames_played.load(Ordering::Relaxed), 156);
+        assert_eq!(voice.shared.underruns.load(Ordering::Relaxed), 0);
+    }
+
+    #[test]
+    fn a_next_song_let_go_of_is_not_played() {
+        let (mut voice, mut sources) = voice();
+        let second = source(1000, 0.5, true);
+        second.stream.cancel.store(true, Ordering::Relaxed);
+        sources.push(source(100, 0.25, false)).unwrap();
+        sources.push(second).unwrap();
+        let mut out = vec![1.0; 512];
+        voice.render(&mut out);
+        assert!(out[200..].iter().all(|s| *s == 0.0));
+    }
+}
