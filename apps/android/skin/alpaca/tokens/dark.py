@@ -33,7 +33,7 @@ glyph, like M3's icon toggle button.
 NAME = "dark"
 SCHEME = "dark"
 SKIN = "Alpaca Dark.wsz"
-WORDMARK = "andamp"
+WORDMARK = "alpaca"
 
 ROLES = {
     "primary": "#D0BCFF", "on_primary": "#381E72",

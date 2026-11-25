@@ -19,7 +19,7 @@ from spec import sprites as S
 
 # --- the state the shot is taken in -----------------------------------------
 TIME = "0342"
-TITLE = "andamp - material 3"
+TITLE = "alpaca - material 3"
 KBPS, KHZ = "192", "44"
 VOLUME = 78            # percent
 BALANCE = 0            # -100..100, 0 = centered

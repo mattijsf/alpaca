@@ -12,7 +12,7 @@ the controls are dark squircles on a near-white plate.
 NAME = "light"
 SKIN = "Alpaca Light.wsz"
 SCHEME = "light"
-WORDMARK = "andamp"
+WORDMARK = "alpaca"
 
 ROLES = {
     "primary": "#6750A4", "on_primary": "#FFFFFF",

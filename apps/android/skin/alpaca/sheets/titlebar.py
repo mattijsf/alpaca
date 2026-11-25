@@ -11,14 +11,14 @@ from ._common import (sheet, container, win_button, track,
                       R_CHAMFER, R_WINDOW)
 
 BAR_W = 14
-WORDMARK = "andamp"
+WORDMARK = "alpaca"
 
 # (sprite y, fill, ink, label)
 BARS = [
     (0, P.primary_container, P.on_primary_container, WORDMARK),    # selected
     (15, P.tray, P.ink_dim, WORDMARK),                             # idle
-    (57, P.tertiary_container, P.on_tertiary_container, "andamp!"),  # egg sel
-    (72, P.tray, P.level, "andamp!"),                              # egg idle
+    (57, P.tertiary_container, P.on_tertiary_container, "alpaca!"),  # egg sel
+    (72, P.tray, P.level, "alpaca!"),                              # egg idle
 ]
 SHADE = [(29, P.primary_container, P.on_primary_container),
          (42, P.tray, P.ink_dim)]
@@ -73,7 +73,7 @@ def build():
             draw.icon(c, 27 + gx, y + 4, len(mask[0]), 7, mask, ink)
         # No well for the position slider: MAIN_SHADE_POSITION_BACKGROUND is
         # its own 17x7 track sprite and covers this area.
-        draw.text(c, 27 + 18, y + 4, "andamp", ink)   # clears the options button at x=6
+        draw.text(c, 27 + 18, y + 4, "alpaca", ink)   # clears the options button at x=6
         _paint_bar_buttons(c, y, ink, shaded=True)
 
     # Window buttons. Options/minimize/close stack their depressed state

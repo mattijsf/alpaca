@@ -10,7 +10,7 @@ tertiary = the classic spectrum-analyzer amber
 NAME = "spot"
 SCHEME = "dark"
 SKIN = "Alpaca Spot.wsz"
-WORDMARK = "andamp"
+WORDMARK = "alpaca"
 
 SEED_PRIMARY = "#00E250"
 SEED_TERTIARY = "#FF9E1B"
