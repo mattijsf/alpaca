@@ -11,7 +11,7 @@
 # release-please.yml calls this when it has made a release, which is a draft at that point: a
 # published release in this repository is immutable and takes no more files. This attaches the
 # APKs and then publishes. A run that fails leaves the draft, and running it again for the tag,
-# from the Actions tab or with `gh workflow run apk.yml -f tag=v1.2.3`, finishes the job.
+# from the Actions tab or with `gh workflow run android-apk.yml -f tag=v1.2.3`, finishes the job.
 #
 # Without a tag it builds the branch it was started on and keeps the APKs as a workflow artifact,
 # which is how a change to this file is tried out.
@@ -58,6 +58,10 @@ permissions:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        # the Android app's build is its own, in its folder of the repository
+        working-directory: apps/android
     env:
       TAG: ${{ inputs.tag }}
       KEY_ALIAS: apk
@@ -85,7 +89,7 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.APK_KEYSTORE_BASE64 }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::error::The APK_* signing secrets are not set; see the top of .github/workflows/apk.yml"
+            echo "::error::The APK_* signing secrets are not set; see the top of .github/workflows/android-apk.yml"
             exit 1
           fi
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/apk.keystore"
@@ -131,8 +135,8 @@ jobs:
         with:
           name: ${{ steps.apk.outputs.file }}
           path: |
-            ${{ steps.apk.outputs.file }}
-            ${{ steps.apk.outputs.auto }}
+            apps/android/${{ steps.apk.outputs.file }}
+            apps/android/${{ steps.apk.outputs.auto }}
 
       - name: Remove the signing key
         if: always()

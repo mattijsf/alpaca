@@ -1,17 +1,18 @@
-# Versions, CHANGELOG.md and tags, from the conventional commits themselves.
+# The Android app's versions, apps/android/CHANGELOG.md and its v* tags, from the
+# conventional commits that touch apps/android.
 #
 # The rest of this repo's CI is manual-only to keep billed Actions minutes near
-# zero (see ci.yml). This one runs on every push to main because a
+# zero (see android-ci.yml and desktop-ci.yml). This one runs on every push to main because a
 # release-please run takes seconds and its release PR has to stay up to date
 # with main.
 #
 # Merging its PR bumps the version, writes the changelog and tags. Uploading
-# that tag to Play is tools/release.py, run by hand, because the upload key
+# that tag to Play is apps/android/tools/release.py, run by hand, because the upload key
 # lives in a keychain on one machine.
 #
 # The release it makes is a draft, with its tag made at once
 # (release-please-config.json). This repository's releases are immutable: once
-# published, nothing can be attached. So apk.yml, called below, builds the APK
+# published, nothing can be attached. So android-apk.yml, called below, builds the APK
 # for installing without Play, attaches it and then publishes the release.
 name: release-please
 
@@ -42,7 +43,7 @@ jobs:
   apk:
     needs: release-please
     if: needs.release-please.outputs.released == 'true'
-    uses: ./.github/workflows/apk.yml
+    uses: ./.github/workflows/android-apk.yml
     with:
       tag: ${{ needs.release-please.outputs.tag }}
     secrets: inherit

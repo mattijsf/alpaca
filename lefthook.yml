@@ -1,5 +1,8 @@
 # Git hooks. One-time setup after clone: `lefthook install` (brew install lefthook)
 #
+# One file for the whole repository: the core and the desktop apps, and the Android app in
+# apps/android. Each hook runs only for the part a commit or push touches.
+#
 # pre-commit: fast format checks on what a commit touches. Nothing is rewritten: fix with
 # `(cd core && cargo fmt)` or `xcrun swift-format format -i -r apps/mac/Sources` and commit again.
 pre-commit:
@@ -20,8 +23,25 @@ commit-msg:
   commands:
     conventional:
       run: bash tools/check-commit-message.sh {1}
+    android-type:
+      # feat:, change: and fix: reach the Android app's release notes, so such a commit that
+      # touches apps/android has to change something that ships there
+      run: python3 apps/android/tools/commit-type.py {1}
 
 pre-push:
   commands:
     gate:
+      # the core and the desktop: tools/gate.sh
+      glob: "{core/**,apps/mac/**,tools/**,vis/**,rust-toolchain.toml}"
       run: tools/gate.sh
+    android-gate:
+      # `gate` is defined in apps/android/build.gradle.kts: formatting, detekt in every module,
+      # the JVM unit tests and the goldens (apps/android/ENGINEERING.md)
+      glob: "apps/android/**"
+      root: "apps/android/"
+      run: ./gradlew gate
+    android-tools:
+      # the release scripts' own tests, which Gradle does not run
+      glob: "apps/android/tools/**"
+      root: "apps/android/"
+      run: python3 -m unittest discover -s tools/tests -q

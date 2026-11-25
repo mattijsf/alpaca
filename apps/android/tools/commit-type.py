@@ -22,7 +22,10 @@ from pathlib import Path
 # `.wsz` and `.zip` files directly in skin/dist (the skins and their runtime
 # templates), which :app:bundledSkins packages. The previews and checksums
 # beside them do not ship.
-SHIPS = re.compile(r"(^|/)src/main/|^skin/dist/[^/]+\.(wsz|zip)$")
+SHIPS = re.compile(r"(^|/)src/main/|^apps/android/skin/dist/[^/]+\.(wsz|zip)$")
+# release-please writes the Android app's changelog from the commits that touch
+# its folder; a commit outside it is the core's or another app's, and not news here.
+ANDROID = "apps/android/"
 TELLS = re.compile(r"^(feat|change|fix)(\([^)]*\))?!?:", re.I)
 
 
@@ -46,7 +49,7 @@ def main() -> int:
     # a merge writes its own message and stages nothing of its own
     if first.startswith("Merge ") or not TELLS.match(first):
         return 0
-    files = staged()
+    files = [name for name in staged() if name.startswith(ANDROID)]
     if not files or any(SHIPS.search(name) for name in files):
         return 0
     print(f"\n  ✗ {first}", file=sys.stderr)

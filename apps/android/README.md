@@ -46,10 +46,10 @@ You need JDK 17 and an Android SDK with NDK 28.2.13676358 and CMake 3.22.1, whic
 the two native visualizer modules.
 
 ```bash
-git clone https://github.com/mattijsf/andamp.git
-cd andamp
-echo "sdk.dir=$HOME/Library/Android/sdk" > local.properties   # or wherever yours lives
+# in a clone of the Alpaca repository, where this app is apps/android
 git submodule update --init --recursive                       # the visualizer engines build from source
+cd apps/android
+echo "sdk.dir=$HOME/Library/Android/sdk" > local.properties   # or wherever yours lives
 ./gradlew installDebug
 ```
 
@@ -109,7 +109,7 @@ After cloning:
 
 ```bash
 brew install lefthook   # or your package manager's equivalent
-lefthook install
+lefthook install        # at the repository's root
 ```
 
 The pre-push hook runs `./gradlew gate` (formatting, detekt, unit tests, golden screenshot

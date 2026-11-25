@@ -1,5 +1,5 @@
 # The gate on a Mac, the core's tests on Windows and Linux, and the Mac's app.
-name: CI
+name: Desktop CI
 
 # Manual-only to keep Actions minutes near zero: the lefthook pre-push gate runs the same
 # checks locally on every push. Start it from the Actions tab ("Run workflow") or with:

@@ -35,16 +35,19 @@ adb shell am start -n nl.mattix.andamp/.MainActivity
 
 ### Setup
 
+This app lives in `apps/android/` of the Alpaca repository; Gradle runs from this folder.
 After cloning, run `git submodule update --init --recursive`. That fetches projectM, its
 vendored `projectm-eval`, and the separate pin of the same evaluator that AVS uses. Without
 them the native builds stop with a message that says so.
 
-Then run `lefthook install` once (`brew install lefthook` if you do not have it). It wires
-the pre-push hook, which runs `./gradlew gate`. If the hook fails, fix the problem; do not
-push with `--no-verify`.
+Then run `lefthook install` once at the repository's root (`brew install lefthook` if you do
+not have it). The root `lefthook.yml` wires the pre-push hook, which runs `./gradlew gate`
+here when a push touches `apps/android/`. If the hook fails, fix the problem; do not push
+with `--no-verify`.
 
-The local hook is the main gate. GitHub Actions (`.github/workflows/ci.yml`) only runs when
-started by hand, from the Actions tab or with `gh workflow run ci.yml`. It checks out with
+The local hook is the main gate. GitHub Actions (`.github/workflows/android-ci.yml` at the
+repository's root) only runs when started by hand, from the Actions tab or with
+`gh workflow run android-ci.yml`. It checks out with
 `submodules: recursive` and runs `gate assembleDebug`. A run is useful before a release or
 after a toolchain upgrade.
 
@@ -91,7 +94,7 @@ are set once in the root build for every Android module.
   members, and everything else is shared: `storeNone` has no till, so the support page
   opens the website. The task names do not change. `assemble*` on a `none` build reads the
   APK back and fails if the library is in it (`verify*ApkCarriesNoBilling`). The gate runs
-  the `play` build; `.github/workflows/apk.yml` builds, signs and attaches the other to
+  the `play` build; `.github/workflows/android-apk.yml` builds, signs and attaches the other to
   each GitHub release, with the APK of `:androidauto` beside it.
 - **A second id, for a phone that has the store's Alpaca.** `-Palpaca.id.suffix=.dev`
   makes the app `nl.mattix.andamp.dev`, which installs beside the other and leaves it and
@@ -152,6 +155,27 @@ MkDocs runs from a virtualenv in `tools/docs-venv` (gitignored, pinned by
 create it.
 
 Neither task is part of `gate`.
+
+## Names kept from Andamp
+
+The app was called Andamp. The code and what a listener reads say Alpaca; a name stays
+`andamp` where changing it would break something outside this repository:
+
+- **Identity:** the application id `nl.mattix.andamp` (Play and installed phones), and the
+  Android Auto app's id derived from it.
+- **What other apps call:** intent actions and meta-data (`nl.mattix.andamp.source.*`,
+  `window.*`, `pack.*`, `widget.*`, the session commands), and the Binder descriptors of
+  the AIDL interfaces, set with `@Descriptor` now that their package moved
+  (`WireNamesTest`, `ProtocolTest`).
+- **What a launcher stores:** the launcher entry is an `activity-alias` named
+  `nl.mattix.andamp.MainActivity`; the widget provider stays in `nl/mattix/andamp/widget/`.
+- **What is stored on a phone:** effect plug-in ids (also the Mac's), the bundled skin ids
+  `andamp-light`/`andamp-spot`, the AVS pack folder `AndAmp` and its preset files, the pack
+  launcher's prefs file, and the intro track. Playlists are written with `#ALPACA` markers
+  and the old `#ANDAMP` ones are still read (`PlaylistCodecTest`).
+- **The SDK's Maven group** `nl.mattix.andamp`, which source extensions resolve.
+- **Addresses:** `andamp.nl`, `mattix.nl/andamp`, and `github.com/mattijsf/andamp` until the
+  repository and the sites move.
 
 ## Architecture
 
