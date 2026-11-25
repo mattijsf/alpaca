@@ -170,9 +170,10 @@ The app was called Andamp. The code and what a listener reads say Alpaca; a name
 - **What a launcher stores:** the launcher entry is an `activity-alias` named
   `nl.mattix.andamp.MainActivity`; the widget provider stays in `nl/mattix/andamp/widget/`.
 - **What is stored on a phone:** effect plug-in ids (also the Mac's), the bundled skin ids
-  `andamp-light`/`andamp-spot`, the AVS pack folder `AndAmp` and its preset files, the pack
-  launcher's prefs file, and the intro track. Playlists are written with `#ALPACA` markers
-  and the old `#ANDAMP` ones are still read (`PlaylistCodecTest`).
+  `andamp-light`/`andamp-spot`, the pack launcher's prefs file, and the intro track's file.
+  Playlists are written with `#ALPACA` markers and the old `#ANDAMP` ones are still read
+  (`PlaylistCodecTest`). The AVS pack installed as `AndAmp` is moved to `Alpaca` once, its
+  files and favorites with it (`PresetOpsPluginTest`).
 - **The SDK's Maven group** `nl.mattix.andamp`, which source extensions resolve.
 - **Addresses:** `andamp.nl`, `mattix.nl/andamp`, and `github.com/mattijsf/andamp` until the
   repository and the sites move.

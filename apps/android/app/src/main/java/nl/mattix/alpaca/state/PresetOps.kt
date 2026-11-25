@@ -177,7 +177,25 @@ class PresetOps(
      * the first install it becomes AVS's pack, unless AVS already has a remembered one.
      */
     private suspend fun installBundled() {
-        val first = withContext(io) { library.install(AlpacaPack.NAME, AlpacaPack.files(), AlpacaPack.VERSION) }
+        // the pack the app shipped as Andamp moves to its name now, once, with the favorites
+        // and each engine's remembered pack. The move and the install share one trip to [io]:
+        // a second dispatch delays the install past the end of a short-lived owner
+        val old = AlpacaPack.OLD_NAME
+        val (moved, first) =
+            withContext(io) {
+                library.rename(old, AlpacaPack.NAME, AlpacaPack::renamed) to
+                    library.install(AlpacaPack.NAME, AlpacaPack.files(), AlpacaPack.VERSION)
+            }
+        if (moved) {
+            takeFavorites(
+                favorites.map {
+                    if (it.pack == old) it.copy(pack = AlpacaPack.NAME, path = AlpacaPack.renamed(it.path)) else it
+                },
+            )
+            packMemory = packMemory.mapValues { (_, pack) -> if (pack == old) AlpacaPack.NAME else pack }
+            if (state.presetPack == old) state.presetPack = AlpacaPack.NAME
+            remember()
+        }
         if (!first || packMemory[VisPlugin.Avs] != null) return
         packMemory = packMemory + (VisPlugin.Avs to AlpacaPack.NAME)
         if (state.visPlugin == VisPlugin.Avs) state.presetPack = AlpacaPack.NAME

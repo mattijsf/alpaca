@@ -12,30 +12,40 @@ import nl.mattix.alpaca.visualizer.avs.AvsPreset
  * Each preset is a component stack: a trail stage (feedback, blur, fade),
  * renderers on top, color stages after, tuned for the 196-wide frame `AvsView`
  * renders. The host installs [files] into the preset library under [NAME],
- * and [VERSION] changes when the set changes. [NAME] and the file names keep the app's old
- * name: they are the pack's folder and files in the phone's preset library, and favorites name them.
+ * and [VERSION] changes when the set changes.
+ *
+ * The pack was installed as [OLD_NAME], with files named `andamp - <title>.avs`, while the
+ * app was called Andamp. The host moves that pack to [NAME] once, and [renamed] gives each
+ * old file's new name, so favorites follow their presets.
  */
 object AlpacaPack {
-    const val NAME = "AndAmp"
+    const val NAME = "Alpaca"
+    const val OLD_NAME = "AndAmp"
     const val VERSION = 1
+
+    /** The name a file of the pack has now, for its name in the pack as [OLD_NAME]. */
+    fun renamed(file: String): String = if (file.startsWith(OLD_PREFIX)) PREFIX + file.removePrefix(OLD_PREFIX) else file
+
+    private const val PREFIX = "alpaca - "
+    private const val OLD_PREFIX = "andamp - "
 
     /** Filename to file bytes, in the order the pack plays unshuffled. */
     fun files(): Map<String, ByteArray> = PRESETS.mapValues { AvsWriter.write(it.value) }
 
     private val PRESETS: Map<String, AvsPreset> =
         linkedMapOf(
-            "andamp - neon cage.avs" to neonCage(),
-            "andamp - lissajous silk.avs" to lissajousSilk(),
-            "andamp - starburst.avs" to starburst(),
-            "andamp - ion tunnel.avs" to ionTunnel(),
-            "andamp - magma bore.avs" to magmaBore(),
-            "andamp - warp gate.avs" to warpGate(),
-            "andamp - neon spokes.avs" to neonSpokes(),
-            "andamp - borealis.avs" to borealis(),
-            "andamp - bloom reactor.avs" to bloomReactor(),
-            "andamp - event horizon.avs" to eventHorizon(),
-            "andamp - ion lattice.avs" to ionLattice(),
-            "andamp - dynamo.avs" to dynamo(),
+            "alpaca - neon cage.avs" to neonCage(),
+            "alpaca - lissajous silk.avs" to lissajousSilk(),
+            "alpaca - starburst.avs" to starburst(),
+            "alpaca - ion tunnel.avs" to ionTunnel(),
+            "alpaca - magma bore.avs" to magmaBore(),
+            "alpaca - warp gate.avs" to warpGate(),
+            "alpaca - neon spokes.avs" to neonSpokes(),
+            "alpaca - borealis.avs" to borealis(),
+            "alpaca - bloom reactor.avs" to bloomReactor(),
+            "alpaca - event horizon.avs" to eventHorizon(),
+            "alpaca - ion lattice.avs" to ionLattice(),
+            "alpaca - dynamo.avs" to dynamo(),
         )
 }
 
