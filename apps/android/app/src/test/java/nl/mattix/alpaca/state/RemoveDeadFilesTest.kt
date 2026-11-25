@@ -28,7 +28,7 @@ class RemoveDeadFilesTest {
 
     private val tracks =
         listOf(
-            Track("bundled", "", "Andamp Whippin' Intro", 5000, uri = "asset:///audio/andamp-intro.mp3"),
+            Track("bundled", "", "Alpaca Whippin' Intro", 5000, uri = "asset:///audio/andamp-intro.mp3"),
             Track("on-disk", "", "still here", 1000, uri = "file://${livingFile.absolutePath}"),
             Track("dead-saf", "", "was on the sd card", 1000, uri = "content://com.gone.provider/document/42"),
             Track("dead-file", "", "deleted file", 1000, uri = "file:///nowhere/gone.mp3"),
