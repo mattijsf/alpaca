@@ -91,8 +91,8 @@ extension AppDelegate {
                         Double(steps) / seconds, Double(drawn) / seconds,
                         engine / seconds * 1000, draw / seconds * 1000,
                         drawn > 0 ? draw / Double(drawn) * 1e6 : 0, Double(usage.ru_maxrss) / 1_048_576,
-                        Int(andamp_player_count(self.controller.player)),
-                        andamp_player_underruns(self.controller.player), self.startup * 1000,
+                        Int(alpaca_player_count(self.controller.player)),
+                        alpaca_player_underruns(self.controller.player), self.startup * 1000,
                         self.controller.startTook * 1000))
                 exit(0)
             }

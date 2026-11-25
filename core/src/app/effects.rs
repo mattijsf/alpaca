@@ -35,7 +35,7 @@ impl App {
                             .insert(player.rack.effects()[index].plugin.info.id.clone());
                     }
                     Ok(_) => {}
-                    Err(reason) => eprintln!("andamp: {name}: {reason}"),
+                    Err(reason) => eprintln!("alpaca: {name}: {reason}"),
                 }
             }
         }
@@ -57,7 +57,7 @@ impl App {
         });
         match found {
             Some(index) => player.rack.set_on(index, true),
-            None => eprintln!("andamp: no effect {id}"),
+            None => eprintln!("alpaca: no effect {id}"),
         }
     }
 

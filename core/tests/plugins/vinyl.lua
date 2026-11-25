@@ -32,7 +32,7 @@ plugin {
   id      = "nl.mattix.andamp.example.vinyl",
   name    = "Vinyl",
   version = "1.3.0",
-  author  = "Andamp examples",
+  author  = "Alpaca examples",
   about   = "Record emulation: 0.556 Hz eccentricity plus 7 Hz belt flutter on a 3 ms line, elliptical bass below 130 Hz, 40–85 Hz high-pass, 24 dB/oct top from 14 kHz to 3.5 kHz, channel separation from 20 dB down to 7 dB, a 3 kHz cartridge lift and tanh tracing distortion, over per-channel surface noise, threshold-gated crackle, pops, a 30 s scratch burst and 35 Hz rumble."
 }
 

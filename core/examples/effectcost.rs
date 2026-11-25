@@ -7,8 +7,8 @@
 use std::path::Path;
 use std::time::Instant;
 
-use andamp_core::dsp::graph::Engine;
-use andamp_core::dsp::lua::Plugin;
+use alpaca_core::dsp::graph::Engine;
+use alpaca_core::dsp::lua::Plugin;
 
 fn main() {
     let folder = std::env::args().nth(1).expect("a folder of plug-ins");

@@ -8,8 +8,8 @@ use std::f32::consts::PI;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
-use andamp_core::player::output::Equalizer;
-use andamp_core::player::{spectrum, Player};
+use alpaca_core::player::output::Equalizer;
+use alpaca_core::player::{spectrum, Player};
 use rustfft::FftPlanner;
 use walkit::player::Status;
 
@@ -36,7 +36,7 @@ fn tone_file(name: &str, hz: f32, seconds: f32, sample_rate: u32) -> PathBuf {
         bytes.extend(s.to_le_bytes());
         bytes.extend(s.to_le_bytes());
     }
-    let dir = std::env::temp_dir().join(format!("andamp-test-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("alpaca-test-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join(name);
     std::fs::write(&path, bytes).unwrap();
@@ -245,10 +245,10 @@ fn a_list_is_saved_and_read_back() {
 fn a_factory_preset_sets_the_bands_and_switches_the_equalizer_on() {
     use walkit::player::Player as _;
     let player = std::rc::Rc::new(std::cell::RefCell::new(Player::silent()));
-    let skin = andamp_core::player::SkinPlayer(player.clone());
+    let skin = alpaca_core::player::SkinPlayer(player.clone());
     assert!(!skin.eq_enabled());
     // Full Bass: the low bands up, the high ones down
-    let full_bass = andamp_core::player::EQ_PRESETS
+    let full_bass = alpaca_core::player::EQ_PRESETS
         .iter()
         .position(|p| p.0 == "Full Bass")
         .unwrap();
@@ -269,7 +269,7 @@ fn a_factory_preset_sets_the_bands_and_switches_the_equalizer_on() {
 fn what_a_run_leaves_is_put_back_in_the_next() {
     use walkit::player::Player as _;
     let first = std::rc::Rc::new(std::cell::RefCell::new(Player::silent()));
-    let mut skin = andamp_core::player::SkinPlayer(first.clone());
+    let mut skin = alpaca_core::player::SkinPlayer(first.clone());
     skin.set_eq_enabled(true);
     skin.set_eq_band(3, 200);
     skin.set_eq_preamp(90);
@@ -278,7 +278,7 @@ fn what_a_run_leaves_is_put_back_in_the_next() {
     let left = first.borrow().state();
     let second = std::rc::Rc::new(std::cell::RefCell::new(Player::silent()));
     second.borrow_mut().restore(&left);
-    let skin = andamp_core::player::SkinPlayer(second.clone());
+    let skin = alpaca_core::player::SkinPlayer(second.clone());
     assert!(skin.eq_enabled() && skin.shuffle() && !skin.repeat());
     assert_eq!(
         (skin.eq_bands()[3], skin.eq_preamp(), skin.pan()),
@@ -308,7 +308,7 @@ fn with_titles(audio: &[u8], every: usize, title: &str) -> Vec<u8> {
 
 #[test]
 fn a_radio_streams_titles_are_taken_out_of_its_audio() {
-    use andamp_core::player::decode::IcyReader;
+    use alpaca_core::player::decode::IcyReader;
     use std::io::Read;
     let audio: Vec<u8> = (0..1000u32).map(|i| (i % 251) as u8).collect();
     let sent = with_titles(&audio, 64, "Artist - Song");
@@ -379,7 +379,7 @@ fn a_radio_stream_plays_and_says_what_it_is() {
 
 #[test]
 fn a_song_at_one_rate_keeps_its_pitch_and_its_time_on_a_device_at_another() {
-    use andamp_core::player::device::resample::Resampler;
+    use alpaca_core::player::device::resample::Resampler;
     // a 1 kHz tone at 44.1 kHz, asked for by a device at 48 kHz in blocks of 512 frames
     let mut resampler = Resampler::new(44_100, 48_000);
     let mut source_frame = 0u64;

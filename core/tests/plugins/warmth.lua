@@ -9,7 +9,7 @@ plugin {
   id      = "nl.mattix.andamp.example.warmth",
   name    = "Warmth",
   version = "1.0.0",
-  author  = "Andamp examples",
+  author  = "Alpaca examples",
   about   = "Lifts the low end with a shelf, with a switch to hear it in and out.",
 }
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- Andamp's icon, as the Android app has it: a background and the mark over it, on the 108
+<!-- Alpaca's icon, as the Android app has it: a background and the mark over it, on the 108
      units of an Android launcher icon, of which the middle 72 show. tools/icon.sh makes the
      Mac's icon from it. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="1080" height="1080">

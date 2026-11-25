@@ -1,14 +1,14 @@
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 -- What a plug-in's script sees: `plugin`, `param`, `ui` and its widgets, `presets`, and the
--- `g` its `build` is handed. Each only writes down what it was told, in the table `__andamp`,
+-- `g` its `build` is handed. Each only writes down what it was told, in the table `__alpaca`,
 -- which the host reads once the script has run. No sample goes through Lua.
 
 -- a script gets no way to load more code
 dofile, loadfile, load, loadstring, require, collectgarbage = nil, nil, nil, nil, nil, nil
 
 local A = { params = {}, presets = {}, nodes = {}, outputs = {}, param_node = {} }
-__andamp = A
+__alpaca = A
 
 function plugin(t) A.plugin = t end
 
@@ -140,7 +140,7 @@ setmetatable(g, { __index = function(_, name)
 end })
 
 -- runs the script's build for one audio format and writes down what each channel leaves by
-function __andamp_build(sample_rate, channels)
+function __alpaca_build(sample_rate, channels)
   if type(build) ~= "function" then error("the plug-in has no build function", 0) end
   local out = build(g, { sampleRate = sample_rate, channels = channels })
   if type(out) ~= "table" then error("build returns a table with one node for each channel", 0) end

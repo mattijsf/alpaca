@@ -1,13 +1,13 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Makes the Mac's app icon, apps/mac/Resources/AppIcon.icns, from Andamp's icon (apps/mac/icon/andamp.svg).
+# Makes the Mac's app icon, apps/mac/Resources/AppIcon.icns, from Alpaca's icon (apps/mac/icon/alpaca.svg).
 # Run it after the drawing changes; the icon it makes is committed. It needs Xcode's tools.
 set -eu
 cd "$(dirname "$0")/.."
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
-swift tools/icon.swift apps/mac/icon/andamp.svg "$work/icon.png"
+swift tools/icon.swift apps/mac/icon/alpaca.svg "$work/icon.png"
 set="$work/AppIcon.iconset"
 mkdir "$set"
 for size in 16 32 128 256 512; do

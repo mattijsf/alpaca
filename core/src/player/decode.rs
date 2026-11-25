@@ -189,7 +189,7 @@ fn open_url(url: &str, stream: &Arc<Stream>) -> Result<Opened, String> {
     let answer = agent
         .get(url)
         .header("Icy-MetaData", "1")
-        .header("User-Agent", "Andamp")
+        .header("User-Agent", "Alpaca")
         .call()
         .map_err(|e| e.to_string())?;
     let header = |name: &str| {
@@ -341,10 +341,10 @@ pub fn spawn(
     });
     let state = stream.clone();
     let spawned = std::thread::Builder::new()
-        .name("andamp-decode".into())
+        .name("alpaca-decode".into())
         .spawn(move || {
             if let Err(message) = decode(&location, start_ms, producer, &state) {
-                eprintln!("andamp: {}: {message}", location.display());
+                eprintln!("alpaca: {}: {message}", location.display());
             }
             state.decoded_all.store(true, Ordering::Release);
         });

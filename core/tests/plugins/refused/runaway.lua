@@ -7,7 +7,7 @@ plugin {
   id      = "com.example.runaway",
   name    = "Runaway",
   version = "1.0.0",
-  author  = "Andamp examples",
+  author  = "Alpaca examples",
   about   = "Never finishes loading, on purpose.",
 }
 

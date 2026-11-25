@@ -2,12 +2,12 @@
 
 //! What is the same on every system: the settings file, and what a file the listener opens is.
 
-use andamp_core::player::{location_kind, LocationKind, Player};
-use andamp_core::settings::Settings;
+use alpaca_core::player::{location_kind, LocationKind, Player};
+use alpaca_core::settings::{self, Settings};
 use std::path::Path;
 
 fn scratch(name: &str) -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join(format!("andamp-settings-{}-{name}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("alpaca-settings-{}-{name}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     dir
@@ -47,6 +47,41 @@ fn settings_come_back_as_they_were_left() {
     none.set("zoom", Some("3"));
     assert_eq!(none.get("zoom"), Some("3"));
     none.save().unwrap();
+}
+
+#[test]
+fn what_the_app_kept_as_andamp_comes_along() {
+    let home = scratch("old");
+    let old = home.join("Andamp");
+    std::fs::create_dir_all(old.join("Skins")).unwrap();
+    std::fs::write(
+        old.join("settings.txt"),
+        "at.AndAmp Light.wsz.1\t10,20\nat.Alpaca Dark.wsz.1\t5,5\nat.AndAmp Dark.wsz.1\t1,1\nzoom\t2\n",
+    )
+    .unwrap();
+
+    let dir = home.join("Alpaca");
+    settings::carry_over_old_folder(&dir);
+    assert!(
+        !old.exists() && dir.join("Skins").is_dir(),
+        "the folder moved"
+    );
+
+    let mut settings = Settings::open(&dir);
+    settings.carry_over_old_skin_names();
+    assert_eq!(settings.get("at.Alpaca Light.wsz.1"), Some("10,20"));
+    assert_eq!(
+        settings.get("at.Alpaca Dark.wsz.1"),
+        Some("5,5"),
+        "what the new name has stays"
+    );
+    assert_eq!(settings.keys("at.AndAmp"), [] as [&str; 0]);
+    assert_eq!(settings.get("zoom"), Some("2"));
+
+    // a folder of the new name is never replaced by an old one
+    std::fs::create_dir_all(&old).unwrap();
+    settings::carry_over_old_folder(&dir);
+    assert!(old.exists() && dir.join("settings.txt").exists());
 }
 
 #[test]

@@ -9,10 +9,10 @@ use std::path::Path;
 use std::rc::Rc;
 use std::time::Instant;
 
-use andamp_core::fonts::Fonts;
-use andamp_core::host::Assets;
-use andamp_core::render::{draw_window, Canvas, ShapeCache};
-use andamp_core::skin::Skin;
+use alpaca_core::fonts::Fonts;
+use alpaca_core::host::Assets;
+use alpaca_core::render::{draw_window, Canvas, ShapeCache};
+use alpaca_core::skin::Skin;
 use walkit::draw::DrawCmd;
 use walkit::player::{FakePlayer, Player};
 

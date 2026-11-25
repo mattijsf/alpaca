@@ -6,8 +6,8 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use andamp_core::fonts::Fonts;
-use andamp_core::skin::{Skin, DRAWN, MOVED};
+use alpaca_core::fonts::Fonts;
+use alpaca_core::skin::{Skin, DRAWN, MOVED};
 use walkit::player::{FakePlayer, Player};
 
 fn resources() -> PathBuf {
@@ -66,8 +66,8 @@ fn the_classic_skin_shows_three_windows_with_pixels() {
 }
 
 #[test]
-fn andamps_own_skins_open_and_draw() {
-    for name in ["AndAmp Dark.wsz", "AndAmp Light.wsz", "AndAmp Spot.wsz"] {
+fn alpacas_own_skins_open_and_draw() {
+    for name in ["Alpaca Dark.wsz", "Alpaca Light.wsz", "Alpaca Spot.wsz"] {
         let mut skin = open(name, false);
         skin.step();
         assert_eq!(
@@ -224,7 +224,7 @@ fn the_title_bar_buttons_and_the_clutter_bar_ask_the_app() {
 
 #[test]
 fn drawing_only_what_changed_gives_the_pixels_drawing_everything_gives() {
-    for name in ["AndAmp Dark.wsz", "walkit-classic.wsz", "walkit-modern.wal"] {
+    for name in ["Alpaca Dark.wsz", "walkit-classic.wsz", "walkit-modern.wal"] {
         let mut skin = open(name, true);
         skin.step();
         let (mut parts, mut wholes) = (0, 0);

@@ -51,12 +51,12 @@ struct Rack: Decodable {
 /// The effects: the plug-ins that come with the app and the listener's own, and the window
 /// that shows the rack with a switch for each effect and its controls.
 ///
-/// A plug-in is a Lua file in the format of Andamp on Android. The library loads them, the
+/// A plug-in is a Lua file in the format of Alpaca on Android. The library loads them, the
 /// ones that come with the app and the listener's own, the first time they are needed: when
 /// the window opens, or at the start when one was left on. This is the window.
 final class Effects: NSObject, NSWindowDelegate {
     private let app: OpaquePointer
-    private var player: OpaquePointer { andamp_app_player(app) }
+    private var player: OpaquePointer { alpaca_app_player(app) }
     private var window: NSWindow?
     private let list = NSStackView()
     /// What the controls call; kept for as long as the controls are.
@@ -71,18 +71,18 @@ final class Effects: NSObject, NSWindowDelegate {
 
     /// The rack as it stands.
     var rack: Rack {
-        guard let json = andamp_player_effects(player) else { return Rack(effects: []) }
-        defer { andamp_string_free(json) }
+        guard let json = alpaca_player_effects(player) else { return Rack(effects: []) }
+        defer { alpaca_string_free(json) }
         let data = Data(String(cString: json).utf8)
         return (try? JSONDecoder().decode(Rack.self, from: data)) ?? Rack(effects: [])
     }
 
     /// Loads every plug-in once: the library knows which come with the app, which are the
     /// listener's own, and how each was left.
-    private func load() { andamp_app_load_effects(app) }
+    private func load() { alpaca_app_load_effects(app) }
 
     /// Keeps which effects are on and where their controls stand.
-    private func save() { andamp_app_save(app) }
+    private func save() { alpaca_app_save(app) }
 
     // MARK: the window
 
@@ -178,7 +178,7 @@ final class Effects: NSObject, NSWindowDelegate {
         power.state = effect.on ? .on : .off
         on(power) { [weak self] sender in
             guard let self else { return }
-            andamp_player_set_effect_on(self.player, Int32(index), (sender as? NSButton)?.state == .on)
+            alpaca_player_set_effect_on(self.player, Int32(index), (sender as? NSButton)?.state == .on)
             self.save()
         }
         // a pull-down with the presets, back to the defaults and, for the listener's own, remove
@@ -187,16 +187,16 @@ final class Effects: NSObject, NSWindowDelegate {
         for preset in effect.presets { menu.addItem(withTitle: preset.name) }
         menu.menu?.addItem(.separator())
         menu.addItem(withTitle: "Reset to Defaults")
-        if andamp_app_effect_own(self.app, Int32(index)) { menu.addItem(withTitle: "Remove Plug-in") }
+        if alpaca_app_effect_own(self.app, Int32(index)) { menu.addItem(withTitle: "Remove Plug-in") }
         on(menu) { [weak self] sender in
             guard let self, let picked = (sender as? NSPopUpButton)?.indexOfSelectedItem else { return }
             let title = (sender as? NSPopUpButton)?.titleOfSelectedItem
             if title == "Remove Plug-in" {
-                andamp_app_remove_plugin(self.app, Int32(index))
+                alpaca_app_remove_plugin(self.app, Int32(index))
             } else if title == "Reset to Defaults" {
-                andamp_player_apply_preset(self.player, Int32(index), -1)
+                alpaca_player_apply_preset(self.player, Int32(index), -1)
             } else if picked >= 1, picked <= effect.presets.count {
-                andamp_player_apply_preset(self.player, Int32(index), Int32(picked - 1))
+                alpaca_player_apply_preset(self.player, Int32(index), Int32(picked - 1))
             }
             self.save()
             self.rebuild()
@@ -226,7 +226,7 @@ final class Effects: NSObject, NSWindowDelegate {
         name.widthAnchor.constraint(equalToConstant: 110).isActive = true
         let set = { [weak self] (value: Double) in
             guard let self else { return }
-            andamp_player_set_effect_value(self.player, Int32(index), Int32(place), Float(value))
+            alpaca_player_set_effect_value(self.player, Int32(index), Int32(place), Float(value))
         }
         let control: NSView
         var readout: NSTextField?
@@ -259,9 +259,9 @@ final class Effects: NSObject, NSWindowDelegate {
             on(made) { [weak self] sender in
                 let value = (sender as? NSSlider)?.doubleValue ?? param.value
                 set(value)
-                if let read = andamp_player_effect_readout(self?.player, Int32(index), Int32(place), Float(value)) {
+                if let read = alpaca_player_effect_readout(self?.player, Int32(index), Int32(place), Float(value)) {
                     shown.stringValue = String(cString: read)
-                    andamp_string_free(read)
+                    alpaca_string_free(read)
                 }
                 // kept when the drag ends, not at every step of it
                 if NSApp.currentEvent?.type == .leftMouseUp { self?.save() }
@@ -283,11 +283,11 @@ final class Effects: NSObject, NSWindowDelegate {
         panel.allowedContentTypes = [UTType(filenameExtension: "lua")].compactMap { $0 }
         guard panel.runModal() == .OK, let file = panel.url else { return }
         var error: UnsafeMutablePointer<CChar>?
-        guard andamp_app_add_plugin(app, file.path, &error) >= 0 else {
+        guard alpaca_app_add_plugin(app, file.path, &error) >= 0 else {
             let alert = NSAlert()
-            alert.messageText = "\(file.lastPathComponent) is not a plug-in Andamp can run"
+            alert.messageText = "\(file.lastPathComponent) is not a plug-in Alpaca can run"
             alert.informativeText = error.map { String(cString: $0) } ?? ""
-            andamp_string_free(error)
+            alpaca_string_free(error)
             alert.runModal()
             return
         }

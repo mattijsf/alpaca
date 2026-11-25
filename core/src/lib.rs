@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! Andamp for the desktop, less what only a system can do: the app, the player and the skin
+//! Alpaca for the desktop, less what only a system can do: the app, the player and the skin
 //! engine's host, the same on macOS, Windows and Linux.
 //!
 //! - [`app`] is the app itself: its command line, its menu, what each command does, what it
@@ -10,7 +10,7 @@
 //!   each window into a buffer of pixels.
 //! - [`player`] is the playlist, decoding and the audio output; [`dsp`] the effects.
 //! - [`settings`] is the file kept between runs, [`vis`] the Visualizer's presets.
-//! - [`ffi`] is the same as a C interface (`include/andamp_core.h`), for a shell in another
+//! - [`ffi`] is the same as a C interface (`include/alpaca_core.h`), for a shell in another
 //!   language. It is the only module with unsafe code.
 //!
 //! The engine is not shared across threads: everything but the audio runs on the thread the

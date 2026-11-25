@@ -1,6 +1,6 @@
 [package]
-name = "andamp-core"
-description = "Andamp for the desktop, less what only a system can do: the app, the player and the walkit skin engine's host, as a crate and behind a C interface"
+name = "alpaca-core"
+description = "Alpaca for the desktop, less what only a system can do: the app, the player and the walkit skin engine's host, as a crate and behind a C interface"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0-or-later"

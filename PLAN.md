@@ -1,6 +1,6 @@
 # Plan
 
-Andamp for macOS: Winamp on the Mac's desktop, from real skin files, on the
+Alpaca for macOS: Winamp on the Mac's desktop, from real skin files, on the
 [walkit](https://github.com/mattijsf/walkit) engine. The player itself comes first. Music
 sources from other apps come last, on top of a player that is whole without them.
 
@@ -20,7 +20,7 @@ Each step ends with something that runs and is committed. [Status](#status) says
    and oscilloscope from what is heard.
 4. **The Mac around it.** Media keys and Now Playing, files and skins opened from Finder and
    by drop, the last skin, window places and playlist kept between runs, internet radio.
-5. **Effects.** The effect rack and `.lua` plug-ins, as in Andamp on Android (`core/dsp`,
+5. **Effects.** The effect rack and `.lua` plug-ins, as in Alpaca on Android (`core/dsp`,
    `core/plugin` there, in Kotlin: a port).
 6. **Milkdrop and AVS.** A visualizer window. projectM is LGPL and draws with OpenGL, which
    macOS has deprecated: how it links and what it draws through is decided here.
@@ -59,7 +59,7 @@ app this grew from is the baseline (see [spikes/](spikes/README.md)).
 
 | | Baseline | Aim | Now |
 | --- | --- | --- | --- |
-| Classic skin playing (AndAmp Dark) | 47% of a core | under 2% | 5.4%, at any zoom |
+| Classic skin playing (Alpaca Dark) | 47% of a core | under 2% | 5.4%, at any zoom |
 | Modern skin playing (walkit's) | 99% | under 3% | 5.0% |
 | Bento playing, its one window 1196 by 798 | | | 8% |
 | MMD3 playing, with its scripts | | | 10% |
@@ -71,7 +71,7 @@ app this grew from is the baseline (see [spikes/](spikes/README.md)).
 
 An effect adds what `cargo run --release --example effectcost` prints for it, about three
 times over in the app, where the audio thread runs cold: Bass & Treble 1%, all six that come
-with the app 8%. Andamp on Android runs a graph a block at a time where nothing in it needs a
+with the app 8%. Alpaca on Android runs a graph a block at a time where nothing in it needs a
 sample the block has not made yet (`BlockRunner`); the engine here runs a frame at a time, and
 that is the first thing to port when an effect's cost matters.
 
@@ -123,14 +123,14 @@ Updated with every step. Whoever picks this up, person or model, starts here.
     mouse. Not yet drawn with the skin's own `wasabi.tooltip.group`, as Winamp3x restyles it.
   - [x] While another app has the keys every window shows itself behind: classic title bars
     unlit, a modern skin's `inactivealpha` and inactive pictures.
-- [x] 5. Effects: Andamp's `.lua` plug-in format (`core/src/dsp`): the loader in a shut-in
+- [x] 5. Effects: Alpaca's `.lua` plug-in format (`core/src/dsp`): the loader in a shut-in
   Lua, the checks, the program and the engine, with the arithmetic of the Kotlin original;
-  the six plug-ins Andamp ships; the rack after the equalizer, each effect fading when
+  the six plug-ins Alpaca ships; the rack after the equalizer, each effect fading when
   switched; the Effects window (View > Effects…) with switches, presets, controls and
   Add Plug-in….
   - [ ] The `ui` block is read but not laid out: controls show in the order declared.
     `enabledBy` is not checked against the graph.
-  - [ ] Andamp's built-in Karaoke, Modulation and Reverb are Kotlin graphs, not ported.
+  - [ ] Alpaca's built-in Karaoke, Modulation and Reverb are Kotlin graphs, not ported.
   - [ ] The block runner (see above).
 - [ ] 6. Milkdrop and AVS
   - [x] Milkdrop in its first form: the Visualizer window (View > Visualizer, or the skin's
@@ -145,8 +145,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
     on top of Metal. Not looked into further.
   - [ ] The window is a plain Mac window, not a skin's. A skin's own visualizer frame stays shut.
   - [ ] projectM's sources are not in this repository: `vis/projectm` as a submodule, or
-    `PROJECTM_SRC`. It was built here from Andamp's own checkout of v4.1.7.
-  - [ ] AVS: Andamp's is 15,000 lines of Kotlin on a framebuffer of its own, with the ns-eel
+    `PROJECTM_SRC`. It was built here from Alpaca's own checkout of v4.1.7.
+  - [ ] AVS: Alpaca's is 15,000 lines of Kotlin on a framebuffer of its own, with the ns-eel
     evaluator in C. A port, not started.
 - [ ] 7. The App Store
 - [ ] 8. Music sources
@@ -190,9 +190,9 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   song that plays: when another song becomes current the list brings it into view. A press
   too short to see, as a tap on a trackpad, still shows the button pressed for a moment. On
   the Mac the skin's windows are one group around the main one, which Mission Control shows
-  as one, and the app has Andamp's icon.
+  as one, and the app has Alpaca's icon.
 - [x] The Mac's shell tells the app where its screens are, and again when one comes, goes or
-  changes (`andamp_app_set_screens`).
+  changes (`alpaca_app_set_screens`).
 - [ ] A shell for Windows: not started. PORTING.md has what is known.
 - [ ] The portable device's sample rate converter draws straight lines between samples; a
   better one can take its place behind the same two calls.
@@ -241,9 +241,9 @@ Updated with every step. Whoever picks this up, person or model, starts here.
    an icon. The plug-in folder and the settings are already under the app's own names.
 6. AVS.
 
-What comes with the app: AndAmp Dark (the skin shown first, and the one under every classic
-skin), Light and Spot, from Andamp's own `skin/dist`; walkit's two example skins; Andamp's
-own element set under modern skins (`core/resources/wasabi`, from Andamp's `defaultset`); the
+What comes with the app: Alpaca Dark (the skin shown first, and the one under every classic
+skin), Light and Spot, from Alpaca's own `skin/dist`; walkit's two example skins; Alpaca's
+own element set under modern skins (`core/resources/wasabi`, from Alpaca's `defaultset`); the
 stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fonts.rs`).
 
 ### Log
@@ -290,7 +290,7 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
   a test on a classic playlist's corner; the cursor itself was not seen on the screen.
 - 2026-11-24, once more: two things the owner found. A classic skin's own cursors, moving
   ones too: the engine had them, the app now says which belongs where
-  (`andamp_app_cursor`, 100 and up) and gives its pictures, and the Mac's shell makes
+  (`alpaca_app_cursor`, 100 and up) and gives its pictures, and the Mac's shell makes
   cursors of them. Tested in the core with a skin given a cursor file; no cursor was seen
   on the screen by me. And a skin's windows came back twice as far apart, or half, when
   the size had changed while another skin was worn: places were kept in points only. The
@@ -334,7 +334,7 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
   turn the volume.
 - 2026-11-24, after the playlist's rules: a skin's text is drawn in the real Arial and Tahoma, as walkit-cli
   draws it when given them (`--fonts`), which is how its text comes to match Winamp's. Before,
-  Andamp's text was already walkit-cli's without them, pixel for pixel: the same engine
+  Alpaca's text was already walkit-cli's without them, pixel for pixel: the same engine
   drawing, the same free stand-ins (Liberation Sans for Arial, DejaVu Sans Condensed for
   Tahoma) under the same names. The stand-ins have Arial's widths but not its letters. macOS
   has both real fonts (`/System/Library/Fonts/Supplemental`, Monotype's hinted cuts with the
@@ -342,7 +342,7 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
   the core reads them from there when a skin first draws text, keeps them for every skin
   after, and draws the stand-ins where they are missing (`core/src/fonts.rs`). Nothing of
   them is in the repository. Compared with walkit-cli (its main branch, 0.1.4 and on) given
-  the Mac's fonts, as Winamp 5.666: the playlist's rows of base-2.91, AndAmp Dark and
+  the Mac's fonts, as Winamp 5.666: the playlist's rows of base-2.91, Alpaca Dark and
   walkit-classic are the same to the pixel, and so is the title text of Winamp3x, Winamp
   Modern and walkit-modern; Big Bento's tabs are in Tahoma as walkit-cli draws them; MMD3
   brings its own fonts and does not change. What still differs is the player's state, not text: the selected row, the
@@ -380,7 +380,7 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
   renderer that draws one window at one pixel per layout pixel, and the audio (Symphonia,
   the default output unit, a ring between them). `apps/mac/` is the AppKit shell. Tests in
   `core/tests` cover windows, drags, the skin's buttons, the player, the equalizer and the
-  spectrum; none makes a sound. Checked by `--dump` with AndAmp Dark, walkit's two skins,
+  spectrum; none makes a sound. Checked by `--dump` with Alpaca Dark, walkit's two skins,
   two classic skins and four modern ones from the local test corpus.
 - 2026-11-24, morning: prepared for Windows and Linux: the audio device behind one small
   interface with a portable version, the core cross-checked for both systems, and what every
@@ -391,13 +391,13 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
 - 2026-11-24, evening: the owner used the app for the first time and found nothing wrong.
 - 2026-11-24, later still: a refactor pass and the gate; ENGINEERING.md written. No change to
   what the app does; cost and start-up measured again.
-- 2026-11-24, later: the app itself moved into the core, behind `andamp_app_`: the Mac's
+- 2026-11-24, later: the app itself moved into the core, behind `alpaca_app_`: the Mac's
   shell asks the core what the menu is and does what the core requests. Start-up, cost and
   what a restart brings back were measured again and are as before. The songs of a start
   are now read after the skin's first drawing, also when the command line names them.
 - 2026-11-24, night, later: damage-only drawing, Bento through its sibling skin, internet
   radio, the equalizer's presets, and Milkdrop through libprojectM in a window of its own.
 - 2026-11-24, night: steps 4 and 5 in their first form: settings, media keys, Finder, the
-  playlist window's buttons, and the effect rack with Andamp's plug-in format ported from
-  Kotlin. The eleven plug-ins of Andamp (six shipped, five examples) load and build; the two
+  playlist window's buttons, and the effect rack with Alpaca's plug-in format ported from
+  Kotlin. The eleven plug-ins of Alpaca (six shipped, five examples) load and build; the two
   made to be refused are refused.

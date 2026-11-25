@@ -55,12 +55,12 @@ impl App {
         let picked = !self.selection().is_empty();
         match menu {
             Menu::Bar => {
-                m.sub("Andamp");
-                m.item(command::ABOUT, "About Andamp", "", false);
+                m.sub("Alpaca");
+                m.item(command::ABOUT, "About Alpaca", "", false);
                 m.separator();
                 m.item(command::PREFERENCES, "Preferences…", ",", false);
                 m.separator();
-                m.item(command::QUIT, "Quit Andamp", "q", false);
+                m.item(command::QUIT, "Quit Alpaca", "q", false);
                 m.end();
                 m.sub("File");
                 m.item(command::OPEN_FILES, "Open Files…", "o", false);
@@ -128,7 +128,7 @@ impl App {
                 m.separator();
                 m.item(command::PREFERENCES, "Preferences…", "", false);
                 m.separator();
-                m.item(command::QUIT, "Quit Andamp", "", false);
+                m.item(command::QUIT, "Quit Alpaca", "", false);
             }
             Menu::Equalizer => {
                 m.item(command::EQ_PRESET, "Flat", "", false);

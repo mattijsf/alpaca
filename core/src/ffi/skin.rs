@@ -8,16 +8,16 @@ use super::panic_text;
 use crate::skin::Skin;
 
 /// A loaded skin behind the C interface.
-pub type AndampSkin = Skin;
+pub type AlpacaSkin = Skin;
 
-/// One window of a skin, as [`andamp_skin_window`] gives it: where it is on the viewport in
+/// One window of a skin, as [`alpaca_skin_window`] gives it: where it is on the viewport in
 /// layout pixels, its `w * h` pixels (rows top first, each `0xAARRGGBB` with the color
 /// multiplied by the alpha, which in memory is BGRA), a count that goes up whenever the
 /// pixels are drawn again, and the part of the window the last drawing changed: an app that
 /// showed the drawing before needs to take over only that part. The pixels stay valid until
 /// the next step.
 #[repr(C)]
-pub struct AndampWindow {
+pub struct AlpacaWindow {
     /// The engine's id of the window.
     pub id: u32,
     /// Its left edge on the viewport, in layout pixels.
@@ -44,7 +44,7 @@ pub struct AndampWindow {
 
 /// Runs `f` on the skin at `skin` unless it broke before; a panic breaks it and gives
 /// `fallback`.
-unsafe fn with_skin<T>(skin: *mut AndampSkin, fallback: T, f: impl FnOnce(&mut Skin) -> T) -> T {
+unsafe fn with_skin<T>(skin: *mut AlpacaSkin, fallback: T, f: impl FnOnce(&mut Skin) -> T) -> T {
     let Some(handle) = skin.as_mut() else {
         return fallback;
     };
@@ -54,7 +54,7 @@ unsafe fn with_skin<T>(skin: *mut AndampSkin, fallback: T, f: impl FnOnce(&mut S
     match catch_unwind(AssertUnwindSafe(|| f(handle))) {
         Ok(v) => v,
         Err(payload) => {
-            eprintln!("andamp: {}", panic_text(payload.as_ref()));
+            eprintln!("alpaca: {}", panic_text(payload.as_ref()));
             handle.broken = true;
             fallback
         }
@@ -66,25 +66,25 @@ unsafe fn with_skin<T>(skin: *mut AndampSkin, fallback: T, f: impl FnOnce(&mut S
 /// # Safety
 /// `skin` is null or a live skin.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_skin_window_count(skin: *mut AndampSkin) -> i32 {
+pub unsafe extern "C" fn alpaca_skin_window_count(skin: *mut AlpacaSkin) -> i32 {
     with_skin(skin, 0, |s| s.windows().len() as i32)
 }
 
 /// Window `index`, counted from the bottom, into `*out`; false when there is none.
 ///
 /// # Safety
-/// `skin` is null or a live skin; `out` points at an [`AndampWindow`].
+/// `skin` is null or a live skin; `out` points at an [`AlpacaWindow`].
 #[no_mangle]
-pub unsafe extern "C" fn andamp_skin_window(
-    skin: *mut AndampSkin,
+pub unsafe extern "C" fn alpaca_skin_window(
+    skin: *mut AlpacaSkin,
     index: i32,
-    out: *mut AndampWindow,
+    out: *mut AlpacaWindow,
 ) -> bool {
     with_skin(skin, false, |s| {
         let Some(w) = usize::try_from(index).ok().and_then(|i| s.windows().get(i)) else {
             return false;
         };
-        *out = AndampWindow {
+        *out = AlpacaWindow {
             id: w.id,
             x: w.rect.left,
             y: w.rect.top,
@@ -107,8 +107,8 @@ pub unsafe extern "C" fn andamp_skin_window(
 /// # Safety
 /// `skin` is null or a live skin; the others are null or point at a `u64`.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_skin_stats(
-    skin: *mut AndampSkin,
+pub unsafe extern "C" fn alpaca_skin_stats(
+    skin: *mut AlpacaSkin,
     steps: *mut u64,
     windows_drawn: *mut u64,
     engine_nanos: *mut u64,

@@ -10,16 +10,16 @@ use crate::player::{location_kind, LocationKind};
 /// What the command line asks for.
 ///
 /// ```text
-/// andamp [skin.wsz|skin.wal] [song ...] [--modern] [--zoom n] [--volume 0..255]
+/// alpaca [skin.wsz|skin.wal] [song ...] [--modern] [--zoom n] [--volume 0..255]
 ///        [--effect <id>]       switches on the effect with that id or name; may be given more
 ///                              than once
 ///        [--show-vis]          opens the Visualizer window
 ///        [--presets <folder>]  the Milkdrop presets it shows
 ///        [--show-effects]      opens the Effects window
 ///        [--show-prefs]        opens the Preferences window
-///        [--base skin.wsz]     a classic skin laid under classic skins, in place of AndAmp Dark
+///        [--base skin.wsz]     a classic skin laid under classic skins, in place of Alpaca Dark
 ///        [--wasabi base.zip]   a zip of a wasabi folder laid under modern skins, in place of
-///                              Andamp's own element set
+///                              Alpaca's own element set
 /// ```
 ///
 /// Songs named on the command line play at once. The rest is for checking and measuring, and

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Andamp's default groups: the frames, title bar and widgets skins build their windows from.
+  Alpaca's default groups: the frames, title bar and widgets skins build their windows from.
   Ids, xui tags and positions are what skins address; behavior="..." asks the engine to do what
   Winamp does with a script there (place the frame's content, center the title).
 -->

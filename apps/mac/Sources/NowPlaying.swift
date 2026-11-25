@@ -22,17 +22,17 @@ final class NowPlaying {
                 return .success
             }
         }
-        on(center.playCommand) { controller.command(ANDAMP_COMMAND_PLAY) }
+        on(center.playCommand) { controller.command(ALPACA_COMMAND_PLAY) }
         on(center.pauseCommand) {
-            if andamp_player_status(controller.player) == 1 { controller.command(ANDAMP_COMMAND_PAUSE) }
+            if alpaca_player_status(controller.player) == 1 { controller.command(ALPACA_COMMAND_PAUSE) }
         }
         on(center.togglePlayPauseCommand) {
             controller.command(
-                andamp_player_status(controller.player) == 0 ? ANDAMP_COMMAND_PLAY : ANDAMP_COMMAND_PAUSE)
+                alpaca_player_status(controller.player) == 0 ? ALPACA_COMMAND_PLAY : ALPACA_COMMAND_PAUSE)
         }
-        on(center.stopCommand) { controller.command(ANDAMP_COMMAND_STOP) }
-        on(center.nextTrackCommand) { controller.command(ANDAMP_COMMAND_NEXT) }
-        on(center.previousTrackCommand) { controller.command(ANDAMP_COMMAND_PREVIOUS) }
+        on(center.stopCommand) { controller.command(ALPACA_COMMAND_STOP) }
+        on(center.nextTrackCommand) { controller.command(ALPACA_COMMAND_NEXT) }
+        on(center.previousTrackCommand) { controller.command(ALPACA_COMMAND_PREVIOUS) }
         center.changePlaybackPositionCommand.isEnabled = true
         center.changePlaybackPositionCommand.addTarget { event in
             guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
@@ -46,8 +46,8 @@ final class NowPlaying {
     /// numbers and most often does nothing more.
     func update() {
         let player = controller.player
-        let now = (andamp_player_index(player), andamp_player_status(player), andamp_player_count(player))
-        let position = Double(andamp_player_position_ms(player)) / 1000
+        let now = (alpaca_player_index(player), alpaca_player_status(player), alpaca_player_count(player))
+        let position = Double(alpaca_player_position_ms(player)) / 1000
         // the system counts the seconds on by itself while a song plays
         let expected = toldAt.position + (told.status == 1 ? Date().timeIntervalSince(toldAt.when) : 0)
         guard now != told || abs(position - expected) > 1.5 else { return }
@@ -57,8 +57,8 @@ final class NowPlaying {
         var title: UnsafeMutablePointer<CChar>?
         var artist: UnsafeMutablePointer<CChar>?
         var album: UnsafeMutablePointer<CChar>?
-        let length = andamp_player_entry(player, now.0, &title, &artist, &album, nil)
-        defer { for text in [title, artist, album] { andamp_string_free(text) } }
+        let length = alpaca_player_entry(player, now.0, &title, &artist, &album, nil)
+        defer { for text in [title, artist, album] { alpaca_string_free(text) } }
         guard length >= 0, now.1 != 0 else {
             center.nowPlayingInfo = nil
             center.playbackState = .stopped

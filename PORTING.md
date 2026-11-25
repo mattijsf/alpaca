@@ -31,8 +31,8 @@ above compile every line for those systems and stop there.
 ## What a shell does
 
 A shell is the part written for one system: `apps/mac/` is the Mac's, in Swift. One written in
-Rust can use the core as a crate (`andamp_core::app::App`); one in another language uses the
-C interface (`core/include/andamp_core.h`, the `andamp_app_` calls), which is what the Mac's
+Rust can use the core as a crate (`alpaca_core::app::App`); one in another language uses the
+C interface (`core/include/alpaca_core.h`, the `alpaca_app_` calls), which is what the Mac's
 does.
 
 The shell makes the app from its command line, the folder of what comes with it and the size
@@ -42,27 +42,27 @@ what the app asks of it.
 
 | A shell's job | On the Mac | What the core gives it |
 | --- | --- | --- |
-| One window for each of the skin's, with no frame, placed where the core says | `SkinWindow.swift`, `SkinController.apply` | each window's place, size and stacking order after every step, in layout pixels from `andamp_app_origin` |
-| The screens: where each is, and when one comes, goes or changes | `SkinController.tellScreens`, on `didChangeScreenParametersNotification` | `andamp_app_set_screens` takes the part of each screen the windows move on as rectangles on one desktop, y down, the main screen first; the core keeps which screen the windows are on, between runs too, and brings back into view what no screen shows |
+| One window for each of the skin's, with no frame, placed where the core says | `SkinWindow.swift`, `SkinController.apply` | each window's place, size and stacking order after every step, in layout pixels from `alpaca_app_origin` |
+| The screens: where each is, and when one comes, goes or changes | `SkinController.tellScreens`, on `didChangeScreenParametersNotification` | `alpaca_app_set_screens` takes the part of each screen the windows move on as rectangles on one desktop, y down, the main screen first; the core keeps which screen the windows are on, between runs too, and brings back into view what no screen shows |
 | Showing a window's pixels, scaled by whole numbers | `SurfaceView` | BGRA with the color multiplied by the alpha, and the part that changed |
-| The mouse, in places on the screen | `SkinController`'s mouse calls | `andamp_app_pointer_down`, `_move`, `_up`, `_double_click`, `_right_click`, and `andamp_app_wheel` for the wheel and the trackpad; a release after a press too short to see is held back by the core |
-| The cursor over the skin | `SkinCursors.swift`, `SurfaceView`'s tracking area | `andamp_app_cursor` for the mouse's place, asked when it moves: the arrow, one of four for what is dragged to size, or a cursor a classic skin brings, whose pictures and steps `andamp_app_cursor_picture` gives; the shell makes its system's cursors from them and steps one that moves |
-| Waking up when there is next something to do | `SkinController.schedule` | `andamp_app_next_due_ms`; nothing to do while no window is in sight |
-| The keys | `SkinController.keyDown`, `Visualizer.key` | `andamp_app_key` with the window the key was pressed in and the key's name (`shift+` before a key that moves the playlist's selection while Shift is held), and `andamp_app_vis_key` |
-| The keys held with a click | `SkinController.mouseDown` | `andamp_app_modifiers` before `andamp_app_pointer_down`: the system's key for picking rows one by one (Command on a Mac, Control elsewhere) and Shift |
+| The mouse, in places on the screen | `SkinController`'s mouse calls | `alpaca_app_pointer_down`, `_move`, `_up`, `_double_click`, `_right_click`, and `alpaca_app_wheel` for the wheel and the trackpad; a release after a press too short to see is held back by the core |
+| The cursor over the skin | `SkinCursors.swift`, `SurfaceView`'s tracking area | `alpaca_app_cursor` for the mouse's place, asked when it moves: the arrow, one of four for what is dragged to size, or a cursor a classic skin brings, whose pictures and steps `alpaca_app_cursor_picture` gives; the shell makes its system's cursors from them and steps one that moves |
+| Waking up when there is next something to do | `SkinController.schedule` | `alpaca_app_next_due_ms`; nothing to do while no window is in sight |
+| The keys | `SkinController.keyDown`, `Visualizer.key` | `alpaca_app_key` with the window the key was pressed in and the key's name (`shift+` before a key that moves the playlist's selection while Shift is held), and `alpaca_app_vis_key` |
+| The keys held with a click | `SkinController.mouseDown` | `alpaca_app_modifiers` before `alpaca_app_pointer_down`: the system's key for picking rows one by one (Command on a Mac, Control elsewhere) and Shift |
 | Going through the app's windows by the system's key for it | `WindowCycle.swift` | nothing: where a system leaves grouped windows out of its own cycling, as the Mac does, the shell gives the keys to the next window itself |
-| Saying which of the skin's windows the keys go to | `SkinWindow.becomeKey` | `andamp_app_focus` with the window, whenever the system makes one the key window; the skin then draws it as the one in front |
-| Drawing menus: the bar, the popups, a skin's own | `NSMenu.from(lines:)` | every menu as lines of text (`andamp_app_menu`), by number: the bar, the main popup, and the popups a skin's buttons ask for (options, visualization, the playlist's five buttons, a row's menu, sorting), with the checks, the grayed items and the keys; the pick goes back as a number (`andamp_app_command`) |
-| Doing what the app asks | `AppDelegate.answer` | `andamp_app_take_requests`: quit, hide, about, show a menu at a place, show the Effects or Visualizer window, load a preset, say what went wrong |
-| Letting the listener pick files, folders, a stream's address | `AppDelegate.ask` | the request `ask` with what to pick; the answer goes to `andamp_app_picked` |
-| What the system opens, and what is dropped on a window | `application(_:open:)`, `SurfaceView` | `andamp_app_open` |
-| The look: size, on top, opacity | `SkinController.answer` | the request `look`, then `andamp_app_zoom`, `_on_top`, `_opacity` |
+| Saying which of the skin's windows the keys go to | `SkinWindow.becomeKey` | `alpaca_app_focus` with the window, whenever the system makes one the key window; the skin then draws it as the one in front |
+| Drawing menus: the bar, the popups, a skin's own | `NSMenu.from(lines:)` | every menu as lines of text (`alpaca_app_menu`), by number: the bar, the main popup, and the popups a skin's buttons ask for (options, visualization, the playlist's five buttons, a row's menu, sorting), with the checks, the grayed items and the keys; the pick goes back as a number (`alpaca_app_command`) |
+| Doing what the app asks | `AppDelegate.answer` | `alpaca_app_take_requests`: quit, hide, about, show a menu at a place, show the Effects or Visualizer window, load a preset, say what went wrong |
+| Letting the listener pick files, folders, a stream's address | `AppDelegate.ask` | the request `ask` with what to pick; the answer goes to `alpaca_app_picked` |
+| What the system opens, and what is dropped on a window | `application(_:open:)`, `SurfaceView` | `alpaca_app_open` |
+| The look: size, on top, opacity | `SkinController.answer` | the request `look`, then `alpaca_app_zoom`, `_on_top`, `_opacity` |
 | The system's media keys and "now playing" | `NowPlaying.swift` | the player's status, position and the current entry |
-| The Preferences window | `Preferences.swift` | the pages and their rows as JSON (`andamp_app_preferences`), by kind: a switch, a choice, a slider, a button, text; a change goes back as an id and a value (`andamp_app_set_preference`) |
-| File info, opening a file, showing one in its folder | `AppDelegate.answer` | the requests `info` (with `andamp_app_file_info` for the text), `open` and `reveal` |
-| The Effects window | `Effects.swift` | the rack as JSON; setters for switches, controls and presets; the listener's own plug-ins kept by `andamp_app_add_plugin` |
+| The Preferences window | `Preferences.swift` | the pages and their rows as JSON (`alpaca_app_preferences`), by kind: a switch, a choice, a slider, a button, text; a change goes back as an id and a value (`alpaca_app_set_preference`) |
+| File info, opening a file, showing one in its folder | `AppDelegate.answer` | the requests `info` (with `alpaca_app_file_info` for the text), `open` and `reveal` |
+| The Effects window | `Effects.swift` | the rack as JSON; setters for switches, controls and presets; the listener's own plug-ins kept by `alpaca_app_add_plugin` |
 | The Visualizer window | `Visualizer.swift` | the samples heard since the last frame, and which preset to show (`preset` requests); libprojectM draws |
-| Saving when the app goes to the background or ends | `AppDelegate` | `andamp_app_save` |
+| Saving when the app goes to the background or ends | `AppDelegate` | `alpaca_app_save` |
 
 What is left in the Mac's shell opens windows, panels and timers, and draws; it decides
 nothing. The Effects window's controls are built in Swift from the rack's description, and a

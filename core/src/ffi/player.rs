@@ -11,13 +11,13 @@ use super::{c_text, panic_text};
 use crate::player::Player;
 
 /// The app's player behind the C interface. Every skin opened with it shows and drives it.
-pub struct AndampPlayer {
+pub struct AlpacaPlayer {
     pub(super) player: Rc<RefCell<Player>>,
 }
 
 /// Runs `f` on the player at `player`; a panic gives `fallback`.
 unsafe fn with_player<T>(
-    player: *mut AndampPlayer,
+    player: *mut AlpacaPlayer,
     fallback: T,
     f: impl FnOnce(&mut Player) -> T,
 ) -> T {
@@ -27,7 +27,7 @@ unsafe fn with_player<T>(
     match catch_unwind(AssertUnwindSafe(|| f(&mut handle.player.borrow_mut()))) {
         Ok(v) => v,
         Err(payload) => {
-            eprintln!("andamp: {}", panic_text(payload.as_ref()));
+            eprintln!("alpaca: {}", panic_text(payload.as_ref()));
             fallback
         }
     }
@@ -38,7 +38,7 @@ unsafe fn with_player<T>(
 /// # Safety
 /// `player` is null or a live player.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_count(player: *mut AndampPlayer) -> i32 {
+pub unsafe extern "C" fn alpaca_player_count(player: *mut AlpacaPlayer) -> i32 {
     with_player(player, 0, |p| p.entries().len() as i32)
 }
 
@@ -47,7 +47,7 @@ pub unsafe extern "C" fn andamp_player_count(player: *mut AndampPlayer) -> i32 {
 /// # Safety
 /// `player` is null or a live player.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_set_volume(player: *mut AndampPlayer, volume: i32) {
+pub unsafe extern "C" fn alpaca_player_set_volume(player: *mut AlpacaPlayer, volume: i32) {
     with_player(player, (), |p| p.set_volume(volume));
 }
 
@@ -56,7 +56,7 @@ pub unsafe extern "C" fn andamp_player_set_volume(player: *mut AndampPlayer, vol
 /// # Safety
 /// `player` is null or a live player.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_volume(player: *mut AndampPlayer) -> i32 {
+pub unsafe extern "C" fn alpaca_player_volume(player: *mut AlpacaPlayer) -> i32 {
     with_player(player, 0, |p| p.volume())
 }
 
@@ -66,7 +66,7 @@ pub unsafe extern "C" fn andamp_player_volume(player: *mut AndampPlayer) -> i32 
 /// # Safety
 /// `player` is null or a live player.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_poll(player: *mut AndampPlayer) {
+pub unsafe extern "C" fn alpaca_player_poll(player: *mut AlpacaPlayer) {
     with_player(player, (), Player::poll);
 }
 
@@ -75,7 +75,7 @@ pub unsafe extern "C" fn andamp_player_poll(player: *mut AndampPlayer) {
 /// # Safety
 /// `player` is null or a live player.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_status(player: *mut AndampPlayer) -> i32 {
+pub unsafe extern "C" fn alpaca_player_status(player: *mut AlpacaPlayer) -> i32 {
     with_player(player, 0, |p| match p.status() {
         walkit::player::Status::Stopped => 0,
         walkit::player::Status::Playing => 1,
@@ -88,7 +88,7 @@ pub unsafe extern "C" fn andamp_player_status(player: *mut AndampPlayer) -> i32 
 /// # Safety
 /// `player` is null or a live player.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_index(player: *mut AndampPlayer) -> i32 {
+pub unsafe extern "C" fn alpaca_player_index(player: *mut AlpacaPlayer) -> i32 {
     with_player(player, 0, |p| p.index() as i32)
 }
 
@@ -97,7 +97,7 @@ pub unsafe extern "C" fn andamp_player_index(player: *mut AndampPlayer) -> i32 {
 /// # Safety
 /// `player` is null or a live player.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_position_ms(player: *mut AndampPlayer) -> i32 {
+pub unsafe extern "C" fn alpaca_player_position_ms(player: *mut AlpacaPlayer) -> i32 {
     with_player(player, 0, |p| p.position_ms())
 }
 
@@ -106,19 +106,19 @@ pub unsafe extern "C" fn andamp_player_position_ms(player: *mut AndampPlayer) ->
 /// # Safety
 /// `player` is null or a live player.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_seek_to(player: *mut AndampPlayer, ms: i32) {
+pub unsafe extern "C" fn alpaca_player_seek_to(player: *mut AlpacaPlayer, ms: i32) {
     with_player(player, (), |p| p.seek_to(ms));
 }
 
 /// Entry `index` of the playlist: its length in milliseconds, or -1 when there is none. The
 /// pointers that are not null get its title, its artist, its album and its file's path, each
-/// to free with [`andamp_string_free`](super::andamp_string_free); a tag the file does not carry comes out empty.
+/// to free with [`alpaca_string_free`](super::alpaca_string_free); a tag the file does not carry comes out empty.
 ///
 /// # Safety
 /// `player` is null or a live player; the others are null or point at a pointer.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_entry(
-    player: *mut AndampPlayer,
+pub unsafe extern "C" fn alpaca_player_entry(
+    player: *mut AlpacaPlayer,
     index: i32,
     title: *mut *mut c_char,
     artist: *mut *mut c_char,
@@ -156,11 +156,11 @@ pub unsafe extern "C" fn andamp_player_entry(
 /// # Safety
 /// `player` is null or a live player.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_underruns(player: *mut AndampPlayer) -> u64 {
+pub unsafe extern "C" fn alpaca_player_underruns(player: *mut AlpacaPlayer) -> u64 {
     with_player(player, 0, |p| p.underruns())
 }
 
-/// The rack as JSON, to free with [`andamp_string_free`](super::andamp_string_free): `{"effects":[...]}`, each effect
+/// The rack as JSON, to free with [`alpaca_string_free`](super::alpaca_string_free): `{"effects":[...]}`, each effect
 /// with `id`, `name`, `version`, `author`, `about`, `on`, `error` (why it is left out of the
 /// stream playing, or empty), `params` (each `id`, `name`, `kind` "number", "toggle" or
 /// "choice", `min`, `max`, `default`, `value`, `unit`, `help`, `scale`, `decimals` or -1,
@@ -170,7 +170,7 @@ pub unsafe extern "C" fn andamp_player_underruns(player: *mut AndampPlayer) -> u
 /// # Safety
 /// `player` is null or a live player.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_effects(player: *mut AndampPlayer) -> *mut c_char {
+pub unsafe extern "C" fn alpaca_player_effects(player: *mut AlpacaPlayer) -> *mut c_char {
     let json = with_player(player, "{\"effects\":[]}".to_string(), |p| {
         crate::dsp::describe::json(&p.rack)
     });
@@ -182,8 +182,8 @@ pub unsafe extern "C" fn andamp_player_effects(player: *mut AndampPlayer) -> *mu
 /// # Safety
 /// `player` is null or a live player.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_set_effect_on(
-    player: *mut AndampPlayer,
+pub unsafe extern "C" fn alpaca_player_set_effect_on(
+    player: *mut AlpacaPlayer,
     index: i32,
     on: bool,
 ) {
@@ -199,8 +199,8 @@ pub unsafe extern "C" fn andamp_player_set_effect_on(
 /// # Safety
 /// `player` is null or a live player.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_set_effect_value(
-    player: *mut AndampPlayer,
+pub unsafe extern "C" fn alpaca_player_set_effect_value(
+    player: *mut AlpacaPlayer,
     index: i32,
     param: i32,
     value: f32,
@@ -218,8 +218,8 @@ pub unsafe extern "C" fn andamp_player_set_effect_value(
 /// # Safety
 /// `player` is null or a live player.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_apply_preset(
-    player: *mut AndampPlayer,
+pub unsafe extern "C" fn alpaca_player_apply_preset(
+    player: *mut AlpacaPlayer,
     index: i32,
     preset: i32,
 ) {
@@ -241,8 +241,8 @@ pub unsafe extern "C" fn andamp_player_apply_preset(
 /// # Safety
 /// `player` is null or a live player; `out` points at `max` floats.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_take_wave(
-    player: *mut AndampPlayer,
+pub unsafe extern "C" fn alpaca_player_take_wave(
+    player: *mut AlpacaPlayer,
     out: *mut f32,
     max: i32,
 ) -> i32 {
@@ -258,13 +258,13 @@ pub unsafe extern "C" fn andamp_player_take_wave(
 }
 
 /// Control `param` of effect `index` at `value` as the listener reads it ("50 %", "-3.0 dB"),
-/// to free with [`andamp_string_free`](super::andamp_string_free).
+/// to free with [`alpaca_string_free`](super::alpaca_string_free).
 ///
 /// # Safety
 /// `player` is null or a live player.
 #[no_mangle]
-pub unsafe extern "C" fn andamp_player_effect_readout(
-    player: *mut AndampPlayer,
+pub unsafe extern "C" fn alpaca_player_effect_readout(
+    player: *mut AlpacaPlayer,
     index: i32,
     param: i32,
     value: f32,

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Draws the Mac's app icon from Andamp's icon (apps/mac/icon/andamp.svg) as a 1024 pixel PNG: the
+// Draws the Mac's app icon from Alpaca's icon (apps/mac/icon/alpaca.svg) as a 1024 pixel PNG: the
 // rounded square of a Mac icon, 824 pixels wide with its soft shadow, filled with the middle
 // 72 of the drawing's 108 units, which is the part an Android launcher shows.
 //
-//   swift tools/icon.swift <andamp.svg> <out.png>
+//   swift tools/icon.swift <alpaca.svg> <out.png>
 import AppKit
 
 let arguments = CommandLine.arguments
 guard arguments.count == 3, let drawing = NSImage(contentsOfFile: arguments[1]) else {
-    FileHandle.standardError.write(Data("usage: icon.swift <andamp.svg> <out.png>\n".utf8))
+    FileHandle.standardError.write(Data("usage: icon.swift <alpaca.svg> <out.png>\n".utf8))
     exit(2)
 }
 let side = 1024.0

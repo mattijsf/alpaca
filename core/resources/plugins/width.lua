@@ -13,7 +13,7 @@ plugin {
   id      = "nl.mattix.andamp.width",
   name    = "Width",
   version = "1.0.0",
-  author  = "Andamp",
+  author  = "Alpaca",
   about   = "Mid/side width: the side signal scaled 0–200 %; above 100 % the output is reduced by 2 / (1 + width) to keep headroom.",
 }
 

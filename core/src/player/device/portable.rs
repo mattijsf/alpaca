@@ -73,7 +73,7 @@ impl Device {
             stereo: Vec::new(),
             channels: usize::from(config.channels).max(1),
         };
-        let failed = |e: cpal::StreamError| eprintln!("andamp: audio output: {e}");
+        let failed = |e: cpal::StreamError| eprintln!("alpaca: audio output: {e}");
         let stream = match format {
             SampleFormat::F32 => device.build_output_stream(
                 &config,

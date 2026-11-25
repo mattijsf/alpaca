@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! An effect plug-in: a Lua file in the format of Andamp on Android.
+//! An effect plug-in: a Lua file in the format of Alpaca on Android.
 //!
 //! The script runs here, off the audio thread, in an interpreter with no files, no system and
 //! no way to load more code, for a limited time and in limited memory. It leaves a
@@ -189,7 +189,7 @@ impl Plugin {
         let lua = run(&self.source)?;
         let build: mlua::Function = lua
             .globals()
-            .get("__andamp_build")
+            .get("__alpaca_build")
             .map_err(|e| message(&e))?;
         build
             .call::<()>((sample_rate, channels))
@@ -233,7 +233,7 @@ fn run(source: &str) -> Result<Lua, String> {
         },
     );
     lua.load(PRELUDE)
-        .set_name("=andamp")
+        .set_name("=alpaca")
         .exec()
         .map_err(|e| message(&e))?;
     lua.load(source)
@@ -257,7 +257,7 @@ fn message(error: &mlua::Error) -> String {
 }
 
 fn table(lua: &Lua) -> Result<Table, String> {
-    lua.globals().get("__andamp").map_err(|e| message(&e))
+    lua.globals().get("__alpaca").map_err(|e| message(&e))
 }
 
 fn text(table: &Table, key: &str) -> Option<String> {

@@ -6,8 +6,8 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use andamp_core::fonts::Fonts;
-use andamp_core::skin::Skin;
+use alpaca_core::fonts::Fonts;
+use alpaca_core::skin::Skin;
 use walkit::files::SkinFiles;
 use walkit::player::FakePlayer;
 
@@ -17,7 +17,7 @@ fn own() -> PathBuf {
 
 /// A folder of its own under the system's temporary folder, emptied first.
 fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("andamp-fonts-{name}-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("alpaca-fonts-{name}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     dir

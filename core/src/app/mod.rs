@@ -44,7 +44,7 @@ use crate::skin::Skin;
 use crate::vis::Presets;
 
 /// The skin shown when none is asked for, which also lies under every classic skin.
-const DEFAULT_SKIN: &str = "AndAmp Dark.wsz";
+const DEFAULT_SKIN: &str = "Alpaca Dark.wsz";
 /// The skin `--modern` shows.
 const MODERN_SKIN: &str = "walkit-modern.wal";
 
@@ -137,10 +137,18 @@ impl App {
         config: Option<PathBuf>,
         player: Player,
     ) -> App {
-        let settings = match &config {
-            Some(dir) if options.kept() => Settings::open(dir),
+        let mut settings = match &config {
+            Some(dir) if options.kept() => {
+                let old = settings::carry_over_old_folder(dir);
+                let mut settings = Settings::open(dir);
+                if let Some(old) = old {
+                    settings.moved_folder(&old, dir);
+                }
+                settings
+            }
             _ => Settings::none(),
         };
+        settings.carry_over_old_skin_names();
         let number = |key: &str| settings.get(key).and_then(|v| v.parse::<f64>().ok());
         let zoom = options
             .zoom
@@ -220,10 +228,15 @@ impl App {
             DEFAULT_SKIN
         });
         let last = || {
-            self.settings
-                .get("skin")
-                .map(PathBuf::from)
-                .filter(|file| file.exists())
+            let kept = PathBuf::from(self.settings.get("skin")?);
+            if kept.exists() {
+                return Some(kept);
+            }
+            // a skin that came with the app when it was called Andamp, kept as a path into
+            // that app: the same skin under its name now
+            let name = kept.file_name()?.to_str()?;
+            let name = name.strip_prefix(settings::OLD_SKIN_PREFIX)?;
+            Some(self.builtin(&format!("{}{name}", settings::SKIN_PREFIX))).filter(|f| f.exists())
         };
         let skin = self
             .options
@@ -466,7 +479,7 @@ impl App {
         self.keep_skin_state();
         self.keep_effects();
         if let Err(message) = self.settings.save() {
-            eprintln!("andamp: {message}");
+            eprintln!("alpaca: {message}");
         }
     }
 

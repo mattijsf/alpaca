@@ -39,7 +39,7 @@ const SPECTRUM_FLOOR_DB: f32 = 66.0;
 const WAVE_SAMPLES: usize = 576;
 
 /// The equalizer's seventeen factory presets: a name, the preamp and the ten bands, on
-/// Winamp's slider scale of 0..63 with 32 in the middle. The same table as Andamp on Android,
+/// Winamp's slider scale of 0..63 with 32 in the middle. The same table as Alpaca on Android,
 /// which has it from webamp's reading of Winamp's preset file.
 pub const EQ_PRESETS: [(&str, i32, [i32; 10]); 17] = [
     ("Classical", 32, [32, 32, 32, 32, 32, 32, 19, 19, 19, 15]),
@@ -621,7 +621,7 @@ impl Player {
                 let rack = self.rack.connect(rate);
                 match Output::new(rate, self.shared.clone(), rack) {
                     Ok(output) => self.output = Some(output),
-                    Err(message) => eprintln!("andamp: {message}"),
+                    Err(message) => eprintln!("alpaca: {message}"),
                 }
             }
         }

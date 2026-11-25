@@ -1,8 +1,8 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Builds the andamp-core static library for the architectures Xcode builds (ARCHS; this Mac's
-# own when run by hand) and puts one library for all of them at target/macos/libandamp_core.a,
+# Builds the alpaca-core static library for the architectures Xcode builds (ARCHS; this Mac's
+# own when run by hand) and puts one library for all of them at target/macos/libalpaca_core.a,
 # where the Xcode project links it from. Xcode runs it before compiling the Swift sources.
 set -eu
 cd "$(dirname "$0")"
@@ -21,11 +21,11 @@ for arch in ${ARCHS:-$(uname -m)}; do
         x86_64) target=x86_64-apple-darwin ;;
         *) echo "build.sh: no Rust target for $arch" >&2; exit 1 ;;
     esac
-    # ANDAMP_CORE_FEATURES names cargo features to build with, such as portable-output
-    cargo build --release --target "$target" ${ANDAMP_CORE_FEATURES:+--features "$ANDAMP_CORE_FEATURES"}
-    libs="$libs target/$target/release/libandamp_core.a"
+    # ALPACA_CORE_FEATURES names cargo features to build with, such as portable-output
+    cargo build --release --target "$target" ${ALPACA_CORE_FEATURES:+--features "$ALPACA_CORE_FEATURES"}
+    libs="$libs target/$target/release/libalpaca_core.a"
 done
 
 mkdir -p target/macos
 # shellcheck disable=SC2086 # one path per architecture
-lipo -create $libs -output target/macos/libandamp_core.a
+lipo -create $libs -output target/macos/libalpaca_core.a

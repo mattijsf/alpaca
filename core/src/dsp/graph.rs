@@ -2,7 +2,7 @@
 
 //! An effect as a graph of built-in primitives, and the engine that runs it.
 //!
-//! This is the effect format of Andamp on Android (its `docs/dsp-plugin-spec.md`), so that one
+//! This is the effect format of Alpaca on Android (its `docs/dsp-plugin-spec.md`), so that one
 //! plug-in file sounds the same on both: the same primitives with the same arithmetic. A
 //! [`Graph`] is checked and arranged into a flat [`Program`]; an [`Engine`] runs a program a
 //! frame at a time. Nodes that only parameters and constants feed run once every

@@ -4,13 +4,18 @@
 //! every system, so a shell stores nothing itself.
 //!
 //! The file is text, a key and its value to a line with a tab between, sorted by key. A key
-//! is a path of words with dots (`skin`, `places.AndAmp Dark.wsz.1`); a value is any text.
+//! is a path of words with dots (`skin`, `places.Alpaca Dark.wsz.1`); a value is any text.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 /// The file's name in the app's folder.
 const FILE: &str = "settings.txt";
+
+/// How the names of the skins that come with the app start: `Alpaca Dark.wsz`.
+pub const SKIN_PREFIX: &str = "Alpaca ";
+/// How they started when the app was called Andamp: `AndAmp Dark.wsz`.
+pub const OLD_SKIN_PREFIX: &str = "AndAmp ";
 
 /// The folder the app keeps its settings and the listener's plug-ins in: Application Support
 /// on a Mac, the roaming `AppData` on Windows, the XDG config folder elsewhere. `None` when the
@@ -23,14 +28,25 @@ pub fn config_dir() -> Option<PathBuf> {
     };
     if cfg!(target_os = "macos") {
         // inside a sandbox HOME is the app's container, which is where this belongs
-        var("HOME").map(|home| home.join("Library/Application Support/Andamp"))
+        var("HOME").map(|home| home.join("Library/Application Support/Alpaca"))
     } else if cfg!(target_os = "windows") {
-        var("APPDATA").map(|data| data.join("Andamp"))
+        var("APPDATA").map(|data| data.join("Alpaca"))
     } else {
         var("XDG_CONFIG_HOME")
             .or_else(|| var("HOME").map(|home| home.join(".config")))
-            .map(|config| config.join("andamp"))
+            .map(|config| config.join("alpaca"))
     }
+}
+
+/// Moves the app's folder from where it was kept when the app was called Andamp (the same
+/// place, named `Andamp` or `andamp`) to `dir`, when there is one there and nothing at `dir`
+/// yet. A folder that does not move stays where it was, and the app starts as if new. Gives
+/// the old folder when it moved.
+pub fn carry_over_old_folder(dir: &Path) -> Option<PathBuf> {
+    let name = dir.file_name()?.to_str()?;
+    let old = dir.with_file_name(name.replace("Alpaca", "Andamp").replace("alpaca", "andamp"));
+    (old != dir && old.is_dir() && !dir.exists() && std::fs::rename(&old, dir).is_ok())
+        .then_some(old)
 }
 
 /// The settings: read once, changed in memory, written when asked.
@@ -101,6 +117,40 @@ impl Settings {
         for key in gone {
             self.values.remove(&key);
             self.changed = true;
+        }
+    }
+
+    /// Moves what is kept under the names of the skins that came with the app when it was
+    /// called Andamp (`at.AndAmp Dark.wsz.1`) to the same skins' names now (`at.Alpaca
+    /// Dark.wsz.1`). A key the new name already has stays as it is.
+    pub fn carry_over_old_skin_names(&mut self) {
+        let old: Vec<String> = self
+            .values
+            .keys()
+            .filter(|key| key.contains(OLD_SKIN_PREFIX))
+            .cloned()
+            .collect();
+        for key in old {
+            if let Some(value) = self.values.remove(&key) {
+                let renamed = key.replace(OLD_SKIN_PREFIX, SKIN_PREFIX);
+                self.values.entry(renamed).or_insert(value);
+                self.changed = true;
+            }
+        }
+    }
+
+    /// Points every path in the values that is inside the folder `from` (the skin worn, from
+    /// the listener's own skins) into the folder `to` instead.
+    pub fn moved_folder(&mut self, from: &Path, to: &Path) {
+        let (from, to) = (
+            format!("{}/", from.to_string_lossy()),
+            format!("{}/", to.to_string_lossy()),
+        );
+        for value in self.values.values_mut() {
+            if value.contains(&from) {
+                *value = value.replace(&from, &to);
+                self.changed = true;
+            }
         }
     }
 

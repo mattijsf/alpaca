@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! Effect plug-ins: the ones that come with the app and Andamp's examples load and build,
+//! Effect plug-ins: the ones that come with the app and Alpaca's examples load and build,
 //! the ones made to be refused are refused with a reason, and the engine does to a signal
 //! what the primitives say.
 
 use std::f32::consts::PI;
 use std::path::{Path, PathBuf};
 
-use andamp_core::dsp::graph::Engine;
-use andamp_core::dsp::lua::{Kind, Plugin};
+use alpaca_core::dsp::graph::Engine;
+use alpaca_core::dsp::lua::{Kind, Plugin};
 
 fn folder(name: &str) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join(name)
@@ -225,7 +225,7 @@ fn filters_delays_and_feedback_do_what_the_primitives_say() {
 
 #[test]
 fn the_rack_runs_what_is_on_and_fades_what_is_switched() {
-    use andamp_core::dsp::rack::Rack;
+    use alpaca_core::dsp::rack::Rack;
     let gain = std::fs::read_to_string(folder("tests/plugins/gain.lua")).unwrap();
     let mut rack = Rack::default();
     assert_eq!(rack.add(&gain), Ok(0));
@@ -269,7 +269,7 @@ fn the_rack_runs_what_is_on_and_fades_what_is_switched() {
 
 #[test]
 fn the_rack_is_left_and_put_back_and_a_control_reads_as_the_reference_says() {
-    use andamp_core::dsp::rack::Rack;
+    use alpaca_core::dsp::rack::Rack;
     let mut rack = Rack::default();
     let loaded = rack.add_folder(&folder("resources/plugins"));
     assert_eq!(loaded.len(), 6);

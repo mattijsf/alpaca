@@ -314,7 +314,7 @@ impl App {
             action("plugins.reveal", "Show Plug-ins Folder"),
         ];
         let about = [
-            text("Andamp", env!("CARGO_PKG_VERSION")),
+            text("Alpaca", env!("CARGO_PKG_VERSION")),
             text(
                 "Settings",
                 &folder(self.config.clone()).unwrap_or_else(|| "Not kept on this system".into()),

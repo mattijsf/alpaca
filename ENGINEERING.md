@@ -1,6 +1,6 @@
-# Andamp for the desktop: engineering notes
+# Alpaca for the desktop: engineering notes
 
-Andamp for the desktop is Winamp's player on macOS, and later Windows and Linux: classic and
+Alpaca for the desktop is Winamp's player on macOS, and later Windows and Linux: classic and
 modern skins run by the walkit engine, each of a skin's windows a window of its own on the
 desktop, with a real player behind them. It is built in two parts. `core/` is a Rust crate
 that is the app, the same on every system. A shell is the part written for one system; `apps/mac/`
@@ -22,9 +22,9 @@ tools/gate.sh                         # the push gate: format, lints, docs, test
 xcrun swift-format format -i -r apps/mac/Sources   # format the Swift
 tools/cross-check.sh                  # the core type-checked for Windows and Linux (needs zig)
 (cd apps/mac && xcodegen generate)         # the Xcode project, after project.yml changes
-xcodebuild -project apps/mac/Andamp.xcodeproj -scheme Andamp -configuration Release \
+xcodebuild -project apps/mac/Alpaca.xcodeproj -scheme Alpaca -configuration Release \
   -derivedDataPath build build        # the Mac's app; it builds the core itself (core/build.sh)
-build/Build/Products/Release/Andamp.app/Contents/MacOS/Andamp [skin] [songs...]
+build/Build/Products/Release/Alpaca.app/Contents/MacOS/Alpaca [skin] [songs...]
 ```
 
 `--dump <folder>` writes every window as a PNG after two seconds and quits: the way to look at
@@ -58,7 +58,7 @@ Visualizer (`vis/build-projectm.sh`); the app builds and runs without it.
   `portable-output` feature, so the audio device every other system uses is linted too
 - `cargo doc` with warnings as errors, which finds a doc link that leads nowhere
 - `cargo test --release`
-- a check that `core/include/andamp_core.h` and `core/src/ffi` name the same functions
+- a check that `core/include/alpaca_core.h` and `core/src/ffi` name the same functions
 - `swift-format lint --strict` on the Mac's shell
 - `tools/cross-check.sh`, where zig is installed
 
@@ -81,7 +81,7 @@ shell ──▶ ffi ──▶ app ──┬──▶ skin ──▶ host, render
 ```
 
 - **A shell depends on `app` and on nothing behind it.** A shell in Rust uses
-  `andamp_core::app::App`; one in another language uses `ffi`, the same thing in C. A shell
+  `alpaca_core::app::App`; one in another language uses `ffi`, the same thing in C. A shell
   does not open a skin, read a setting or build a playlist itself: it asks the app.
 - **`app` decides, the shell does.** The app knows the command line, the menu, what each
   command does, what a skin's buttons ask for, what a start puts back and what a quit keeps.
@@ -114,12 +114,12 @@ shell ──▶ ffi ──▶ app ──┬──▶ skin ──▶ host, render
 | `core/src/dsp/` | Effects: Lua plug-ins (`lua.rs`) describe a graph, `graph.rs` runs it, `rack.rs` is the chain the audio passes through, `describe.rs` spells the rack out for an Effects window. |
 | `core/src/settings.rs` | The one file kept between runs. |
 | `core/src/vis.rs` | The Visualizer's presets: which shows, how long, what its keys do. |
-| `core/src/ffi/` | The C interface, by what it takes: `app.rs`, `player.rs`, `skin.rs`. `core/include/andamp_core.h` is written by hand, in step with it. |
+| `core/src/ffi/` | The C interface, by what it takes: `app.rs`, `player.rs`, `skin.rs`. `core/include/alpaca_core.h` is written by hand, in step with it. |
 | `core/tests/` | The tests, a file to an area: `app`, `windows`, `screens`, `player`, `effects`, `settings`. |
 | `core/resources/` | What comes with the app on every system: the built-in skins, the fonts, the wasabi element set and the effect plug-ins. Each shell bundles this folder and hands its path to the app; the tests read it in place. |
 | `apps/mac/Sources/` | The Mac's shell: `main.swift` answers the app's requests and draws its menus; `SkinController.swift` steps the app and places the windows; `SkinWindow.swift` shows pixels; `SkinCursors.swift` shows the cursor the app names; `WindowCycle.swift` is Command-` through the app's windows; `Preferences.swift`, `Effects.swift`, `Visualizer.swift` and `NowPlaying.swift` are the Mac's own windows and media keys; `Checks.swift` is `--dump` and `--bench`. |
 | `vis/` | Builds libprojectM as a library beside the app. |
-| `tools/` | The gate, the cross-check, and `icon.sh`, which makes the Mac's icon from Andamp's own (`apps/mac/icon/andamp.svg`). |
+| `tools/` | The gate, the cross-check, and `icon.sh`, which makes the Mac's icon from Alpaca's own (`apps/mac/icon/alpaca.svg`). |
 | `spikes/` | Experiments kept for their findings; outside the gate. |
 
 **The split rule.** A file that holds two concerns is split by concern, not by length: the

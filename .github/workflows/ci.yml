@@ -45,5 +45,5 @@ jobs:
       - run: xcodegen generate
         working-directory: apps/mac
       - run: >
-          xcodebuild -project apps/mac/Andamp.xcodeproj -scheme Andamp -configuration Release
+          xcodebuild -project apps/mac/Alpaca.xcodeproj -scheme Alpaca -configuration Release
           -derivedDataPath build build

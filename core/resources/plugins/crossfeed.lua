@@ -10,7 +10,7 @@ plugin {
   id      = "nl.mattix.andamp.crossfeed",
   name    = "Headphone Crossfeed",
   version = "1.0.0",
-  author  = "Andamp",
+  author  = "Alpaca",
   about   = "Opposite channel low-passed at 700 Hz (Q 0.5), delayed 0.3 ms and mixed in; output normalized for centered content.",
 }
 

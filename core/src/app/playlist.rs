@@ -344,9 +344,9 @@ impl App {
             })
             .collect();
         format!(
-            "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>Andamp playlist</title>\n\
+            "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>Alpaca playlist</title>\n\
              <style>body {{ font: 14px sans-serif; margin: 2em; }} small {{ color: gray; }}</style>\n\
-             </head>\n<body>\n<h1>Andamp playlist</h1>\n<p>{} songs, {}</p>\n<ol>\n{rows}</ol>\n</body>\n</html>\n",
+             </head>\n<body>\n<h1>Alpaca playlist</h1>\n<p>{} songs, {}</p>\n<ol>\n{rows}</ol>\n</body>\n</html>\n",
             player.entries().len(),
             time(total.min(i64::from(i32::MAX)) as i32),
         )

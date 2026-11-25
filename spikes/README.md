@@ -8,7 +8,7 @@ answers a question the player's design depends on.
 [`extensionkit/`](extensionkit) is a sandboxed host with an extension point, and two copies of
 one extension: one inside the host's bundle, one inside a second app that stands in for a
 source from another developer. The host finds both, starts each in its own process and talks to
-it over XPC. The contract has the shape of Andamp's source contract on Android: a version, a
+it over XPC. The contract has the shape of Alpaca's source contract on Android: a version, a
 request with an answer, and the audio as a pipe.
 
 The host was signed with a development certificate; the second app had an ad hoc signature and

@@ -53,8 +53,8 @@ final class Preferences: NSObject, NSWindowDelegate {
     var isShown: Bool { window?.isVisible == true }
 
     private var pages: [PreferencePages.Page] {
-        guard let json = andamp_app_preferences(app) else { return [] }
-        defer { andamp_string_free(json) }
+        guard let json = alpaca_app_preferences(app) else { return [] }
+        defer { alpaca_string_free(json) }
         let data = Data(String(cString: json).utf8)
         return (try? JSONDecoder().decode(PreferencePages.self, from: data))?.pages ?? []
     }
@@ -249,10 +249,10 @@ final class Preferences: NSObject, NSWindowDelegate {
     /// Tells the library, lets the app answer what it asks, and draws the window again: after
     /// this turn of the run loop, since the control that fired is one of those drawn again.
     private func set(_ id: String, _ value: String) {
-        andamp_app_set_preference(app, id, value)
+        alpaca_app_set_preference(app, id, value)
         onChange?()
         DispatchQueue.main.async { [weak self] in self?.refresh() }
     }
 
-    func windowWillClose(_ notification: Notification) { andamp_app_save(app) }
+    func windowWillClose(_ notification: Notification) { alpaca_app_save(app) }
 }

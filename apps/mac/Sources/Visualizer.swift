@@ -148,7 +148,7 @@ final class MilkdropView: NSOpenGLView {
             engine.loadPreset(handle, wanted.file, wanted.blend)
             self.wanted = nil
         }
-        let count = andamp_player_take_wave(player, &samples, Int32(samples.count))
+        let count = alpaca_player_take_wave(player, &samples, Int32(samples.count))
         if count > 0 { engine.addSamples(handle, samples, UInt32(count), 1) }
         engine.render(handle)
         context.flushBuffer()
@@ -212,7 +212,7 @@ final class Visualizer: NSObject, NSWindowDelegate {
             return
         }
         if window == nil {
-            guard let view = MilkdropView(engine: engine, player: andamp_app_player(app)) else { return }
+            guard let view = MilkdropView(engine: engine, player: alpaca_app_player(app)) else { return }
             let made = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 640, height: 400),
                 styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
@@ -231,7 +231,7 @@ final class Visualizer: NSObject, NSWindowDelegate {
         window?.makeFirstResponder(view)
         run()
         // the library answers with the first preset of the listener's folder
-        andamp_app_vis_shown(app, true)
+        alpaca_app_vis_shown(app, true)
         onChange?()
     }
 
@@ -244,7 +244,7 @@ final class Visualizer: NSObject, NSWindowDelegate {
     private func key(_ event: NSEvent) -> Bool {
         let named: [UInt16: String] = [124: "right", 123: "left", 49: "space"]
         guard let key = named[event.keyCode] ?? event.charactersIgnoringModifiers?.lowercased(),
-            andamp_app_vis_key(app, key)
+            alpaca_app_vis_key(app, key)
         else { return false }
         onChange?()
         return true
@@ -253,14 +253,14 @@ final class Visualizer: NSObject, NSWindowDelegate {
     /// Draws while the window can be seen, and tells the library when a preset's stay is over.
     private func run() {
         let seen = window?.isVisible == true && window?.occlusionState.contains(.visible) == true
-        view?.fps = Double(andamp_app_vis_fps(app))
+        view?.fps = Double(alpaca_app_vis_fps(app))
         view?.run(seen)
         changer?.invalidate()
         changer = nil
         guard seen else { return }
-        let next = Timer(timeInterval: TimeInterval(andamp_app_vis_stay(app)), repeats: true) { [weak self] _ in
+        let next = Timer(timeInterval: TimeInterval(alpaca_app_vis_stay(app)), repeats: true) { [weak self] _ in
             guard let self else { return }
-            andamp_app_vis_tick(self.app)
+            alpaca_app_vis_tick(self.app)
             self.onChange?()
         }
         RunLoop.main.add(next, forMode: .common)
@@ -276,7 +276,7 @@ final class Visualizer: NSObject, NSWindowDelegate {
         view?.run(false)
         changer?.invalidate()
         changer = nil
-        andamp_app_vis_shown(app, false)
+        alpaca_app_vis_shown(app, false)
         onChange?()
     }
 

@@ -7,8 +7,8 @@
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use andamp_core::app::{into_view, seen, App, Area, Options};
-use andamp_core::player::Player;
+use alpaca_core::app::{into_view, seen, App, Area, Options};
+use alpaca_core::player::Player;
 
 /// The part of the main screen the windows move on: a 2560 by 1440 screen, less a menu bar.
 const MAIN: Area = Area {
@@ -30,7 +30,7 @@ fn resources() -> PathBuf {
 }
 
 fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("andamp-screens-{}-{name}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("alpaca-screens-{}-{name}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     dir
@@ -210,7 +210,7 @@ fn a_window_is_never_put_where_no_screen_shows_it() {
     let dir = scratch("never");
     std::fs::write(
         dir.join("settings.txt"),
-        "at.AndAmp Dark.wsz.1\t9000,9000\nat.AndAmp Dark.wsz.3\t9000,9116\nat.AndAmp Dark.wsz.5\t-7000,9232\n",
+        "at.Alpaca Dark.wsz.1\t9000,9000\nat.Alpaca Dark.wsz.3\t9000,9116\nat.Alpaca Dark.wsz.5\t-7000,9232\n",
     )
     .unwrap();
     let mut app = start(&dir, &[MAIN, LEFT]);
@@ -281,7 +281,7 @@ fn places_kept_before_the_screens_were_known_count_from_the_main_screen() {
     let dir = scratch("old");
     std::fs::write(
         dir.join("settings.txt"),
-        "at.AndAmp Dark.wsz.1\t478,294\nat.AndAmp Dark.wsz.3\t478,410\nat.AndAmp Dark.wsz.5\t478,526\nat.AndAmp Dark.wsz.zoom\t1\n",
+        "at.Alpaca Dark.wsz.1\t478,294\nat.Alpaca Dark.wsz.3\t478,410\nat.Alpaca Dark.wsz.5\t478,526\nat.Alpaca Dark.wsz.zoom\t1\n",
     )
     .unwrap();
     let mut app = start(&dir, &[MAIN, LEFT]);

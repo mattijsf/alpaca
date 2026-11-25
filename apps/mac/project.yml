@@ -1,8 +1,8 @@
-# The Xcode project, Andamp.xcodeproj, is made from this file with XcodeGen
+# The Xcode project, Alpaca.xcodeproj, is made from this file with XcodeGen
 # (`xcodegen generate` in this folder). The project itself is not committed.
-name: Andamp
+name: Alpaca
 options:
-  bundleIdPrefix: nl.mattix.andamp
+  bundleIdPrefix: nl.mattix.alpaca
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
@@ -16,12 +16,12 @@ settings:
     DEVELOPMENT_TEAM: ""
     ENABLE_USER_SCRIPT_SANDBOXING: NO
 targets:
-  Andamp:
+  Alpaca:
     type: application
     platform: macOS
     sources:
       - path: Sources
-      - path: ../../core/include/andamp_core.h
+      - path: ../../core/include/alpaca_core.h
         buildPhase: none
       - path: ../../core/resources/skins
         type: folder
@@ -35,14 +35,14 @@ targets:
       - path: ../../core/resources/plugins
         type: folder
         buildPhase: resources
-      # the app's icon, made from icon/andamp.svg by tools/icon.sh
+      # the app's icon, made from icon/alpaca.svg by tools/icon.sh
       - path: Resources/AppIcon.icns
         buildPhase: resources
     info:
       # written by XcodeGen, not committed
       path: Info.plist
       properties:
-        CFBundleDisplayName: Andamp
+        CFBundleDisplayName: Alpaca
         CFBundleIconFile: AppIcon
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
@@ -59,26 +59,26 @@ targets:
           - CFBundleTypeName: Winamp skin
             CFBundleTypeRole: Viewer
             LSHandlerRank: Default
-            LSItemContentTypes: [nl.mattix.andamp.skin.classic, nl.mattix.andamp.skin.modern]
+            LSItemContentTypes: [nl.mattix.alpaca.skin.classic, nl.mattix.alpaca.skin.modern]
         UTImportedTypeDeclarations:
-          - UTTypeIdentifier: nl.mattix.andamp.skin.classic
+          - UTTypeIdentifier: nl.mattix.alpaca.skin.classic
             UTTypeDescription: Classic Winamp skin
             UTTypeConformsTo: [public.data]
             UTTypeTagSpecification:
               public.filename-extension: [wsz]
-          - UTTypeIdentifier: nl.mattix.andamp.skin.modern
+          - UTTypeIdentifier: nl.mattix.alpaca.skin.modern
             UTTypeDescription: Modern Winamp skin
             UTTypeConformsTo: [public.data]
             UTTypeTagSpecification:
               public.filename-extension: [wal]
     settings:
       base:
-        PRODUCT_NAME: Andamp
-        PRODUCT_BUNDLE_IDENTIFIER: nl.mattix.andamp.mac
-        SWIFT_OBJC_BRIDGING_HEADER: ../../core/include/andamp_core.h
+        PRODUCT_NAME: Alpaca
+        PRODUCT_BUNDLE_IDENTIFIER: nl.mattix.alpaca.mac
+        SWIFT_OBJC_BRIDGING_HEADER: ../../core/include/alpaca_core.h
         LIBRARY_SEARCH_PATHS: $(PROJECT_DIR)/../../core/target/macos
         # the Rust library and the system frameworks its audio output calls
-        OTHER_LDFLAGS: -landamp_core -framework AudioToolbox -framework AudioUnit -framework CoreAudio
+        OTHER_LDFLAGS: -lalpaca_core -framework AudioToolbox -framework AudioUnit -framework CoreAudio
         # the Visualizer window draws with OpenGL, which Apple has deprecated and still ships
         GCC_PREPROCESSOR_DEFINITIONS: GL_SILENCE_DEPRECATION=1
         ONLY_ACTIVE_ARCH: YES
@@ -95,8 +95,8 @@ targets:
           fi
         basedOnDependencyAnalysis: false
     preBuildScripts:
-      - name: Build the andamp-core library
+      - name: Build the alpaca-core library
         script: exec "$PROJECT_DIR/../../core/build.sh"
         basedOnDependencyAnalysis: false
         outputFiles:
-          - $(PROJECT_DIR)/../../core/target/macos/libandamp_core.a
+          - $(PROJECT_DIR)/../../core/target/macos/libalpaca_core.a

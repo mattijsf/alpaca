@@ -13,7 +13,7 @@ final class SkinCursors {
 
     private let app: OpaquePointer
     /// The cursor last set, as the library numbers them.
-    private var shown = UInt32(ANDAMP_CURSOR_ARROW)
+    private var shown = UInt32(ALPACA_CURSOR_ARROW)
     /// The skin's own cursors made so far, by the library's number; nil for one that has no
     /// pictures after all.
     private var made: [UInt32: Pictures?] = [:]
@@ -30,17 +30,17 @@ final class SkinCursors {
         shown = kind
         timer?.invalidate()
         timer = nil
-        if kind >= UInt32(ANDAMP_CURSOR_SKIN), let pictures = pictures(kind) {
+        if kind >= UInt32(ALPACA_CURSOR_SKIN), let pictures = pictures(kind) {
             step = 0
             pictures.frames[pictures.steps[0].frame].set()
             if pictures.steps.count > 1 { wait(pictures, for: kind) }
             return
         }
         switch Int32(kind) {
-        case ANDAMP_CURSOR_LEFT_RIGHT: NSCursor.resizeLeftRight.set()
-        case ANDAMP_CURSOR_UP_DOWN: NSCursor.resizeUpDown.set()
-        case ANDAMP_CURSOR_DIAGONAL: Self.corner(right: true).set()
-        case ANDAMP_CURSOR_OTHER_DIAGONAL: Self.corner(right: false).set()
+        case ALPACA_CURSOR_LEFT_RIGHT: NSCursor.resizeLeftRight.set()
+        case ALPACA_CURSOR_UP_DOWN: NSCursor.resizeUpDown.set()
+        case ALPACA_CURSOR_DIAGONAL: Self.corner(right: true).set()
+        case ALPACA_CURSOR_OTHER_DIAGONAL: Self.corner(right: false).set()
         default: NSCursor.arrow.set()
         }
     }
@@ -48,7 +48,7 @@ final class SkinCursors {
     /// Another skin is worn: its cursors are other pictures.
     func forget() {
         made.removeAll()
-        show(UInt32(ANDAMP_CURSOR_ARROW))
+        show(UInt32(ALPACA_CURSOR_ARROW))
     }
 
     /// Shows the next picture of a cursor that moves when this one's time is over, for as
@@ -73,8 +73,8 @@ final class SkinCursors {
 
     private func read(_ kind: UInt32) -> Pictures? {
         var count = 0
-        guard let words = andamp_app_cursor_picture(app, kind, &count) else { return nil }
-        defer { andamp_words_free(words, count) }
+        guard let words = alpaca_app_cursor_picture(app, kind, &count) else { return nil }
+        defer { alpaca_words_free(words, count) }
         let all = UnsafeBufferPointer(start: words, count: count)
         var at = 0
         // the next whole number, or nil past the end

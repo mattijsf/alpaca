@@ -4,7 +4,7 @@ import AppKit
 
 /// The app's windows on the desktop: one for each window of the skin worn.
 ///
-/// The library has the app (`andamp_app_`): its player, the skin, the menu, what each command
+/// The library has the app (`alpaca_app_`): its player, the skin, the menu, what each command
 /// does. The controller tells it where the screens are, as rectangles on the desktop in points
 /// from the main screen's top left corner with y down, and again whenever they change. The
 /// engine counts in layout pixels from the library's origin, the top left of the screen the
@@ -16,9 +16,9 @@ final class SkinController {
     /// The app in the library.
     let app: OpaquePointer
     /// The app's player, which every skin shows and drives.
-    var player: OpaquePointer { andamp_app_player(app) }
+    var player: OpaquePointer { alpaca_app_player(app) }
     /// The skin worn; the library's, and another one after a request `skin`.
-    private var skin: OpaquePointer? { andamp_app_skin(app) }
+    private var skin: OpaquePointer? { alpaca_app_skin(app) }
     private var windows: [UInt32: SkinWindow] = [:]
     /// The engine's windows from the bottom up, as last shown.
     private var order: [UInt32] = []
@@ -47,16 +47,16 @@ final class SkinController {
     var onStep: (() -> Void)?
 
     /// Points per layout pixel.
-    var zoom: Int { Int(andamp_app_zoom(app)) }
+    var zoom: Int { Int(alpaca_app_zoom(app)) }
     /// Whether the windows stay above other apps' windows.
-    private var onTop: Bool { andamp_app_on_top(app) }
+    private var onTop: Bool { alpaca_app_on_top(app) }
     /// How much of the windows shows over what is behind them: 1 for all of it.
-    private var opacity: CGFloat { CGFloat(andamp_app_opacity(app)) / 100 }
+    private var opacity: CGFloat { CGFloat(alpaca_app_opacity(app)) / 100 }
 
     /// The file name of the skin worn.
     var name: String {
-        guard let name = andamp_app_skin_name(app) else { return "" }
-        defer { andamp_string_free(name) }
+        guard let name = alpaca_app_skin_name(app) else { return "" }
+        defer { alpaca_string_free(name) }
         return String(cString: name)
     }
 
@@ -66,12 +66,12 @@ final class SkinController {
         let arguments = CommandLine.arguments.dropFirst().map { UnsafePointer(strdup($0)) }
         defer { for argument in arguments { free(UnsafeMutablePointer(mutating: argument)) } }
         guard
-            let made = andamp_app_new(
+            let made = alpaca_app_new(
                 arguments, Int32(arguments.count), Bundle.main.resourcePath ?? "", Int32(area.width),
                 Int32(area.height))
         else { fatalError("the library did not start") }
         app = made
-        andamp_app_set_menu_handler(
+        alpaca_app_set_menu_handler(
             app,
             { context, menu in
                 guard let context, let menu else { return 0 }
@@ -100,7 +100,7 @@ final class SkinController {
         if let screenWatcher { NotificationCenter.default.removeObserver(screenWatcher) }
         activeWatchers.forEach(NotificationCenter.default.removeObserver)
         dropWindows()
-        andamp_app_free(app)
+        alpaca_app_free(app)
     }
 
     /// The top of the main screen, from the bottom of it: the desktop the library knows counts
@@ -119,21 +119,21 @@ final class SkinController {
             let (right, lower) = (frame.maxX.rounded(.down), (top - frame.minY).rounded(.down))
             rects += [Int32(left), Int32(upper), Int32(right - left), Int32(lower - upper)]
         }
-        rects.withUnsafeBufferPointer { andamp_app_set_screens(app, $0.baseAddress, Int32($0.count / 4)) }
+        rects.withUnsafeBufferPointer { alpaca_app_set_screens(app, $0.baseAddress, Int32($0.count / 4)) }
     }
 
     /// Where the library counts the windows and the mouse from, on the desktop.
     private var origin: (x: CGFloat, y: CGFloat) {
         var x: Int32 = 0
         var y: Int32 = 0
-        andamp_app_origin(app, &x, &y)
+        alpaca_app_origin(app, &x, &y)
         return (CGFloat(x), CGFloat(y))
     }
 
     /// Wears the first skin, shows it, and then puts the playlist back.
     func start() {
         let began = ProcessInfo.processInfo.systemUptime
-        andamp_app_start(app)
+        alpaca_app_start(app)
         pump(force: true)
         // the library reads the songs at its second step: after the skin is on the screen,
         // in sight or not
@@ -143,8 +143,8 @@ final class SkinController {
 
     /// What the command line gave for an option the shell answers: nil when it was not given.
     func option(_ name: String) -> String? {
-        guard let value = andamp_app_option(app, name) else { return nil }
-        defer { andamp_string_free(value) }
+        guard let value = alpaca_app_option(app, name) else { return nil }
+        defer { alpaca_string_free(value) }
         return String(cString: value)
     }
 
@@ -170,7 +170,7 @@ final class SkinController {
     /// Runs the engine and shows what changed, then sleeps until the skin next changes.
     func pump(force: Bool = false) {
         guard !inMenu else { return }
-        let changed = andamp_app_step(app)
+        let changed = alpaca_app_step(app)
         answer()
         if changed != 0 || force || stale { apply() }
         stale = false
@@ -181,18 +181,18 @@ final class SkinController {
 
     /// The skin's tooltip for the object under the mouse, or none.
     private func showTooltip() {
-        guard let text = andamp_app_tooltip(app) else { return }
+        guard let text = alpaca_app_tooltip(app) else { return }
         let tip = String(cString: text)
-        andamp_string_free(text)
+        alpaca_string_free(text)
         tooltip.show(tip.isEmpty || pressed ? nil : tip, at: NSEvent.mouseLocation)
     }
 
     /// Takes what the library asked for: what concerns the windows is done here, the rest is
     /// handed on.
     private func answer() {
-        guard let text = andamp_app_take_requests(app) else { return }
+        guard let text = alpaca_app_take_requests(app) else { return }
         let lines = String(cString: text).split(separator: "\n").map(String.init)
-        andamp_string_free(text)
+        alpaca_string_free(text)
         var rest: [String] = []
         for line in lines {
             switch line {
@@ -224,9 +224,9 @@ final class SkinController {
     private func apply() {
         guard let skin else { return }
         defer { if firstShown == 0, !windows.isEmpty { firstShown = ProcessInfo.processInfo.systemUptime } }
-        var infos: [AndampWindow] = []
-        var info = AndampWindow()
-        for index in 0..<andamp_skin_window_count(skin) where andamp_skin_window(skin, index, &info) {
+        var infos: [AlpacaWindow] = []
+        var info = AlpacaWindow()
+        for index in 0..<alpaca_skin_window_count(skin) where alpaca_skin_window(skin, index, &info) {
             infos.append(info)
         }
         let seen = infos.map(\.id)
@@ -289,7 +289,7 @@ final class SkinController {
     /// engine does not move along, one that is not docked to the main window, is let go of
     /// before the move and taken back after it, so it stays where it is.
     private func place(_ wanted: [UInt32: NSRect]) {
-        let main = andamp_app_main_window(app)
+        let main = alpaca_app_main_window(app)
         let lead = windows[main]
         if let lead, let to = wanted[main], to.origin != lead.frame.origin {
             let (dx, dy) = (to.minX - lead.frame.minX, to.minY - lead.frame.minY)
@@ -327,10 +327,10 @@ final class SkinController {
         guard inSight || windows.isEmpty else {
             // nobody sees the skin: it is not run or drawn. While a song plays the player is
             // asked twice a second whether the song is over, so the playlist goes on.
-            guard andamp_player_status(player) == 1 else { return }
+            guard alpaca_player_status(player) == 1 else { return }
             let next = Timer(timeInterval: 0.5, repeats: false) { [weak self] _ in
                 guard let self else { return }
-                andamp_player_poll(self.player)
+                alpaca_player_poll(self.player)
                 self.onStep?()
                 self.schedule()
             }
@@ -339,7 +339,7 @@ final class SkinController {
             timer = next
             return
         }
-        let due = andamp_app_next_due_ms(app)
+        let due = alpaca_app_next_due_ms(app)
         guard due >= 0 else { return }
         // "now" means the next frame of the screen
         let wait = max(Double(due) / 1000, 1.0 / 120)
@@ -355,7 +355,7 @@ final class SkinController {
     func scrollWheel(_ event: NSEvent) {
         guard event.scrollingDeltaY != 0 else { return }
         let (x, y) = point()
-        andamp_app_wheel(app, x, y, Float(event.scrollingDeltaY), event.hasPreciseScrollingDeltas)
+        alpaca_app_wheel(app, x, y, Float(event.scrollingDeltaY), event.hasPreciseScrollingDeltas)
         pump(force: true)
     }
 
@@ -382,25 +382,25 @@ final class SkinController {
     /// Files dropped on a window or opened from Finder: the library wears a skin and plays
     /// the rest.
     func open(_ files: [URL]) {
-        andamp_app_open(app, files.map(Self.location).joined(separator: "\n"))
+        alpaca_app_open(app, files.map(Self.location).joined(separator: "\n"))
         pump(force: true)
     }
 
     /// Does one of the app's commands, by its number.
     func command(_ id: Int32) {
-        andamp_app_command(app, id)
+        alpaca_app_command(app, id)
         pump(force: true)
     }
 
     /// What the listener picked when the library asked for `what`.
     func picked(_ what: String, _ answer: [String]) {
-        andamp_app_picked(app, what, answer.joined(separator: "\n"))
+        alpaca_app_picked(app, what, answer.joined(separator: "\n"))
         pump(force: true)
     }
 
     /// Moves the song to `ms` milliseconds.
     func seek(toMs ms: Int32) {
-        andamp_player_seek_to(player, ms)
+        alpaca_player_seek_to(player, ms)
         pump(force: true)
     }
 
@@ -420,16 +420,16 @@ final class SkinController {
         touch += 1
         pressed = true
         let held = event.modifierFlags
-        andamp_app_modifiers(app, held.contains(.command), held.contains(.shift))
-        andamp_app_pointer_down(app, x, y, touch)
-        if event.clickCount == 2 { andamp_app_double_click(app, x, y, touch) }
+        alpaca_app_modifiers(app, held.contains(.command), held.contains(.shift))
+        alpaca_app_pointer_down(app, x, y, touch)
+        if event.clickCount == 2 { alpaca_app_double_click(app, x, y, touch) }
         pump()
     }
 
     func mouseDragged(_ event: NSEvent) {
         guard skin != nil, pressed, !inMenu else { return }
         let (x, y) = point()
-        andamp_app_pointer_move(app, x, y)
+        alpaca_app_pointer_move(app, x, y)
         pump()
         showCursor()
     }
@@ -440,9 +440,9 @@ final class SkinController {
         guard skin != nil, !pressed, !inMenu else { return }
         if inside {
             let (x, y) = point()
-            andamp_app_hover(app, x, y)
+            alpaca_app_hover(app, x, y)
         } else {
-            andamp_app_pointer_leave(app)
+            alpaca_app_pointer_leave(app)
         }
         pump()
         showCursor(inside: inside)
@@ -452,14 +452,14 @@ final class SkinController {
     /// behind while another app has it.
     func appActive(_ active: Bool) {
         guard skin != nil else { return }
-        andamp_app_set_active(app, active)
+        alpaca_app_set_active(app, active)
         pump()
     }
 
     /// The cursor the library names for the mouse's place, or the arrow off the skin.
     private func showCursor(inside: Bool = true) {
         let (x, y) = point()
-        cursors.show(inside ? andamp_app_cursor(app, x, y) : UInt32(ANDAMP_CURSOR_ARROW))
+        cursors.show(inside ? alpaca_app_cursor(app, x, y) : UInt32(ALPACA_CURSOR_ARROW))
     }
 
     /// The library holds a release back when the press was too short to be seen, and the
@@ -468,7 +468,7 @@ final class SkinController {
         guard skin != nil, pressed, !inMenu else { return }
         pressed = false
         let (x, y) = point()
-        andamp_app_pointer_up(app, x, y)
+        alpaca_app_pointer_up(app, x, y)
         pump()
         showCursor()
     }
@@ -477,7 +477,7 @@ final class SkinController {
         guard skin != nil, !inMenu else { return }
         let (x, y) = point()
         touch += 1
-        andamp_app_right_click(app, x, y, touch)
+        alpaca_app_right_click(app, x, y, touch)
         pump()
     }
 
@@ -497,7 +497,7 @@ final class SkinController {
         // Shift goes along with the keys that move a selection
         let moves = ["up", "down", "pageup", "pagedown", "home", "end"].contains(name)
         let key = moves && event.modifierFlags.contains(.shift) ? "shift+" + name : name
-        guard andamp_app_key(app, window, key) else { return false }
+        guard alpaca_app_key(app, window, key) else { return false }
         pump(force: true)
         return true
     }
@@ -505,7 +505,7 @@ final class SkinController {
     /// The skin's window `window` became the one the keys go to.
     func becameKey(_ window: UInt32) {
         guard skin != nil else { return }
-        andamp_app_focus(app, window)
+        alpaca_app_focus(app, window)
         // drawn after this call: a step of the app can itself be what made the window key
         DispatchQueue.main.async { [weak self] in self?.pump() }
     }
@@ -519,8 +519,8 @@ final class SkinController {
     func click(x: Int32, y: Int32) {
         guard skin != nil else { return }
         touch += 1
-        andamp_app_pointer_down(app, x, y, touch)
-        andamp_app_pointer_up(app, x, y)
+        alpaca_app_pointer_down(app, x, y, touch)
+        alpaca_app_pointer_up(app, x, y)
         pump()
     }
 
@@ -539,7 +539,7 @@ final class SkinController {
         var drawn: UInt64 = 0
         var engine: UInt64 = 0
         var draw: UInt64 = 0
-        if let skin { andamp_skin_stats(skin, &steps, &drawn, &engine, &draw) }
+        if let skin { alpaca_skin_stats(skin, &steps, &drawn, &engine, &draw) }
         return (steps, drawn, Double(engine) / 1e9, Double(draw) / 1e9)
     }
 }
