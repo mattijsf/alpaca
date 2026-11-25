@@ -12,8 +12,9 @@ import java.net.URL
  * The link is an App Link, verified against the site's `/.well-known/assetlinks.json`, so
  * Android hands it to Alpaca; where Alpaca is not installed, the same link downloads the
  * file. Only https links into the plug-in folder of one of the [FOLDERS] are taken: the
- * site, and mattix.nl, which serves the same files. The manifest filters say so and
- * [accepts] checks again, because the receiving activity also receives files from anywhere.
+ * site, and andamp.nl (its old name) and mattix.nl, which serve the same files. The manifest
+ * filters say so and [accepts] checks again, because the receiving activity also receives
+ * files from anywhere.
  *
  * Following a link installs nothing. The fetched file is shown to the listener first
  * ([PluginOps.offerFrom]), and only Add installs it. Lua runs in Alpaca's sandbox with no
@@ -21,12 +22,13 @@ import java.net.URL
  */
 object PluginLinks {
     /** The site, as it is named to the listener. */
-    const val SITE = "andamp.nl"
+    const val SITE = "alpaca.fm"
 
     /** The plug-in folder of each host a link is taken from. */
     private val FOLDERS =
         mapOf(
             SITE to "/extensions/plugins/",
+            "andamp.nl" to "/extensions/plugins/",
             "mattix.nl" to "/andamp/extensions/plugins/",
         )
 

@@ -178,7 +178,7 @@ class AndroidAutoPrefsTest {
         compose.onNodeWithTag("prefs.androidauto.check.play.warning").performClick()
         compose.onNodeWithTag("prefs.androidauto.check.version.warning").performClick()
 
-        assertEquals(listOf("https://andamp.nl/android-auto#not-in-car", "https://andamp.nl/android-auto#update-autoamp"), opened)
+        assertEquals(listOf("https://alpaca.fm/android-auto#not-in-car", "https://alpaca.fm/android-auto#update-autoamp"), opened)
     }
 
     @Test
@@ -191,7 +191,7 @@ class AndroidAutoPrefsTest {
 
         compose.onNodeWithTag("prefs.androidauto.check.version.warning").performClick()
 
-        assertEquals(listOf("https://andamp.nl/android-auto#update-andamp"), opened)
+        assertEquals(listOf("https://alpaca.fm/android-auto#update-andamp"), opened)
     }
 
     @Test

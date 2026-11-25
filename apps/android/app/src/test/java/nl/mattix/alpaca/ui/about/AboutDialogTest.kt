@@ -40,7 +40,7 @@ class AboutDialogTest {
         compose.setContent { AboutBody(onClose = {}) }
 
         compose.onNodeWithText("Alpaca").assertIsDisplayed()
-        compose.onNodeWithText("andamp.nl").assertIsDisplayed()
+        compose.onNodeWithText("alpaca.fm").assertIsDisplayed()
         compose.onNodeWithText("mattix.nl").assertIsDisplayed()
         compose
             .onNodeWithText("Winamp", substring = true)

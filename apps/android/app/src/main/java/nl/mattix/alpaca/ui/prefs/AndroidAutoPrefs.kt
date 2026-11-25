@@ -116,8 +116,8 @@ private fun VersionRow(
     )
 }
 
-/** The page on andamp.nl about Android Auto, with a section for each warning below. */
-internal const val ANDROID_AUTO_HELP = "https://andamp.nl/android-auto"
+/** The page on alpaca.fm about Android Auto, with a section for each warning below. */
+internal const val ANDROID_AUTO_HELP = "https://alpaca.fm/android-auto"
 
 /** Whether the window can be expected to show in the car: one row for each thing that has to be right. */
 @Composable
@@ -158,7 +158,7 @@ private fun CompanionStatus(check: CompanionCheck) {
 
 /**
  * One thing checked: a tick when it is right, or a warning that says what it means, [warning],
- * when it is not. A warning opens [help], the part of andamp.nl that says what to do about it.
+ * when it is not. A warning opens [help], the part of alpaca.fm that says what to do about it.
  */
 @Composable
 private fun CheckRow(

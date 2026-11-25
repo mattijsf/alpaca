@@ -433,7 +433,7 @@ private fun PluginEntry.credit(): String {
 }
 
 /** The site's page of effect plug-ins, each with an Install link that opens Alpaca. */
-internal const val MORE_EFFECTS_URL = "https://andamp.nl/extensions/plugins"
+internal const val MORE_EFFECTS_URL = "https://alpaca.fm/extensions/plugins"
 
 /**
  * A link to more effects, shown on the rack and on the list of added plug-ins. What is offered is

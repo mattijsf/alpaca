@@ -112,7 +112,7 @@ fun AboutBody(onClose: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(16.dp))
-            Stamp("andamp.nl", "https://andamp.nl", "about.site")
+            Stamp("alpaca.fm", "https://alpaca.fm", "about.site")
             Spacer(Modifier.height(SHADOW + 8.dp))
             Stamp("mattix.nl", "https://mattix.nl", "about.maker")
             Spacer(Modifier.height(4.dp))
