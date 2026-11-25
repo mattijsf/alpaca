@@ -23,12 +23,7 @@ export PATH="$HOME/.cargo/bin:$PATH"
 )
 
 # every function behind the C interface is in the header, and the other way round
-rust="$(grep -oh 'fn andamp_[a-z0-9_]*' core/src/ffi/*.rs | sed 's/^fn //' | sort -u)"
-header="$(grep -v '^ *//' core/include/andamp_core.h | grep -o 'andamp_[a-z0-9_]*(' | tr -d '(' | sort -u)"
-if [ "$rust" != "$header" ]; then
-    echo "gate: core/include/andamp_core.h and core/src/ffi name different functions" >&2
-    exit 1
-fi
+tools/check-header.sh
 
 # the Mac's shell: Apple's swift-format, which comes with Xcode
 if command -v xcrun >/dev/null 2>&1 && xcrun --find swift-format >/dev/null 2>&1; then

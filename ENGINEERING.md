@@ -36,8 +36,14 @@ listening.
 
 It needs Xcode, rustup's Rust (`rust-toolchain.toml` names the toolchain and its components)
 and [XcodeGen](https://github.com/yonaskolb/XcodeGen). Run `lefthook install` once
-(`brew install lefthook`): it wires the pre-push hook, which runs the gate. If the hook
-fails, fix the problem; do not push with `--no-verify`.
+(`brew install lefthook`). It wires three hooks:
+
+- pre-commit: rustfmt, swift-format (`.swift-format`) and the C header check, only for the
+  languages a commit touches. Checks only; nothing is rewritten.
+- commit-msg: Conventional Commits (`tools/check-commit-message.sh`).
+- pre-push: the gate.
+
+If a hook fails, fix the problem; do not commit or push with `--no-verify`.
 
 Two things are optional. zig is the C compiler `tools/cross-check.sh` uses for the other
 systems; the gate runs the cross-check where zig is there. CMake builds libprojectM for the
