@@ -151,6 +151,33 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 - [ ] 7. The App Store
 - [ ] 8. Music sources
 
+### The repository
+
+- [x] One repository for every app, named Alpaca (formerly Andamp): the core in `core/`, what
+  every app brings in `core/resources/`, the Mac's app in `apps/mac/`, the Android app in
+  `apps/android/` with its whole history (its commits rewritten under that folder, its `v*`
+  tags kept), `apps/web/` kept for a shell on the core in WebAssembly (PORTING.md, The web).
+- [x] Renamed everywhere but where a name is a contract: the Mac's bundle id is
+  `nl.mattix.alpaca.mac` and its folder `Application Support/Alpaca`; a first start moves the
+  `Andamp` folder there, and the skin worn, places kept by the built-in skins' old names
+  (`AndAmp Dark.wsz`) and paths into the old folder come along (tested in `tests/app.rs` and
+  `tests/settings.rs`; run once by hand on a copy of real settings). The effect plug-ins keep
+  their ids (`nl.mattix.andamp.*`) on both apps, since racks are saved by them. Android keeps
+  its Play application id, its intent actions, Binder descriptors, widget class, stored
+  names and its SDK's Maven group (`apps/android/ENGINEERING.md`, Names kept from Andamp).
+- [x] The built-in skins say Alpaca. `core/resources/skins` holds copies of
+  `apps/android/skin/dist`, which builds them; copy them again after a rebuild there.
+- [x] One `lefthook.yml` at the root: the desktop gate for pushes that touch the core or the
+  Mac, `./gradlew gate` for pushes that touch `apps/android/`; the Android commit-type check
+  only for commits that touch it. Workflows: `desktop-ci.yml`, `android-ci.yml`,
+  `android-apk.yml`, `release-please.yml` for the Android app (package `apps/android`).
+- [ ] Not done, the owner's to decide: where the repository lives on GitHub and under what
+  name, and whether the Android repository's releases and tags move with it. The rewritten
+  history has new commit ids, so `last-release-sha` in `release-please-config.json` names
+  the rewritten `v0.17.0`; take it out after the first release from here.
+- [ ] The CI workflows were moved and pointed at their folders, not run.
+- [ ] The local folder is still called `andamp-mac`.
+
 ### Other systems
 
 - [x] The core compiles for Windows and Linux (`tools/cross-check.sh`: every line, its tests
@@ -247,6 +274,13 @@ own element set under modern skins (`core/resources/wasabi`, from Alpaca's `defa
 stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fonts.rs`).
 
 ### Log
+
+- 2026-11-25, the rename and one repository: Andamp is Alpaca, and this repository holds
+  every app. `app/` became `apps/mac/`; the skins, fonts, wasabi and plug-ins every app
+  brings went to `core/resources/`; the Android app came in under `apps/android/` with its
+  history, renamed there in its own commits (its gate and `assembleDebug` pass). What a Mac
+  user kept as Andamp comes along on the first start. The core does not build for
+  WebAssembly yet: `ring` under `ureq`'s TLS is the first crate that stops it.
 
 - 2026-11-24, right after: the owner asked for one place for the player, not one for each
   skin. Another skin now opens with its main window at the corner of the one before, in the
