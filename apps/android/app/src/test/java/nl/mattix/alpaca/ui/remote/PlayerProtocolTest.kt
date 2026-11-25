@@ -12,13 +12,13 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** What the player tells Autoamp about the window's interface it speaks. */
+/** What the player tells Alpaca Auto about the window's interface it speaks. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class PlayerProtocolTest {
     private val app: Context = ApplicationProvider.getApplicationContext()
 
-    /** Autoamp reads the manifest's entry; the code speaks the protocol this build was made with. */
+    /** Alpaca Auto reads the manifest's entry; the code speaks the protocol this build was made with. */
     @Test
     fun `the manifest says the protocol the player speaks`() {
         val info = app.packageManager.getApplicationInfo(app.packageName, PackageManager.GET_META_DATA)

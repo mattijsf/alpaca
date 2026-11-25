@@ -124,7 +124,7 @@ class AndroidAutoPrefsTest {
         compose.onNodeWithTag("prefs.androidauto.check.play.warning").assertExists()
         compose.onNodeWithText("Android Auto won't show it in a car").assertExists()
         compose.onNodeWithTag("prefs.androidauto.check.version.warning").assertExists()
-        compose.onNodeWithText("Update Autoamp").assertExists()
+        compose.onNodeWithText("Update Alpaca Auto").assertExists()
     }
 
     @Test
@@ -182,7 +182,7 @@ class AndroidAutoPrefsTest {
     }
 
     @Test
-    fun `a newer Autoamp sends the listener to update Alpaca`() {
+    fun `a newer Alpaca Auto sends the listener to update Alpaca`() {
         val opened = mutableListOf<String>()
         showCheckedOpening(
             CompanionCheck(fromPlay = true, version = "0.17.0", playerVersion = "0.16.0", protocol = 3, playerProtocol = 2),
