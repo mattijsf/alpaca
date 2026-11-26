@@ -11,10 +11,18 @@ extension AppDelegate {
     func dump(to folder: URL) {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         var lines = ["skin \(controller.name) zoom \(controller.zoom)"]
+        // the visualizer, drawn into the skin window it shows in, as it is seen there
+        let vis = controller.option("show-vis") != nil ? visualizer.picture(after: 60) : nil
+        let inSkin = visualizer.insetArea
         for (n, window) in controller.pictures().enumerated() {
             let file = folder.appendingPathComponent("window-\(n)-\(window.id).png")
+            var image = window.image
+            if let inSkin, inSkin.window == window.id, let drawn = vis?.cgImage {
+                image = Self.paste(drawn, into: image, at: inSkin.rect) ?? image
+                lines.append("visualizer in window \(window.id) at \(inSkin.rect)")
+            }
             if let out = CGImageDestinationCreateWithURL(file as CFURL, UTType.png.identifier as CFString, 1, nil) {
-                CGImageDestinationAddImage(out, window.image, nil)
+                CGImageDestinationAddImage(out, image, nil)
                 CGImageDestinationFinalize(out)
             }
             let f = window.frame
@@ -22,9 +30,7 @@ extension AppDelegate {
                 "window \(n) id \(window.id) frame \(Int(f.minX)),\(Int(f.minY)) \(Int(f.width))x\(Int(f.height))"
                     + " pixels \(window.image.width)x\(window.image.height)")
         }
-        if controller.option("show-vis") != nil,
-            let png = visualizer.picture(after: 60)?.representation(using: .png, properties: [:])
-        {
+        if let png = vis?.representation(using: .png, properties: [:]) {
             try? png.write(to: folder.appendingPathComponent("visualizer.png"))
         }
         if controller.option("show-effects") != nil,
@@ -41,6 +47,21 @@ extension AppDelegate {
         try? lines.joined(separator: "\n").appending("\n")
             .write(to: folder.appendingPathComponent("windows.txt"), atomically: true, encoding: .utf8)
         exit(0)
+    }
+
+    /// `picture` over `image`, scaled into `rect`, in `image`'s pixels from its top left corner.
+    private static func paste(_ picture: CGImage, into image: CGImage, at rect: CGRect) -> CGImage? {
+        guard
+            let context = CGContext(
+                data: nil, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: 0,
+                space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
+        else { return nil }
+        let height = CGFloat(image.height)
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        context.interpolationQuality = .high
+        context.draw(picture, in: CGRect(x: rect.minX, y: height - rect.maxY, width: rect.width, height: rect.height))
+        return context.makeImage()
     }
 
     /// Seconds from the process starting to the skin's first window showing its pixels.

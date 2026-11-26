@@ -15,12 +15,12 @@ impl App {
     pub fn command(&mut self, id: i32) {
         use super::command::{
             ABOUT, ADD_FILES, ADD_FOLDER, ADD_URL, CHOOSE_PRESETS, CLEAR, CROP, DOUBLE_SIZE,
-            EFFECTS, EQ_PRESET, FILE_INFO, HIDE, HTML_LIST, LOAD_LIST, NEXT, ON_TOP, OPACITY,
-            OPEN_FILES, OPEN_SKIN, PAUSE, PLAY, PLAY_SELECTED, PREFERENCES, PREVIOUS, QUIT,
-            RANDOMIZE, REMOVE_DEAD, REMOVE_DUPLICATES, REMOVE_SELECTED, REPEAT, REREAD, REVEAL,
-            REVERSE, SAVE_LIST, SELECT_ALL, SELECT_INVERT, SELECT_NONE, SHUFFLE, SKIN,
-            SORT_FILENAME, SORT_PATH, SORT_TITLE, STOP, TIME_ELAPSED, TIME_REMAINING, VISUALIZER,
-            VIS_ANALYZER, VIS_OFF, VIS_SCOPE,
+            EFFECTS, EQ_PRESET, FILE_INFO, HIDE, HTML_LIST, LOAD_LIST, MILKDROP_WINDOW, NEXT,
+            ON_TOP, OPACITY, OPEN_FILES, OPEN_SKIN, PAUSE, PLAY, PLAY_SELECTED, PREFERENCES,
+            PREVIOUS, QUIT, RANDOMIZE, REMOVE_DEAD, REMOVE_DUPLICATES, REMOVE_SELECTED, REPEAT,
+            REREAD, REVEAL, REVERSE, SAVE_LIST, SELECT_ALL, SELECT_INVERT, SELECT_NONE, SHUFFLE,
+            SKIN, SORT_FILENAME, SORT_PATH, SORT_TITLE, STOP, TIME_ELAPSED, TIME_REMAINING,
+            VISUALIZER, VIS_ANALYZER, VIS_OFF, VIS_SCOPE,
         };
         let skins = SKIN..SKIN + super::command::SKINS as i32;
         let presets = EQ_PRESET..=EQ_PRESET + EQ_PRESETS.len() as i32;
@@ -54,7 +54,8 @@ impl App {
             ON_TOP => self.set_on_top(!self.on_top),
             EFFECTS => self.request(Request::Effects),
             PREFERENCES => self.request(Request::Preferences),
-            VISUALIZER => self.request(Request::Vis(!self.vis_open)),
+            VISUALIZER => self.toggle_visualizer(),
+            MILKDROP_WINDOW => self.request(Request::Vis(!self.vis_open)),
             VIS_ANALYZER => self.set_vis_mode(VisMode::Analyzer),
             VIS_SCOPE => self.set_vis_mode(VisMode::Scope),
             VIS_OFF => self.set_vis_mode(VisMode::Off),
@@ -200,12 +201,7 @@ impl App {
             }
             Ask::Presets => {
                 self.settings.set("presets", Some(first));
-                self.presets.read(Path::new(first));
-                if self.vis_open {
-                    self.show_preset(false);
-                } else {
-                    self.request(Request::Vis(true));
-                }
+                self.presets_picked(Path::new(first));
             }
         }
     }

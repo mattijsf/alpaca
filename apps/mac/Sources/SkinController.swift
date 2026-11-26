@@ -43,6 +43,8 @@ final class SkinController {
     /// Called with what the library asks of the app, a line for each, after the turn of the
     /// run loop they came in: a panel must not open inside a mouse event.
     var onRequests: (([String]) -> Void)?
+    /// Called when the skin's windows came, went or changed their order, size or level.
+    var onWindows: (() -> Void)?
     /// Called after every step of the skin.
     var onStep: (() -> Void)?
 
@@ -267,6 +269,7 @@ final class SkinController {
             order = seen
             for id in seen { windows[id]?.orderFront(nil) }
             if let top = seen.last, NSApp.isActive { windows[top]?.makeKey() }
+            onWindows?()
         }
     }
 
@@ -514,6 +517,9 @@ final class SkinController {
 
     /// Gives the keys to the skin's window `window`, as Command-` does.
     func makeKey(window: UInt32) { windows[window]?.makeKey() }
+
+    /// The skin's window with the engine's id `id`, when it shows.
+    func window(_ id: UInt32) -> NSWindow? { windows[id] }
 
     /// A click at `x`, `y` on the viewport, in layout pixels, as if the mouse made it.
     func click(x: Int32, y: Int32) {

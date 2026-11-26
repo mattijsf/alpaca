@@ -64,7 +64,7 @@ what the app asks of it.
 | The Preferences window | `Preferences.swift` | the pages and their rows as JSON (`alpaca_app_preferences`), by kind: a switch, a choice, a slider, a button, text; a change goes back as an id and a value (`alpaca_app_set_preference`) |
 | File info, opening a file, showing one in its folder | `AppDelegate.answer` | the requests `info` (with `alpaca_app_file_info` for the text), `open` and `reveal` |
 | The Effects window | `Effects.swift` | the rack as JSON; setters for switches, controls and presets; the listener's own plug-ins kept by `alpaca_app_add_plugin` |
-| The Visualizer window | `Visualizer.swift` | the samples heard since the last frame, and which preset to show (`preset` requests); libprojectM draws |
+| The visualizer | `Visualizer.swift` | the samples heard since the last frame, which preset to show (`preset` requests), and where: the part of a skin window (`alpaca_app_vis_area`, after a `visarea` request) or the Milkdrop window (`vis` requests); libprojectM draws |
 | Saving when the app goes to the background or ends | `AppDelegate` | `alpaca_app_save` |
 
 What is left in the Mac's shell opens windows, panels and timers, and draws; it decides

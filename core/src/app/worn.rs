@@ -297,6 +297,14 @@ impl App {
             self.keep_switches();
             self.main_corner = self.main_place();
         }
+        // the visualizer showed in the old skin's windows: it shows in the new one's, if it
+        // has a visualizer window
+        let vis_in_skin = self.vis_area.take().is_some();
+        self.vis_unsure = true;
+        if vis_in_skin {
+            skin.show_vis_window(true);
+            self.request(Request::VisArea);
+        }
         self.skin = Some(Box::new(skin));
         self.worn = Some(file.to_path_buf());
         // the new skin's list starts at its top, and is brought to the current song again
@@ -412,7 +420,7 @@ impl App {
 
     /// Tells the skin which of the app's switches are on, so its buttons show them.
     pub(super) fn tell_switches(&mut self) {
-        let (double, on_top, vis) = (self.zoom > 1, self.on_top, self.vis_open);
+        let (double, on_top, vis) = (self.zoom > 1, self.on_top, self.vis_running());
         if let Some(skin) = self.skin.as_mut() {
             skin.set_switch("doublesize", double);
             skin.set_switch("ontop", on_top);
@@ -433,6 +441,9 @@ impl App {
         // again where they were put elsewhere, so the shell has their places now
         if (flags & skin::MOVED != 0 || self.unsettled) && self.settle() {
             flags |= skin::MOVED;
+        }
+        if flags != 0 || std::mem::take(&mut self.vis_unsure) || self.vis_window_opening > 0 {
+            self.follow_vis_area();
         }
         if self.playlist_due == 2 {
             self.playlist_due = 1;
@@ -501,6 +512,13 @@ impl App {
             ("MENU" | "SYSMENU" | "CONTROLMENU", _) => self.request(popup(Menu::Popup)),
             ("ABOUT", _) => self.request(Request::About),
             ("TOGGLE" | "SHOW", Some("vis")) => self.command(command::VISUALIZER),
+            // a classic skin's visualizer window's buttons
+            ("VIS_NEXT", _) if self.vis_running() => {
+                self.vis_key("right");
+            }
+            ("VIS_PREV", _) if self.vis_running() => {
+                self.vis_key("left");
+            }
             ("EQ_PRESETS", _) => self.request(popup(Menu::Equalizer)),
             // a modern skin's playlist buttons: the app shows the menu for each
             ("PE_ADD", _) => self.request(popup(Menu::PlaylistAdd)),
@@ -543,7 +561,7 @@ impl App {
 }
 
 /// A place kept as `x,y`.
-fn parse_point(text: &str) -> Option<(i32, i32)> {
+pub(super) fn parse_point(text: &str) -> Option<(i32, i32)> {
     let (x, y) = text.split_once(',')?;
     Some((x.trim().parse().ok()?, y.trim().parse().ok()?))
 }

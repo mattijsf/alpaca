@@ -84,6 +84,8 @@ pub struct Skin {
     pub player: Option<Rc<RefCell<crate::player::Player>>>,
     /// Set when the engine panicked behind the C interface: the skin does nothing more.
     pub broken: bool,
+    /// Whether it is a classic skin (`.wsz`), not a modern one.
+    pub classic: bool,
 }
 
 /// What a skin keeps between runs: what its scripts wrote down for themselves (a drawer left
@@ -115,12 +117,9 @@ impl Skin {
         player: impl FnOnce(Clock) -> Box<dyn Player>,
     ) -> Result<Skin, String> {
         let archive = unzip(bytes)?;
+        let classic = walkit::classic::is_classic(&archive);
         // a classic skin lies over the classic base skin, a modern one over the wasabi base
-        let under = if walkit::classic::is_classic(&archive) {
-            base
-        } else {
-            wasabi
-        };
+        let under = if classic { base } else { wasabi };
         let siblings = Rc::new(Siblings {
             folder: beside.map(Path::to_path_buf),
             opened: RefCell::new(Vec::new()),
@@ -174,6 +173,9 @@ impl Skin {
             runtime.restore_settings(&kept.settings);
         }
         runtime.load();
+        // the visualizer window's frame names the plug-in, as Winamp's does, and not the
+        // preset: gen.bmp's font has letters only
+        runtime.set_window_title(VIS_CONTAINER, VIS_TITLE);
         if let Some(theme) = kept.and_then(|kept| kept.theme.as_deref()) {
             runtime.select_color_theme(theme);
         }
@@ -208,6 +210,7 @@ impl Skin {
             selected: Vec::new(),
             player: None,
             broken: false,
+            classic,
         })
     }
 
@@ -472,7 +475,46 @@ impl Skin {
     pub fn window_id(id: u32) -> WindowId {
         WindowId(id)
     }
+
+    /// Where the skin shows the visualizer: the window, by the engine's id, and the part of it
+    /// in layout pixels from its top left corner. A classic skin shows it in its visualizer
+    /// window, framed by `gen.bmp`, while that is open; a modern skin where it holds Winamp's
+    /// visualizer (Winamp Modern's drawer in its visualizer mode). `None` when it shows none.
+    /// Up to date as of the last [`Skin::step`].
+    pub fn vis_area(&mut self) -> Option<(u32, Rect)> {
+        let area = self.runtime.vis_rect()?;
+        let (x, y) = (area.left + area.width / 2, area.top + area.height / 2);
+        let window = self.windows.iter().rev().find(|w| {
+            let r = w.rect;
+            x >= r.left && x < r.left + r.width && y >= r.top && y < r.top + r.height
+        })?;
+        let inside = Rect::new(
+            area.left - window.rect.left,
+            area.top - window.rect.top,
+            area.width,
+            area.height,
+        )
+        .cut_to(&Rect::new(0, 0, window.rect.width, window.rect.height));
+        (inside.width > 0 && inside.height > 0).then_some((window.id, inside))
+    }
+
+    /// Opens a classic skin's visualizer window, or closes it. False when the skin has none,
+    /// as a modern skin has not.
+    pub fn show_vis_window(&mut self, open: bool) -> bool {
+        let done = if open {
+            self.runtime.open_window(VIS_CONTAINER)
+        } else {
+            self.runtime.close_window(VIS_CONTAINER)
+        };
+        self.redraw.set(true);
+        done
+    }
 }
+
+/// The container of a classic skin's visualizer window, as the engine names it.
+pub const VIS_CONTAINER: &str = "avs";
+/// The visualizer window's title.
+const VIS_TITLE: &str = "Milkdrop";
 
 /// The skins beside the one opened, for a skin that builds on another: Winamp's Bento reads
 /// its scripts and pictures from `../Big Bento/`, the skin installed next to it.

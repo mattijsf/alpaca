@@ -38,7 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return made
     }()
     lazy var visualizer: Visualizer = {
-        let made = Visualizer(app: controller.app)
+        let made = Visualizer(app: controller.app, skin: controller)
         made.onChange = { [weak self] in self?.controller.pump(force: true) }
         return made
     }()
@@ -48,6 +48,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         controller.onRequests = { [weak self] lines in self?.answer(lines) }
+        controller.onWindows = { [weak self] in self?.visualizer.place() }
         controller.start()
         NSApp.mainMenu = makeMenu()
         WindowCycle.install()
@@ -131,6 +132,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             case "reveal": NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: rest(line))])
             case "effects": effects.show()
             case "vis": if second == "1" { visualizer.show() } else { visualizer.close() }
+            case "visarea": visualizer.place()
             case "preset" where parts.count >= 4:
                 visualizer.load(preset: parts[3], title: parts[2], blend: second == "1")
             case "error":

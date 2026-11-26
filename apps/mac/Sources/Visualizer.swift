@@ -185,22 +185,34 @@ final class MilkdropView: NSOpenGLView {
     }
 }
 
-/// The Visualizer window: Milkdrop presets drawn to what plays.
+/// The visualizer: Milkdrop presets drawn to what plays, in the skin or in the Milkdrop window.
 ///
-/// Which presets there are, which one shows, how long it stays and what the window's keys do
-/// is the library's, the same on every system. This is the window, its view and its timers.
-/// The right and left arrows go on and back, R picks a preset at random, and the space bar
-/// keeps the one shown.
+/// Which presets there are, which one shows, how long it stays, what its keys do and where it
+/// shows is the library's, the same on every system. This is the view, the windows it shows in
+/// and its timers. In the Milkdrop window the right and left arrows go on and back, R picks a
+/// preset at random, and the space bar keeps the one shown.
+///
+/// In the skin it shows in a borderless window over the part of the skin window the library
+/// names (`alpaca_app_vis_area`), a child of that window, so it moves along with it. It lets
+/// the mouse through to the skin. The view is the same one the Milkdrop window shows: projectM
+/// draws into a window's own framebuffer, and a view inside the skin's layers would have none.
 final class Visualizer: NSObject, NSWindowDelegate {
     private let app: OpaquePointer
+    private unowned let skin: SkinController
+    /// The Milkdrop window.
     private var window: NSWindow?
+    /// The window over the skin's visualizer area, and where in its skin window it is, in
+    /// layout pixels from the top left corner.
+    private var inset: NSWindow?
+    private(set) var insetArea: (window: UInt32, rect: CGRect)?
     private var view: MilkdropView?
     private var changer: Timer?
     /// Called after the library was told something, for what it asks in answer.
     var onChange: (() -> Void)?
 
-    init(app: OpaquePointer) {
+    init(app: OpaquePointer, skin: SkinController) {
         self.app = app
+        self.skin = skin
         super.init()
     }
 
@@ -211,30 +223,40 @@ final class Visualizer: NSObject, NSWindowDelegate {
 
     func close() { window?.close() }
 
+    /// The view, made the first time it is needed; nil when the engine is not beside the app.
+    private func madeView() -> MilkdropView? {
+        if let view { return view }
+        guard let engine = ProjectM.shared,
+            let made = MilkdropView(engine: engine, player: alpaca_app_player(app))
+        else { return nil }
+        made.onKey = { [weak self] event in self?.key(event) ?? false }
+        view = made
+        return made
+    }
+
+    /// Opens the Milkdrop window, with the view in it.
     func show() {
-        guard let engine = ProjectM.shared else {
+        guard ProjectM.shared != nil, let view = madeView() else {
             let alert = NSAlert()
             alert.messageText = "The Milkdrop engine is not beside the app"
             alert.informativeText = "Build it with vis/build-projectm.sh, then build the app again."
             alert.runModal()
             return
         }
+        letGoOfSkin()
         if window == nil {
-            guard let view = MilkdropView(engine: engine, player: alpaca_app_player(app)) else { return }
             let made = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 640, height: 400),
                 styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
             made.title = "Visualizer"
             made.isReleasedWhenClosed = false
             made.delegate = self
-            made.contentView = view
             made.contentMinSize = NSSize(width: 200, height: 120)
             made.setFrameAutosaveName("Visualizer")
             if made.frame.origin == .zero { made.center() }
-            view.onKey = { [weak self] event in self?.key(event) ?? false }
-            self.view = view
             window = made
         }
+        if window?.contentView !== view { window?.contentView = view }
         window?.makeKeyAndOrderFront(nil)
         window?.makeFirstResponder(view)
         run()
@@ -243,9 +265,61 @@ final class Visualizer: NSObject, NSWindowDelegate {
         onChange?()
     }
 
-    /// Shows the preset the library asked for, with its name on the window.
+    /// Puts the view where the library says the skin shows the visualizer, or takes it out of
+    /// the skin when it shows none there. Nothing changes while the Milkdrop window is open.
+    func place() {
+        guard window?.isVisible != true else { return }
+        var id: UInt32 = 0
+        var (x, y, w, h): (Int32, Int32, Int32, Int32) = (0, 0, 0, 0)
+        guard alpaca_app_vis_area(app, &id, &x, &y, &w, &h), let host = skin.window(id), let view = madeView()
+        else {
+            letGoOfSkin()
+            run()
+            return
+        }
+        let z = CGFloat(skin.zoom)
+        let frame = NSRect(
+            x: host.frame.minX + CGFloat(x) * z, y: host.frame.maxY - CGFloat(y + h) * z,
+            width: CGFloat(w) * z, height: CGFloat(h) * z)
+        let over = inset ?? madeInset()
+        if over.contentView !== view { over.contentView = view }
+        if over.frame != frame { over.setFrame(frame, display: false) }
+        if over.parent !== host {
+            over.parent?.removeChildWindow(over)
+            host.addChildWindow(over, ordered: .above)
+        }
+        over.level = host.level
+        over.alphaValue = host.alphaValue
+        over.orderFront(nil)
+        insetArea = (id, CGRect(x: Int(x), y: Int(y), width: Int(w), height: Int(h)))
+        run()
+    }
+
+    private func madeInset() -> NSWindow {
+        let made = NSWindow(contentRect: .zero, styleMask: .borderless, backing: .buffered, defer: false)
+        made.isOpaque = true
+        made.hasShadow = false
+        made.isReleasedWhenClosed = false
+        made.animationBehavior = .none
+        // a click there is the skin's: a drag moves its window, a double click asks for the
+        // Milkdrop window
+        made.ignoresMouseEvents = true
+        made.delegate = self
+        inset = made
+        return made
+    }
+
+    /// The view is in the skin no more.
+    private func letGoOfSkin() {
+        guard let inset else { return }
+        inset.parent?.removeChildWindow(inset)
+        inset.orderOut(nil)
+        insetArea = nil
+    }
+
+    /// Shows the preset the library asked for, with its name on the Milkdrop window.
     func load(preset file: String, title: String, blend: Bool) {
-        view?.load(preset: file, blend: blend)
+        madeView()?.load(preset: file, blend: blend)
         window?.title = title
     }
 
@@ -258,9 +332,16 @@ final class Visualizer: NSObject, NSWindowDelegate {
         return true
     }
 
-    /// Draws while the window can be seen, and tells the library when a preset's stay is over.
+    /// The window the view shows in now: the Milkdrop window, the one over the skin, or none.
+    private var shownIn: NSWindow? {
+        if window?.isVisible == true { return window }
+        if insetArea != nil { return inset }
+        return nil
+    }
+
+    /// Draws while the view can be seen, and tells the library when a preset's stay is over.
     private func run() {
-        let seen = window?.isVisible == true && window?.occlusionState.contains(.visible) == true
+        let seen = shownIn.map { $0.isVisible && $0.occlusionState.contains(.visible) } ?? false
         view?.fps = Double(alpaca_app_vis_fps(app))
         view?.run(seen)
         changer?.invalidate()
@@ -276,14 +357,16 @@ final class Visualizer: NSObject, NSWindowDelegate {
     }
 
     /// The listener changed how fast it draws or how long a preset stays.
-    func settingsChanged() { if isShown { run() } }
+    func settingsChanged() { run() }
 
     func windowDidChangeOcclusionState(_ notification: Notification) { run() }
 
     func windowWillClose(_ notification: Notification) {
+        guard (notification.object as? NSWindow) === window else { return }
         view?.run(false)
         changer?.invalidate()
         changer = nil
+        // the library asks for the view back in the skin when it shows it there
         alpaca_app_vis_shown(app, false)
         onChange?()
     }

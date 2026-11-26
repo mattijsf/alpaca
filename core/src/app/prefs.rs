@@ -378,7 +378,7 @@ impl App {
             }
             "milk.open" => {
                 if self.vis_open != on {
-                    self.command(command::VISUALIZER);
+                    self.command(command::MILKDROP_WINDOW);
                 }
             }
             "milk.choose" => self.request(Request::Ask(Ask::Presets)),

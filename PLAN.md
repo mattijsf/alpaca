@@ -152,7 +152,15 @@ Updated with every step. Whoever picks this up, person or model, starts here.
     refilled its vertex buffers in place, which made the driver submit work to the GPU
     several times a frame; `vis/build-projectm.sh` now gives them new storage first
     (`vis/fresh-buffers.h`), which took a quarter off. Not tried at 60.
-  - [ ] The window is a plain Mac window, not a skin's. A skin's own visualizer frame stays shut.
+  - [x] Milkdrop shows in the skin: a classic skin's visualizer window, framed by `gen.bmp` and
+    titled MILKDROP as Winamp titles it, opens with View > Visualizer, docked to the main
+    window's right and at Winamp's size the first time, where it was and as large later; a
+    modern skin's own visualizer window or its place for it (Winamp Modern's), wherever it
+    shows. The Milkdrop window (Visualization > Milkdrop Window, or a double click on the
+    skin's visualizer) takes it while open. A skin with no place for it opens the Milkdrop
+    window instead (MMD3, and Big Bento, whose visualizer window shows nothing at first).
+  - [ ] In the skin the visualizer takes no keys: the arrows, R and space work only in the
+    Milkdrop window. Winamp Modern's Random button does nothing yet.
   - [x] projectM's sources are one submodule at the root, `third_party/projectm` (4.1.8),
     which the Android app and the Mac's both build, and a shell for another system will.
   - [ ] AVS: Alpaca's is 15,000 lines of Kotlin on a framebuffer of its own, with the ns-eel
@@ -288,9 +296,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
    wait.
 2. What the engine could offer, since the rest of the cost is its own: a tick that says what
    changed without building the draw lists; the playlist as something that says when it
-   changed (it is asked for whole, several times a tick); a skin's visualizer frame that
-   the app can draw into.
-3. Milkdrop's window as a skin's own (with the engine's frame, above). Its cost further: the
+   changed (it is asked for whole, several times a tick).
+3. Milkdrop's cost further: the
    rest is projectM's arithmetic and the system's OpenGL, which a shell cannot reach. What
    was tried and is not worth it is in the log, ANGLE included. Left: a coarser warp mesh
    as a choice in Preferences; a Metal renderer for projectM, which is a port of its own.
@@ -305,6 +312,19 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
 
 ### Log
 
+- 2026-11-26, Milkdrop in the skin: walkit says where a skin shows the visualizer
+  (`SkinRuntime::vis_rect`), for a classic skin's visualizer window as for a modern skin's
+  holder. PLAN.md listed this as missing from the engine; it was there. The core finds the
+  window and the part of it (`App::vis_area`, `alpaca_app_vis_area`, a `visarea` request when
+  it changes); the Mac's shell shows the one Milkdrop view in a borderless child window over
+  that part, which lets the mouse through. Not inside the skin's view: projectM draws into
+  framebuffer 0, which a layer-backed view does not have. Compared with Winamp 5.666 and
+  MilkDrop 2.25c in the VM, base skin: its frame reads MILKDROP 2, the plug-in's name, where
+  Alpaca's showed the preset's in a font with letters only; it now reads MILKDROP. Winamp
+  opened it at 586 by 475, over the playlist; Alpaca opens it at that size, against the main
+  window's right edge. Looked at with `--dump`, which now draws the visualizer into its skin
+  window's picture: base-2.91, Alpaca Dark, Winamp Modern and Winamp3x show it in the skin,
+  MMD3 and Big Bento in the Milkdrop window. The owner saw base-2.91 on the screen.
 - 2026-11-26, projectM in one place: Android's submodule moved from
   `apps/android/visualizer/projectm/third_party/` to `third_party/projectm` at the root, at
   the same commit (4.1.8), and `vis/build-projectm.sh` builds it with no `PROJECTM_SRC`.

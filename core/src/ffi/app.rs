@@ -195,8 +195,9 @@ pub unsafe extern "C" fn alpaca_app_next_due_ms(app: *mut AlpacaApp) -> i64 {
 /// - `info` and a row of the playlist: show what is known of it ([`alpaca_app_file_info`]).
 /// - `open` and a file: open it with whatever the system opens it with.
 /// - `reveal` and a file or folder: show it in its folder.
-/// - `vis` and 1 to open the Visualizer window, 0 to close it; [`alpaca_app_vis_shown`] says
+/// - `vis` and 1 to open the Milkdrop window, 0 to close it; [`alpaca_app_vis_shown`] says
 ///   when it is done.
+/// - `visarea`: where the skin shows the visualizer changed ([`alpaca_app_vis_area`]).
 /// - `preset`, 1 for blending into it, the window's title and the preset's file.
 /// - `error` and a message for the listener.
 ///
@@ -569,6 +570,40 @@ pub unsafe extern "C" fn alpaca_app_vis_shown(app: *mut AlpacaApp, open: bool) {
 pub unsafe extern "C" fn alpaca_app_vis_key(app: *mut AlpacaApp, key: *const c_char) -> bool {
     let key = string(key);
     with_app(app, false, |a| a.vis_key(&key))
+}
+
+/// Where the skin shows the visualizer: `window`, the engine's id of the window it is in, and
+/// the part of it in layout pixels from that window's top left corner. False when it shows in
+/// the Milkdrop window or the skin shows none, and nothing is written.
+///
+/// # Safety
+/// `app` is null or a live app; the other pointers are each null or writable.
+#[no_mangle]
+pub unsafe extern "C" fn alpaca_app_vis_area(
+    app: *mut AlpacaApp,
+    window: *mut u32,
+    x: *mut i32,
+    y: *mut i32,
+    width: *mut i32,
+    height: *mut i32,
+) -> bool {
+    let Some((id, area)) = with_app(app, None, |a| a.vis_area()) else {
+        return false;
+    };
+    for (to, value) in [
+        (x, area.left),
+        (y, area.top),
+        (width, area.width),
+        (height, area.height),
+    ] {
+        if !to.is_null() {
+            *to = value;
+        }
+    }
+    if !window.is_null() {
+        *window = id;
+    }
+    true
 }
 
 /// Seconds a preset stays, as the listener set it: the shell calls [`alpaca_app_vis_tick`] that
