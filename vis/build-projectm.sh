@@ -10,6 +10,10 @@
 # Without PROJECTM_SRC it looks for vis/projectm. It needs CMake (and takes Ninja when it is
 # there). projectM is under the LGPL; it stays a library of its own beside the app, so it can
 # be replaced with another build.
+#
+# Its sources are built as they are, with one header included ahead of each, fresh-buffers.h,
+# which gives a vertex buffer new storage before projectM refills it. On the Mac's OpenGL that
+# saves about a fifth of what a frame costs.
 set -eu
 cd "$(dirname "$0")"
 
@@ -34,7 +38,8 @@ cmake -S "$src" -B build $generator \
     -DENABLE_PLAYLIST=OFF \
     -DENABLE_SYSTEM_PROJECTM_EVAL=OFF \
     -DCMAKE_OSX_ARCHITECTURES="${ARCHS:-$(uname -m)}" \
-    -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 >/dev/null
+    -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+    -DCMAKE_CXX_FLAGS="-include $PWD/fresh-buffers.h" >/dev/null
 cmake --build build
 mkdir -p lib
 # one file, by the name the app looks for

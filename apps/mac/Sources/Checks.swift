@@ -69,6 +69,7 @@ extension AppDelegate {
         // the first second is the launch: not counted
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             let before = (self.controller.stats(), cpu())
+            let milkdrop = self.visualizer.frameCost
             DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
                 let after = (self.controller.stats(), cpu())
                 let steps = after.0.steps - before.0.steps
@@ -94,6 +95,14 @@ extension AppDelegate {
                         Int(alpaca_player_count(self.controller.player)),
                         alpaca_player_underruns(self.controller.player), self.startup * 1000,
                         self.controller.startTook * 1000))
+                let shown = self.visualizer.frameCost
+                if shown.frames > milkdrop.frames {
+                    let frames = Double(shown.frames - milkdrop.frames)
+                    print(
+                        String(
+                            format: "Milkdrop: %.1f frames/s, %.2f ms of the main thread a frame",
+                            frames / seconds, (shown.seconds - milkdrop.seconds) / frames * 1000))
+                }
                 exit(0)
             }
         }
