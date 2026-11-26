@@ -153,8 +153,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
     several times a frame; `vis/build-projectm.sh` now gives them new storage first
     (`vis/fresh-buffers.h`), which took a quarter off. Not tried at 60.
   - [ ] The window is a plain Mac window, not a skin's. A skin's own visualizer frame stays shut.
-  - [ ] projectM's sources are not in this repository: `vis/projectm` as a submodule, or
-    `PROJECTM_SRC`. It was built here from Alpaca's own checkout of v4.1.7.
+  - [x] projectM's sources are one submodule at the root, `third_party/projectm` (4.1.8),
+    which the Android app and the Mac's both build, and a shell for another system will.
   - [ ] AVS: Alpaca's is 15,000 lines of Kotlin on a framebuffer of its own, with the ns-eel
     evaluator in C. A port, not started.
 - [ ] 7. The App Store
@@ -305,6 +305,12 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
 
 ### Log
 
+- 2026-11-26, projectM in one place: Android's submodule moved from
+  `apps/android/visualizer/projectm/third_party/` to `third_party/projectm` at the root, at
+  the same commit (4.1.8), and `vis/build-projectm.sh` builds it with no `PROJECTM_SRC`.
+  `ignore = dirty`: a build regenerates projectm-eval's scanner in the source tree. Android's
+  visualizer module and the Mac's app were built from it, and the Mac's looked at with
+  `--dump`.
 - 2026-11-26, the docs brought up to date: the engine's pin and what the app uses of walkit's
   main branch, by pull request; the module layout (`app/pointer.rs`, `fonts.rs`,
   `Tooltip.swift`, `vis/fresh-buffers.h`, the tests); the workflows' names; the items done since (release PR #181

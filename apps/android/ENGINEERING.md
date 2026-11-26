@@ -254,8 +254,8 @@ engine was on.
 
 Both read PCM through `PcmSource` and pace with `FramePacer`, which live in `:core:player`.
 
-projectM is a git submodule in `visualizer/projectm/third_party/projectm`, pinned to a
-release tag. CMake builds it from source into `libprojectM-4.so` and
+projectM is a git submodule in `third_party/projectm` at the repository root, pinned to a
+release tag, and the desktop apps build the same checkout. CMake builds it from source into `libprojectM-4.so` and
 `libprojectM-4-playlist.so`, for `arm64-v8a` and `x86_64`. It must stay a shared library:
 the LGPL relinking requirement depends on that. Read NOTICE.md before you change how it is
 linked or move the pin. [docs/projectm-integration.md](docs/projectm-integration.md)

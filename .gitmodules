@@ -1,6 +1,7 @@
-[submodule "visualizer/projectm/third_party/projectm"]
-	path = apps/android/visualizer/projectm/third_party/projectm
+[submodule "third_party/projectm"]
+	path = third_party/projectm
 	url = https://github.com/projectM-visualizer/projectm.git
+	ignore = dirty
 [submodule "visualizer/avs/third_party/projectm-eval"]
 	path = apps/android/visualizer/avs/third_party/projectm-eval
 	url = https://github.com/projectM-visualizer/projectm-eval.git
