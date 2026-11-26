@@ -122,8 +122,8 @@ impl App {
         }
     }
 
-    /// The mouse moved to `x`, `y` with no button down: what is under it hears it, as in
-    /// Winamp, and a modern skin's button shows its hover picture.
+    /// The mouse moved to `x`, `y` with no button down: the skin gets the hover events, as
+    /// in Winamp, and a modern skin's button shows its hover picture.
     pub fn hover(&mut self, x: i32, y: i32) {
         if let Some(skin) = self.skin.as_mut() {
             skin.runtime.pointer_hover(x, y);

@@ -92,7 +92,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 - [x] 1. Windows: one desktop window for each of the skin's, drawn only when it changes;
   drags, docking and snapping by the engine; double size; always on top; the skin's close,
   minimize, menu and clutter bar buttons; the skin's popup menus as Mac menus.
-  - [ ] A click on a clear part of a shaped window goes to the app, not to what is under it.
+  - [x] A click on a clear part of a shaped window goes to what is under it (seen by the owner
+    on 2026-11-24).
   - [x] More than one screen: the windows go onto any screen and come back on the screen and
     at the place they were left; a screen gone brings them back whole onto the main screen,
     a docked group together; no window is left where no screen shows it. They snap to the
@@ -103,7 +104,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
     CornerAmp from the local corpus.
 - [x] 2. Playback: MP3, AAC, ALAC, FLAC, Ogg Vorbis, WAV and AIFF files; the playlist; play,
   pause, stop, next, previous, seek, shuffle, repeat; volume and balance; Winamp's keys.
-  - [ ] The playlist window's own buttons (add, remove, select, sort) do nothing yet.
+  - [x] The playlist window's own buttons (add, remove, select, sort) open their menus
+    (Other systems, the player's basics).
   - [x] Gapless playback: the next song is decoded ahead once the current one is read to its
     end and starts in the same audio block. MP3 and AAC encoder delay and padding are trimmed.
     A next song at another sample rate still reopens the output, with a short gap.
@@ -118,11 +120,11 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   - [x] The equalizer's factory presets, the mouse wheel for the volume, View > Opacity.
   - [x] An icon.
   - [x] The mouse wheel on a list, classic and modern.
-  - [x] Hovering: the mouse over a modern skin with no button down is heard there
-    (`onEnterArea`, `onLeaveArea`, `onMouseMove`), and a button shows its hover picture.
+  - [x] Hover: a modern skin gets the mouse with no button down (`onEnterArea`,
+    `onLeaveArea`, `onMouseMove`), and a button shows its hover picture.
   - [x] Tooltips with Winamp's timing (350 ms, shown for 3 s), drawn by the Mac above the
     mouse. Not yet drawn with the skin's own `wasabi.tooltip.group`, as Winamp3x restyles it.
-  - [x] While another app has the keys every window shows itself behind: classic title bars
+  - [x] While another app has the focus every window is drawn inactive: classic title bars
     unlit, a modern skin's `inactivealpha` and inactive pictures.
 - [x] 5. Effects: Alpaca's `.lua` plug-in format (`core/src/dsp`): the loader in a shut-in
   Lua, the checks, the program and the engine, with the arithmetic of the Kotlin original;
@@ -186,11 +188,11 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   entry each, in a `BEGIN_COMMIT_OVERRIDE` block (an HTML comment), for the first release
   from here.
 - [x] The GitHub repository `andamp` is renamed `alpaca`; GitHub sends the old addresses on.
-- [ ] Release PR #181, on the old layout, is stale once #211 is in: close it.
-  `andamp-monorepo`, an older attempt with the brand, the site and the sources, is not part
-  of this.
-- [ ] The CI workflows were moved and pointed at their folders, not run.
-- [ ] The local folder is still called `andamp-mac`.
+- [x] Release PR #181, on the old layout, is closed. `andamp-monorepo`, an older attempt
+  with the brand, the site and the sources, is not part of this.
+- [ ] The CI workflows were moved and pointed at their folders. `release-please.yml` runs on
+  every push to main; `desktop-ci.yml` and `android-ci.yml` run only when started by hand and
+  have not been started yet.
 
 ### Other systems
 
@@ -201,8 +203,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   underruns, the same cost.
 - [x] Settings, what an opened file is, folders of songs, Winamp's keys and the effects'
   loading, state and readouts moved from Swift into the core.
-- [ ] `.github/workflows/ci.yml` builds and tests on the three systems; it has never run,
-  as the repository has no remote.
+- [ ] `.github/workflows/desktop-ci.yml` builds and tests on the three systems; it has never
+  been started.
 - [x] The app itself is in the core (`app.rs`, `vis.rs`): the command line, the menu and
   what its items do, what each of the skin's actions leads to, the Visualizer's presets and
   keys, the order of a start, what is kept for the next run, the listener's own plug-ins. A
@@ -241,16 +243,26 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 ### Known about the engine
 
 - The engine is walkit's main branch as of 2026-11-25 (`[patch.crates-io]` in
-  `core/Cargo.toml`, a revision by its number), ahead of release 0.10.4 by what the app
-  uses: a row of a classic playlist brought into view (`show_classic_playlist_row`), the
-  list under a point scrolled (`scroll_at`), a frame's divider dragged, the cursor that
-  belongs at a point (`pointer_shape_at`), the focus given to a window (`focus_window`), a wider snap for
-  the equalizer's and the balance's sliders (`Presentation::snap_reach`), the mouse with no
-  button down (`pointer_hover`, `pointer_leave`) and the app losing the keys (`set_app_active`),
-  and older skins' playlists as Winamp draws them (MMD3: the list inside its frame, the
-  scrollbar's colors and thumb).
+  `core/Cargo.toml`, revision `4ac65ef`, walkit #37), fifteen commits ahead of release
+  0.10.4 (walkit #23 to #37). What the app uses from them:
+  - the focus given to a window (`focus_window`), a row of a playlist brought into view
+    (`show_playlist_row`) and the list under a point scrolled (`scroll_at`): #26, #27;
+  - a frame's divider dragged, and the cursor that belongs at a point (`pointer_shape_at`):
+    #28; the divider's place kept for the next run, by the frame's id: #31;
+  - a wider snap for the equalizer's and the balance's sliders (`Presentation::snap_reach`):
+    #30;
+  - a modern playlist that brings a row into view and follows the song
+    (`follow_playlist_song`), as Winamp's does: #32; the part of a skin the keys go to
+    after a press (`focused_part`) and several rows selected in a modern playlist: #33;
+  - hover (`pointer_hover`, `pointer_leave`) and windows drawn inactive when the app loses
+    the focus (`set_app_active`): #34;
+  - tooltips with Winamp's timing (`tooltip`): #35;
+  - older skins' playlists as Winamp draws them (MMD3: the list inside its frame, the
+    scrollbar's colors and thumb): #37;
+  - and the fix for the debug check below: #24.
+
   The owner expects more changes to walkit before its next release; with that release the
-  pin goes.
+  pin goes, and `walkit` in `core/Cargo.toml` takes its version.
 - The same revision has the fix for the engine's own check, under debug assertions, that a
   window drawn in parts equals the window drawn whole: 0.10.4 stopped two tests of
   `tests/windows.rs` at it. The check can still trip when the player's own time moves
@@ -282,8 +294,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
    rest is projectM's arithmetic and the system's OpenGL, which a shell cannot reach. What
    was tried and is not worth it is in the log, ANGLE included. Left: a coarser warp mesh
    as a choice in Preferences; a Metal renderer for projectM, which is a port of its own.
-4. Step 7, the App Store: the sandbox (files by bookmark, the network for radio), signing,
-   an icon. The plug-in folder and the settings are already under the app's own names.
+4. Step 7, the App Store: the sandbox (files by bookmark, the network for radio), signing.
+   The plug-in folder and the settings are already under the app's own names.
 5. AVS.
 
 What comes with the app: Alpaca Dark (the skin shown first, and the one under every classic
@@ -293,6 +305,12 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
 
 ### Log
 
+- 2026-11-26, the docs brought up to date: the engine's pin and what the app uses of walkit's
+  main branch, by pull request; the module layout (`app/pointer.rs`, `fonts.rs`,
+  `Tooltip.swift`, `vis/fresh-buffers.h`, the tests); the workflows' names; the items done since (release PR #181
+  closed, the playlist's buttons, a click on a clear pixel); the Mac's README on hover,
+  tooltips, cursors, dividers, screens and the playlist's keys; PORTING.md's table on hover,
+  tooltips and the app losing the focus.
 - 2026-11-26, Milkdrop's cost, what did not pay. A Core Animation layer (`CAOpenGLLayer`) in
   place of the OpenGL view, with projectM's picture sent to the layer's framebuffer: the
   main thread's time in a frame went from 3.3 to 2.2 ms, but the whole cost stayed the same

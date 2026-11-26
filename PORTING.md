@@ -21,9 +21,9 @@ and what a quit keeps. It has no line that knows its system outside two places:
 
 `cargo test --release` runs the same tests everywhere; none opens the audio device or a window.
 `tools/cross-check.sh` type-checks the core for Windows and Linux from a Mac, and
-`.github/workflows/ci.yml` builds and tests it on all three. The portable audio device also
-builds on a Mac, with `--features portable-output`: there it was run and measured, with the
-right speed through its converter and no underruns.
+`.github/workflows/desktop-ci.yml` builds and tests it on all three, when started by hand.
+The portable audio device also builds on a Mac, with `--features portable-output`: there it
+was run and measured, with the right speed through its converter and no underruns.
 
 What has not been done: nobody has linked or run the core on Windows or Linux. The checks
 above compile every line for those systems and stop there.
@@ -46,12 +46,15 @@ what the app asks of it.
 | The screens: where each is, and when one comes, goes or changes | `SkinController.tellScreens`, on `didChangeScreenParametersNotification` | `alpaca_app_set_screens` takes the part of each screen the windows move on as rectangles on one desktop, y down, the main screen first; the core keeps which screen the windows are on, between runs too, and brings back into view what no screen shows |
 | Showing a window's pixels, scaled by whole numbers | `SurfaceView` | BGRA with the color multiplied by the alpha, and the part that changed |
 | The mouse, in places on the screen | `SkinController`'s mouse calls | `alpaca_app_pointer_down`, `_move`, `_up`, `_double_click`, `_right_click`, and `alpaca_app_wheel` for the wheel and the trackpad; a release after a press too short to see is held back by the core |
+| Hover | `SkinController.mouseMoved`, from `SurfaceView`'s tracking area | `alpaca_app_hover` for the mouse moving with no button down, `alpaca_app_pointer_leave` when it leaves the skin's windows |
+| Tooltips | `Tooltip.swift`, `SkinController.showTooltip` | `alpaca_app_tooltip` after each step: the text to show beside the mouse, or none; the core keeps Winamp's timing (350 ms before, 3 s shown) |
 | The cursor over the skin | `SkinCursors.swift`, `SurfaceView`'s tracking area | `alpaca_app_cursor` for the mouse's place, asked when it moves: the arrow, one of four for what is dragged to size, or a cursor a classic skin brings, whose pictures and steps `alpaca_app_cursor_picture` gives; the shell makes its system's cursors from them and steps one that moves |
 | Waking up when there is next something to do | `SkinController.schedule` | `alpaca_app_next_due_ms`; nothing to do while no window is in sight |
 | The keys | `SkinController.keyDown`, `Visualizer.key` | `alpaca_app_key` with the window the key was pressed in and the key's name (`shift+` before a key that moves the playlist's selection while Shift is held), and `alpaca_app_vis_key` |
 | The keys held with a click | `SkinController.mouseDown` | `alpaca_app_modifiers` before `alpaca_app_pointer_down`: the system's key for picking rows one by one (Command on a Mac, Control elsewhere) and Shift |
 | Going through the app's windows by the system's key for it | `WindowCycle.swift` | nothing: where a system leaves grouped windows out of its own cycling, as the Mac does, the shell gives the keys to the next window itself |
 | Saying which of the skin's windows the keys go to | `SkinWindow.becomeKey` | `alpaca_app_focus` with the window, whenever the system makes one the key window; the skin then draws it as the one in front |
+| The app losing and getting back the focus | `SkinController.appActive`, on `didBecomeActiveNotification` and `didResignActiveNotification` | `alpaca_app_set_active`: while it is off, every window is drawn inactive |
 | Drawing menus: the bar, the popups, a skin's own | `NSMenu.from(lines:)` | every menu as lines of text (`alpaca_app_menu`), by number: the bar, the main popup, and the popups a skin's buttons ask for (options, visualization, the playlist's five buttons, a row's menu, sorting), with the checks, the grayed items and the keys; the pick goes back as a number (`alpaca_app_command`) |
 | Doing what the app asks | `AppDelegate.answer` | `alpaca_app_take_requests`: quit, hide, about, show a menu at a place, show the Effects or Visualizer window, load a preset, say what went wrong |
 | Letting the listener pick files, folders, a stream's address | `AppDelegate.ask` | the request `ask` with what to pick; the answer goes to `alpaca_app_picked` |

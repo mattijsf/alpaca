@@ -434,8 +434,8 @@ final class SkinController {
         showCursor()
     }
 
-    /// The mouse moved over the skin with no button down, or left it: what is under it hears
-    /// it, the library says which cursor belongs where it is, and the arrow belongs off the skin.
+    /// The mouse moved over the skin with no button down, or left it: the skin gets the hover
+    /// events, the library says which cursor belongs where it is, and the arrow belongs off the skin.
     func mouseMoved(inside: Bool) {
         guard skin != nil, !pressed, !inMenu else { return }
         if inside {
