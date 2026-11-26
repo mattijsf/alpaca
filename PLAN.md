@@ -280,9 +280,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
    the app can draw into.
 3. Milkdrop's window as a skin's own (with the engine's frame, above). Its cost further: the
    rest is projectM's arithmetic and the system's OpenGL, which a shell cannot reach. What
-   was tried and is not worth it is in the log. Left: a coarser warp mesh as a choice in
-   Preferences; projectM through ANGLE's Metal back end, measured against Apple's OpenGL,
-   which already runs on Metal; a Metal renderer for projectM, which is a port of its own.
+   was tried and is not worth it is in the log, ANGLE included. Left: a coarser warp mesh
+   as a choice in Preferences; a Metal renderer for projectM, which is a port of its own.
 4. Step 7, the App Store: the sandbox (files by bookmark, the network for radio), signing,
    an icon. The plug-in folder and the settings are already under the app's own names.
 5. AVS.
@@ -300,6 +299,13 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
   (16.0 and 15.7% of a core), since Core Animation's commit took what the flush had. A
   display link in place of the timer cost more. A warp mesh of 32 by 24 in place of 48 by
   32 saves 1.3 points (15.9 to 14.4%), coarser than Winamp's own, so it stays 48 by 32.
+  And ANGLE: projectM built for OpenGL ES (its CMake allows that on Linux only, and its GL
+  header picks Apple's OpenGL on a Mac, so a scratch copy was changed), drawing through
+  ANGLE's Metal back end into an EGL surface on the view's layer, with the ANGLE that comes
+  with Visual Studio Code. It draws the same pictures, at 2.6 to 2.8 times the processor time
+  a frame: 1.6 to 1.85 ms against 0.6 to 0.7 ms, 600 frames back to back on two presets.
+  Measured with the windows covered, so neither way paid for showing its frames; a paced
+  `--bench` could not run then.
 - 2026-11-26, Milkdrop's cost: profiled with `sample` at 30 frames a second. projectM refills
   its vertex buffers with `glBufferSubData`, and Apple's OpenGL on Metal answers a write to a
   buffer the GPU may still read by submitting the command buffer there and then, several
