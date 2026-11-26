@@ -25,9 +25,10 @@ mlua = { version = "0.10", features = ["lua54", "vendored"] }
 
 # walkit main after 0.10.4, until the next release is on crates.io. Needed for playlist
 # scrolling and keys, frame dividers, cursor shapes, window focus, slider snap, hover, app focus
-# loss and tooltips. Remove once released and bump the version above.
+# loss, tooltips, and older skins' playlist frames and scrollbars. Remove once released and bump
+# the version above.
 [patch.crates-io]
-walkit = { git = "https://github.com/mattijsf/walkit", rev = "579197eec87a2fefa1eba1bd92832bc28f1f42b9" }
+walkit = { git = "https://github.com/mattijsf/walkit", rev = "4ac65efefa83d0d5d00b8ffc5baa9932f99dcfee" }
 
 # the audio device: the Mac's own output unit there, the cpal crate everywhere else
 [target.'cfg(target_os = "macos")'.dependencies]

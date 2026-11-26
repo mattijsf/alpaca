@@ -235,13 +235,15 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 
 ### Known about the engine
 
-- The engine is walkit's main branch as of 2026-11-24 (`[patch.crates-io]` in
+- The engine is walkit's main branch as of 2026-11-25 (`[patch.crates-io]` in
   `core/Cargo.toml`, a revision by its number), ahead of release 0.10.4 by what the app
   uses: a row of a classic playlist brought into view (`show_classic_playlist_row`), the
   list under a point scrolled (`scroll_at`), a frame's divider dragged, the cursor that
   belongs at a point (`pointer_shape_at`), the focus given to a window (`focus_window`), a wider snap for
   the equalizer's and the balance's sliders (`Presentation::snap_reach`), the mouse with no
-  button down (`pointer_hover`, `pointer_leave`) and the app losing the keys (`set_app_active`).
+  button down (`pointer_hover`, `pointer_leave`) and the app losing the keys (`set_app_active`),
+  and older skins' playlists as Winamp draws them (MMD3: the list inside its frame, the
+  scrollbar's colors and thumb).
   The owner expects more changes to walkit before its next release; with that release the
   pin goes.
 - The same revision has the fix for the engine's own check, under debug assertions, that a
@@ -299,6 +301,16 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
   draw its lines (`mark-mono.svg` in the brand tools, holes kept with `evenOdd`), and the
   brand tools now write `apps/mac/icon/alpaca.svg` too. The skins' 13-pixel logo is the same
   alpaca from the front.
+- 2026-11-25, older skins' playlists: MMD3's list covered its frame, the bottom bar and its
+  own scrollbar. The engine gave a skin's redefined standard frame the behavior of Alpaca's
+  own (`behavior="standardframe"`), so the list went where Alpaca's frame has room, not where
+  MMD3's script puts it; and the scrollbar's colors and thumb were walkit's own picks.
+  walkit #37 places the list by the skin's script, works the scrollbar's colors out from the
+  window as Winamp does for a skin older than version 1, and draws the thumb as the skin's
+  button, 8 by 18 from the list's top. Checked against Winamp 5.666 in the VM: the
+  scrollbar's colors match to the pixel on all seven MMD3 color themes, the thumb on MMD3
+  and Winamp Modern but for the grip. Alpaca's element set now draws the grip as lines
+  (`scrollgrip.png`, `scrollgrip-h.png`, our own) in place of a plain block.
 - 2026-11-25, the brand: the icon is an alpaca in profile, on the Mac (`apps/mac/icon/alpaca.svg`,
   `AppIcon.icns`) as on Android, all drawn from one source the Android app's brand tools keep.
   The built-in skins carry a 13-pixel alpaca in the main window's logo spot, drawn in the
