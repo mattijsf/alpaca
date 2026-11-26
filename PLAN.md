@@ -142,9 +142,14 @@ Updated with every step. Whoever picks this up, person or model, starts here.
     it the app builds and runs, and the window says what is missing. Presets come from a
     folder the listener picks (View > Choose Milkdrop Presets…); none come with the app.
     Right and left arrows, R for a random one, space to keep the one shown.
-  - [ ] What it costs: about 0.5% of a core for every frame a second (16% at the 30 it runs
-    at, 33% at 60), at 640 by 400, most of it inside the system's OpenGL, which macOS runs
-    on top of Metal. Not looked into further.
+  - [ ] What it costs: about 8 points of a core at the 30 frames a second it runs at, at 640
+    by 400 (13% with a song playing, against 5% without the window), 2.5 to 3 ms of the main
+    thread a frame; `--bench` prints both. Of a frame, projectM's own work is about half
+    and the system's OpenGL, which macOS runs on top of Metal, the rest: handing the frame
+    to the window server (`flushBuffer`) is a third of the main thread's time. projectM
+    refilled its vertex buffers in place, which made the driver submit work to the GPU
+    several times a frame; `vis/build-projectm.sh` now gives them new storage first
+    (`vis/fresh-buffers.h`), which took a quarter off. Not tried at 60.
   - [ ] The window is a plain Mac window, not a skin's. A skin's own visualizer frame stays shut.
   - [ ] projectM's sources are not in this repository: `vis/projectm` as a submodule, or
     `PROJECTM_SRC`. It was built here from Alpaca's own checkout of v4.1.7.
@@ -273,7 +278,10 @@ Updated with every step. Whoever picks this up, person or model, starts here.
    changed without building the draw lists; the playlist as something that says when it
    changed (it is asked for whole, several times a tick); a skin's visualizer frame that
    the app can draw into.
-3. Milkdrop's cost, and its window as a skin's own.
+3. Milkdrop's window as a skin's own (with the engine's frame, above). Its cost further: the
+   rest is projectM's arithmetic and the system's OpenGL, which a shell cannot reach. What
+   was tried and is not worth it is in the log, ANGLE included. Left: a coarser warp mesh
+   as a choice in Preferences; a Metal renderer for projectM, which is a port of its own.
 4. Step 7, the App Store: the sandbox (files by bookmark, the network for radio), signing,
    an icon. The plug-in folder and the settings are already under the app's own names.
 5. AVS.
@@ -285,6 +293,33 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
 
 ### Log
 
+- 2026-11-26, Milkdrop's cost, what did not pay. A Core Animation layer (`CAOpenGLLayer`) in
+  place of the OpenGL view, with projectM's picture sent to the layer's framebuffer: the
+  main thread's time in a frame went from 3.3 to 2.2 ms, but the whole cost stayed the same
+  (16.0 and 15.7% of a core), since Core Animation's commit took what the flush had. A
+  display link in place of the timer cost more. A warp mesh of 32 by 24 in place of 48 by
+  32 saves 1.3 points (15.9 to 14.4%), coarser than Winamp's own, so it stays 48 by 32.
+  And ANGLE: projectM built for OpenGL ES (its CMake allows that on Linux only, and its GL
+  header picks Apple's OpenGL on a Mac, so a scratch copy was changed), drawing through
+  ANGLE's Metal back end into an EGL surface on the view's layer, with the ANGLE that comes
+  with Visual Studio Code. It draws the same pictures, at 2.6 to 2.8 times the processor time
+  a frame: 1.6 to 1.85 ms against 0.6 to 0.7 ms, 600 frames back to back on two presets.
+  Measured with the windows covered, so neither way paid for showing its frames; a paced
+  `--bench` could not run then.
+- 2026-11-26, Milkdrop's cost: profiled with `sample` at 30 frames a second. projectM refills
+  its vertex buffers with `glBufferSubData`, and Apple's OpenGL on Metal answers a write to a
+  buffer the GPU may still read by submitting the command buffer there and then, several
+  times a frame. A header the build includes ahead of projectM's sources
+  (`vis/fresh-buffers.h`) gives the buffer new storage first; projectM's sources are not
+  changed, and every caller draws only what it just wrote. With a song playing and the
+  window open, in turns: 18.1 and 15.9% of a core before, 15.4 and 13.1% after, against
+  5% with no window; the system's share of it went from 6% to 4%. The picture is the same
+  (`--dump` with Geiss's Vortex 2). `--bench` now prints the window's frames a second and the
+  main thread's time a frame. A display link in place of the timer kept the same 30 frames
+  and cost more, so the timer stays. In early runs the timer gave 16 to 23 frames a second
+  instead of 30, not seen again. projectM was built from Alpaca on Android's checkout of
+  4.1.8, with CMake from Homebrew. The first preset of the Winamp 5.2 folder used for this
+  draws black, and so does the dump of it.
 - 2026-11-26, the effects in blocks: the engine runs a buffer through each instruction over
   up to 32 frames before the next, as Alpaca on Android's `BlockRunner` does, where nothing
   in the block needs a sample it has not made yet (`Program::block`). Unlike Android's, a

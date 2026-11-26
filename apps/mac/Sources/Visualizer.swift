@@ -62,8 +62,11 @@ final class MilkdropView: NSOpenGLView {
     /// The preset to load at the next frame, and whether to blend into it.
     private var wanted: (file: String, blend: Bool)?
     var onKey: ((NSEvent) -> Bool)?
-    /// Frames a second, as the listener set them. A frame costs about 5 ms of processor time
-    /// whatever the preset, most of it in the system's OpenGL.
+    /// Frames drawn so far, and the processor time they took on this thread, for `--bench`.
+    private(set) var framesDrawn = 0
+    private(set) var frameSeconds = 0.0
+    /// Frames a second, as the listener set them. A frame costs 3 to 4 ms of processor time
+    /// on this thread at 640 by 400, most of it in the system's OpenGL.
     var fps: Double = 30 {
         didSet {
             guard fps != oldValue, let handle else { return }
@@ -143,6 +146,11 @@ final class MilkdropView: NSOpenGLView {
     /// One frame: the samples heard since the last one go in, and a picture comes out.
     func frame() {
         guard let handle, let context = openGLContext else { return }
+        let began = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
+        defer {
+            framesDrawn += 1
+            frameSeconds += Double(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - began) / 1e9
+        }
         context.makeCurrentContext()
         if let wanted {
             engine.loadPreset(handle, wanted.file, wanted.blend)
@@ -279,6 +287,9 @@ final class Visualizer: NSObject, NSWindowDelegate {
         alpaca_app_vis_shown(app, false)
         onChange?()
     }
+
+    /// Frames drawn so far, and the processor time they took on the main thread.
+    var frameCost: (frames: Int, seconds: Double) { (view?.framesDrawn ?? 0, view?.frameSeconds ?? 0) }
 
     /// Draws `frames` frames at once and gives the last as a picture, for `--dump`.
     func picture(after frames: Int) -> NSBitmapImageRep? {
