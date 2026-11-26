@@ -49,7 +49,8 @@ If a hook fails, fix the problem; do not commit or push with `--no-verify`.
 
 Two things are optional. zig is the C compiler `tools/cross-check.sh` uses for the other
 systems; the gate runs the cross-check where zig is there. CMake builds libprojectM for the
-Visualizer (`vis/build-projectm.sh`); the app builds and runs without it.
+Visualizer from the `third_party/projectm` submodule, which the Android app builds too (`git
+submodule update --init --recursive third_party/projectm`, then `vis/build-projectm.sh`); the app builds and runs without it.
 
 ### The gate
 
@@ -121,7 +122,7 @@ shell ──▶ ffi ──▶ app ──┬──▶ skin ──▶ host, render
 | `core/tests/` | The tests, a file to an area: `app`, `windows`, `screens`, `player`, `effects`, `settings`, `fonts`; `plugins/` holds the test plug-ins, with the ones made to be refused. |
 | `core/resources/` | What comes with the app on every system: the built-in skins, the fonts, the wasabi element set and the effect plug-ins. Each shell bundles this folder and hands its path to the app; the tests read it in place. |
 | `apps/mac/Sources/` | The Mac's shell: `main.swift` answers the app's requests and draws its menus; `SkinController.swift` steps the app and places the windows; `SkinWindow.swift` shows pixels; `SkinCursors.swift` shows the cursor the app names; `Tooltip.swift` shows the tooltip the app gives; `WindowCycle.swift` is Command-` through the app's windows; `Preferences.swift`, `Effects.swift`, `Visualizer.swift` and `NowPlaying.swift` are the Mac's own windows and media keys; `Checks.swift` is `--dump` and `--bench`. |
-| `vis/` | Builds libprojectM as a library beside the app; `fresh-buffers.h`, included ahead of projectM's sources, gives a vertex buffer new storage before projectM writes it again. |
+| `vis/` | Builds libprojectM from `third_party/projectm` as a library beside the app; `fresh-buffers.h`, included ahead of projectM's sources, gives a vertex buffer new storage before projectM writes it again. |
 | `tools/` | The gate, the cross-check, and `icon.sh`, which makes the Mac's icon from Alpaca's own (`apps/mac/icon/alpaca.svg`). |
 | `spikes/` | Experiments kept for their findings; outside the gate. |
 

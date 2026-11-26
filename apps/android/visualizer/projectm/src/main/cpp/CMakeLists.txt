@@ -4,7 +4,8 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project(alpaca_projectm LANGUAGES C CXX)
 
-set(PROJECTM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../third_party/projectm")
+# one checkout at the root of the repository, shared with the desktop apps
+set(PROJECTM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../../third_party/projectm")
 
 if(NOT EXISTS "${PROJECTM_DIR}/CMakeLists.txt")
     message(FATAL_ERROR

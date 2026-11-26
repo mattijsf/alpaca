@@ -20,7 +20,7 @@ class ProjectMLoadTest {
     }
 
     private companion object {
-        // third_party/projectm is pinned to tag v4.1.8
+        // third_party/projectm at the repository root is pinned to tag v4.1.8
         const val PINNED_VERSION = "4.1.8"
     }
 }

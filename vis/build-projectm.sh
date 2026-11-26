@@ -5,9 +5,11 @@
 # starts: vis/lib/libprojectM-4.dylib. The app builds and runs without it; with it, the
 # Visualizer window shows Milkdrop presets.
 #
-#   PROJECTM_SRC=<a checkout of projectM 4.1 with its submodules> vis/build-projectm.sh
+#   git submodule update --init --recursive third_party/projectm
+#   vis/build-projectm.sh
 #
-# Without PROJECTM_SRC it looks for vis/projectm. It needs CMake (and takes Ninja when it is
+# third_party/projectm is projectM as a submodule, the one checkout every app builds.
+# PROJECTM_SRC names another checkout instead. It needs CMake (and takes Ninja when it is
 # there). projectM is under the LGPL; it stays a library of its own beside the app, so it can
 # be replaced with another build.
 #
@@ -17,9 +19,10 @@
 set -eu
 cd "$(dirname "$0")"
 
-src="${PROJECTM_SRC:-$PWD/projectm}"
+src="${PROJECTM_SRC:-$PWD/../third_party/projectm}"
 if [ ! -f "$src/CMakeLists.txt" ]; then
-    echo "build-projectm.sh: no projectM sources at $src; set PROJECTM_SRC" >&2
+    echo "build-projectm.sh: no projectM sources at $src;" \
+        "run git submodule update --init --recursive third_party/projectm" >&2
     exit 1
 fi
 if ! command -v cmake >/dev/null 2>&1; then

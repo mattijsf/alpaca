@@ -177,7 +177,7 @@ val bundledLicenses =
             ),
         )
         projectM.set(
-            rootProject.layout.projectDirectory.file("visualizer/projectm/third_party/projectm/LICENSE.txt"),
+            rootProject.layout.projectDirectory.file("../../third_party/projectm/LICENSE.txt"),
         )
     }
 
