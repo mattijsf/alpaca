@@ -282,6 +282,11 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
 
 ### Log
 
+- 2026-11-26, the brand: the icon is an alpaca seen from the front, a cloud of wool over a
+  gold face with dark lines, in place of the profile. The themed icon and the notification
+  draw its lines (`mark-mono.svg` in the brand tools, holes kept with `evenOdd`), and the
+  brand tools now write `apps/mac/icon/alpaca.svg` too. The skins' 13-pixel logo is the same
+  alpaca from the front.
 - 2026-11-25, the brand: the icon is an alpaca in profile, on the Mac (`apps/mac/icon/alpaca.svg`,
   `AppIcon.icns`) as on Android, all drawn from one source the Android app's brand tools keep.
   The built-in skins carry a 13-pixel alpaca in the main window's logo spot, drawn in the
