@@ -297,8 +297,8 @@ pub unsafe extern "C" fn alpaca_app_modifiers(app: *mut AlpacaApp, add: bool, ra
     with_app(app, (), |a| a.set_modifiers(add, range));
 }
 
-/// The mouse moved to `x`, `y` on the viewport with no button down, in layout pixels: what is
-/// under it hears it, and a modern skin's button shows its hover picture.
+/// The mouse moved to `x`, `y` on the viewport with no button down, in layout pixels: the skin
+/// gets the hover events, and a modern skin's button shows its hover picture.
 ///
 /// # Safety
 /// `app` is null or a live app.
@@ -326,8 +326,8 @@ pub unsafe extern "C" fn alpaca_app_pointer_leave(app: *mut AlpacaApp) {
     with_app(app, (), App::pointer_leave);
 }
 
-/// Whether the app has the keyboard: while another app has it, every window of the skin shows
-/// itself behind.
+/// Whether the app has the keyboard: while another app has it, every window of the skin is drawn
+/// inactive.
 ///
 /// # Safety
 /// `app` is null or a live app.

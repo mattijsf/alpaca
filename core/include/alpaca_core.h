@@ -227,8 +227,8 @@ uint32_t alpaca_app_main_window(AlpacaApp *app);
 void alpaca_app_pointer_down(AlpacaApp *app, int32_t x, int32_t y, int32_t touch);
 void alpaca_app_pointer_move(AlpacaApp *app, int32_t x, int32_t y);
 void alpaca_app_pointer_up(AlpacaApp *app, int32_t x, int32_t y);
-/// The mouse moved with no button down, in layout pixels on the viewport: what is under it
-/// hears it, and a modern skin's button shows its hover picture. And the mouse left the skin.
+/// The mouse moved with no button down, in layout pixels on the viewport: the skin gets the
+/// hover events, and a modern skin's button shows its hover picture. And the mouse left the skin.
 void alpaca_app_hover(AlpacaApp *app, int32_t x, int32_t y);
 void alpaca_app_pointer_leave(AlpacaApp *app);
 /// The tooltip to show beside the mouse now, empty for none (free with alpaca_string_free):
@@ -283,8 +283,8 @@ bool alpaca_app_key(AlpacaApp *app, uint32_t window, const char *key);
 /// by another way than a press on it: the skin shows it as the one in front on the next step.
 void alpaca_app_focus(AlpacaApp *app, uint32_t window);
 
-/// Whether the app has the keyboard: while another app has it, every window of the skin shows
-/// itself behind, and the window that had the focus shows it again when the app is active again.
+/// Whether the app has the keyboard: while another app has it, every window of the skin is drawn
+/// inactive, and the window that had the focus shows it again when the app is active again.
 void alpaca_app_set_active(AlpacaApp *app, bool active);
 
 /// The mouse wheel at `x`, `y` on the viewport, in layout pixels: over a list of the skin,

@@ -65,7 +65,7 @@ Visualizer (`vis/build-projectm.sh`); the app builds and runs without it.
 - `tools/cross-check.sh`, where zig is installed
 
 It is one script so the hook, CI and this file cannot disagree about what it contains. CI
-(`.github/workflows/ci.yml`) runs only when started by hand: the gate on a Mac, the core's
+(`.github/workflows/desktop-ci.yml`) runs only when started by hand: the gate on a Mac, the core's
 tests on Windows and Linux, and a build of the Mac's app. The gate does not build the app.
 
 The tests run in release: with debug assertions on, a check inside the engine can stop a
@@ -108,19 +108,20 @@ shell ──▶ ffi ──▶ app ──┬──▶ skin ──▶ host, render
 
 | Path | What it is |
 | --- | --- |
-| `core/src/app/` | The app: `mod.rs` the start, the look and saving; `options.rs` the command line; `request.rs` the commands' numbers, the menus' numbers and what the app asks of a shell; `menu.rs` every menu as text; `commands.rs` what each command and each pick does; `playlist.rs` the selection, file info and the list as a web page; `prefs.rs` the preferences as pages of rows and what setting one does; `worn.rs` the skin worn, its windows' places, the step and what the skin's buttons ask; `screens.rs` the screens and the rules that keep a window where one shows it; `visualizer.rs` and `effects.rs` those two windows as the app sees them. |
+| `core/src/app/` | The app: `mod.rs` the start, the look and saving; `options.rs` the command line; `request.rs` the commands' numbers, the menus' numbers and what the app asks of a shell; `pointer.rs` the mouse: presses, short taps, hover, tooltips and cursors; `menu.rs` every menu as text; `commands.rs` what each command and each pick does; `playlist.rs` the selection, file info and the list as a web page; `prefs.rs` the preferences as pages of rows and what setting one does; `worn.rs` the skin worn, its windows' places, the step and what the skin's buttons ask; `screens.rs` the screens and the rules that keep a window where one shows it; `visualizer.rs` and `effects.rs` those two windows as the app sees them. |
 | `core/src/skin.rs` | The engine running one skin, its windows set out apart, each drawn into its own pixels. |
 | `core/src/host.rs` | What the engine asks of an app: pictures decoded, text measured, actions and switches. |
+| `core/src/fonts.rs` | Arial and Tahoma under every skin: the system's real fonts where it has them, else the stand-ins in `core/resources/fonts`. |
 | `core/src/render.rs` | A window's draw list into pixels: only what changed, with shapes as runs of rows. |
 | `core/src/player/` | The playlist and transport (`mod.rs`), decoding and radio (`decode.rs`), what the audio thread runs (`output.rs`), the audio device (`device/`). |
 | `core/src/dsp/` | Effects: Lua plug-ins (`lua.rs`) describe a graph, `graph.rs` runs it, `rack.rs` is the chain the audio passes through, `describe.rs` spells the rack out for an Effects window. |
 | `core/src/settings.rs` | The one file kept between runs. |
 | `core/src/vis.rs` | The Visualizer's presets: which shows, how long, what its keys do. |
 | `core/src/ffi/` | The C interface, by what it takes: `app.rs`, `player.rs`, `skin.rs`. `core/include/alpaca_core.h` is written by hand, in step with it. |
-| `core/tests/` | The tests, a file to an area: `app`, `windows`, `screens`, `player`, `effects`, `settings`. |
+| `core/tests/` | The tests, a file to an area: `app`, `windows`, `screens`, `player`, `effects`, `settings`, `fonts`; `plugins/` holds the test plug-ins, with the ones made to be refused. |
 | `core/resources/` | What comes with the app on every system: the built-in skins, the fonts, the wasabi element set and the effect plug-ins. Each shell bundles this folder and hands its path to the app; the tests read it in place. |
-| `apps/mac/Sources/` | The Mac's shell: `main.swift` answers the app's requests and draws its menus; `SkinController.swift` steps the app and places the windows; `SkinWindow.swift` shows pixels; `SkinCursors.swift` shows the cursor the app names; `WindowCycle.swift` is Command-` through the app's windows; `Preferences.swift`, `Effects.swift`, `Visualizer.swift` and `NowPlaying.swift` are the Mac's own windows and media keys; `Checks.swift` is `--dump` and `--bench`. |
-| `vis/` | Builds libprojectM as a library beside the app. |
+| `apps/mac/Sources/` | The Mac's shell: `main.swift` answers the app's requests and draws its menus; `SkinController.swift` steps the app and places the windows; `SkinWindow.swift` shows pixels; `SkinCursors.swift` shows the cursor the app names; `Tooltip.swift` shows the tooltip the app gives; `WindowCycle.swift` is Command-` through the app's windows; `Preferences.swift`, `Effects.swift`, `Visualizer.swift` and `NowPlaying.swift` are the Mac's own windows and media keys; `Checks.swift` is `--dump` and `--bench`. |
+| `vis/` | Builds libprojectM as a library beside the app; `fresh-buffers.h`, included ahead of projectM's sources, gives a vertex buffer new storage before projectM writes it again. |
 | `tools/` | The gate, the cross-check, and `icon.sh`, which makes the Mac's icon from Alpaca's own (`apps/mac/icon/alpaca.svg`). |
 | `spikes/` | Experiments kept for their findings; outside the gate. |
 

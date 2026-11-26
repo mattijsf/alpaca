@@ -31,7 +31,7 @@ impl App {
     }
 
     /// Whether the app has the keyboard: while another app has it, every window of the skin
-    /// shows itself behind, as Winamp's do, and the window that had the focus shows it again
+    /// is drawn inactive, as Winamp's are, and the window that had the focus shows it again
     /// when the app is active again.
     pub fn set_active(&mut self, active: bool) {
         if let Some(skin) = self.skin.as_mut() {

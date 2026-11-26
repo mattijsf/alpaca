@@ -15,7 +15,7 @@ nearest-neighbor filtering.
 Alpaca is in internal testing on Google Play. [CHANGELOG.md](CHANGELOG.md) lists what each
 release changed.
 
-Each [release](https://github.com/mattijsf/andamp/releases) also carries an APK for installing
+Each [release](https://github.com/mattijsf/alpaca/releases) also carries an APK for installing
 without Google Play. It is signed with a different key than a Play install, so the two do not
 update each other. A second, small APK beside it, `alpaca-auto`, is Alpaca Auto: the app that
 brings the Android Auto screen described below. It works beside an Alpaca from either place.

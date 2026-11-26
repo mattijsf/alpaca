@@ -10,13 +10,21 @@ It is early. [PLAN.md](../../PLAN.md) says what is done, what is not, and what c
 ## What works
 
 - The skin's windows on the desktop, see-through where the skin is, at Winamp's size or
-  double. Alpaca Dark, Light and Spot come with the app; a skin of your own opens from the
+  double, on any of the Mac's screens and back where they were left. Command-` goes through
+  them, and the skin draws the one with the focus as the one in front; while another app
+  has the focus they are drawn inactive. Alpaca Dark, Light and Spot come with the app, and walkit's two example skins; a skin of your own opens from the
   File menu, from Finder, or by dropping it on a window, and one put in the app's `Skins`
   folder (Preferences shows it) is in the Skins menu from then on.
+- The mouse as in Winamp: a modern skin's hover pictures, tooltips with Winamp's timing, a
+  classic skin's own cursors, and a frame's divider (Bento's panels) dragged and kept for the
+  next run. The wheel and the trackpad scroll the list under them and turn the volume over
+  its slider.
 - MP3, AAC, ALAC, FLAC, Ogg Vorbis, WAV and AIFF files, folders of them and `.m3u`, `.m3u8`
   and `.pls` playlists, and internet radio streams by their address. The playlist window's
   menus select, remove, crop and sort, drop dead files and duplicates, show a file's info
-  and write the list as a web page.
+  and write the list as a web page. Its rows are picked with Command and Shift and moved
+  through with the keys, in a classic skin's playlist and a modern one's, and the list
+  follows the song that plays.
 - Preferences (Command and comma): the skin, the size, shuffle and repeat, the time shown,
   what the skin's visualizer shows and how, and the Milkdrop window's presets and pace.
 - The ten-band equalizer, balance and volume, and the skin's spectrum and oscilloscope.
