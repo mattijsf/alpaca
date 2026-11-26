@@ -69,11 +69,12 @@ app this grew from is the baseline (see [spikes/](spikes/README.md)).
 | Memory (footprint, as Activity Monitor shows it) | 75 MB | under 50 MB | 25 MB |
 | From the process starting to the first window | | under 150 ms | 190 to 250 ms |
 
-An effect adds what `cargo run --release --example effectcost` prints for it, about three
-times over in the app, where the audio thread runs cold: Bass & Treble 1%, all six that come
-with the app 8%. Alpaca on Android runs a graph a block at a time where nothing in it needs a
-sample the block has not made yet (`BlockRunner`); the engine here runs a frame at a time, and
-that is the first thing to port when an effect's cost matters.
+An effect adds what `cargo run --release --example effectcost` prints for it, two to three
+times over in the app, where the audio thread runs cold: all six that come with the app about
+4.5%, where it was 7% a frame at a time. A buffer runs through each instruction up to 32 frames
+at a time, fewer when a delay line is read sooner than that (Headphone Crossfeed's 0.3 ms is
+13 frames), and a frame at a time with a feedback pair or a delay time worked out as it
+plays, as in Vinyl.
 
 Where the 5% goes: the engine's tick and draw lists 1.2%, drawing pixels 0.3%, the rest is
 the 40 wakeups a second themselves (the timer, handing the layer its pixels, the window
@@ -131,7 +132,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   - [ ] The `ui` block is read but not laid out: controls show in the order declared.
     `enabledBy` is not checked against the graph.
   - [ ] Alpaca's built-in Karaoke, Modulation and Reverb are Kotlin graphs, not ported.
-  - [ ] The block runner (see above).
+  - [x] The block runner: a buffer runs through the effects a block of frames per
+    instruction, with the same samples as a frame at a time.
 - [ ] 6. Milkdrop and AVS
   - [x] Milkdrop in its first form: the Visualizer window (View > Visualizer, or the skin's
     button for it) draws `.milk` presets with libprojectM to what plays. The engine is a
@@ -269,11 +271,10 @@ Updated with every step. Whoever picks this up, person or model, starts here.
    changed without building the draw lists; the playlist as something that says when it
    changed (it is asked for whole, several times a tick); a skin's visualizer frame that
    the app can draw into.
-3. The effects' block runner, when an effect's cost matters.
-4. Milkdrop's cost, and its window as a skin's own.
-5. Step 7, the App Store: the sandbox (files by bookmark, the network for radio), signing,
+3. Milkdrop's cost, and its window as a skin's own.
+4. Step 7, the App Store: the sandbox (files by bookmark, the network for radio), signing,
    an icon. The plug-in folder and the settings are already under the app's own names.
-6. AVS.
+5. AVS.
 
 What comes with the app: Alpaca Dark (the skin shown first, and the one under every classic
 skin), Light and Spot, from Alpaca's own `skin/dist`; walkit's two example skins; Alpaca's
@@ -282,6 +283,17 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
 
 ### Log
 
+- 2026-11-26, the effects in blocks: the engine runs a buffer through each instruction over
+  up to 32 frames before the next, as Alpaca on Android's `BlockRunner` does, where nothing
+  in the block needs a sample it has not made yet (`Program::block`). Unlike Android's, a
+  block never holds a control tick, so the parameters move on the same frames, and a filter
+  whose frequency follows a signal still gets its coefficients every frame: the samples are
+  the same to the bit as a frame at a time, tested on every plug-in that comes with the app
+  or as an example and on one that uses every primitive, in buffers of 1 to 512 frames with
+  controls moving. `effectcost`, all six: 2.4% of a core before, 0.9% after. In the app with
+  all six on, a song playing: 8.7, 8.7 and 12.6% before, 6.6, 6.3 and 9.9% after, measured
+  in turns on a Mac with a load average of 7, so the figures are rough. A `maxTime` that is
+  not a number is now refused; it made a line that read_line could not clamp into.
 - 2026-11-26, the brand: the icon is an alpaca seen from the front, a cloud of wool over a
   gold face with dark lines, in place of the profile. The themed icon and the notification
   draw its lines (`mark-mono.svg` in the brand tools, holes kept with `evenOdd`), and the
