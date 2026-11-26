@@ -16,6 +16,8 @@ use super::lua::{Kind, Plugin};
 const FADE_MS: f32 = 20.0;
 /// How many changes may wait for the audio thread.
 const COMMANDS: usize = 1024;
+/// Samples run through an effect at once, left and right in turn: 256 frames.
+const PART: usize = 512;
 
 /// One effect in the rack.
 #[derive(Debug, Clone)]
@@ -126,19 +128,29 @@ impl RackVoice {
                 continue;
             }
             let target = if stage.on { 1.0 } else { 0.0 };
-            for frame in samples.chunks_exact_mut(2) {
-                let dry = [frame[0], frame[1]];
-                stage.engine.process(frame);
-                if stage.mix != target {
-                    stage.mix = if stage.on {
-                        (stage.mix + fade).min(1.0)
-                    } else {
-                        (stage.mix - fade).max(0.0)
-                    };
+            for part in samples.chunks_mut(PART) {
+                let even = part.len() / 2 * 2;
+                let part = &mut part[..even];
+                if stage.mix == 1.0 && target == 1.0 {
+                    stage.engine.run(part);
+                    continue;
                 }
-                if stage.mix < 1.0 {
-                    frame[0] = dry[0] + (frame[0] - dry[0]) * stage.mix;
-                    frame[1] = dry[1] + (frame[1] - dry[1]) * stage.mix;
+                // fading: what came in is mixed with what the effect made, frame by frame
+                let mut dry = [0.0f32; PART];
+                dry[..part.len()].copy_from_slice(part);
+                stage.engine.run(part);
+                for (frame, dry) in part.chunks_exact_mut(2).zip(dry.chunks_exact(2)) {
+                    if stage.mix != target {
+                        stage.mix = if stage.on {
+                            (stage.mix + fade).min(1.0)
+                        } else {
+                            (stage.mix - fade).max(0.0)
+                        };
+                    }
+                    if stage.mix < 1.0 {
+                        frame[0] = dry[0] + (frame[0] - dry[0]) * stage.mix;
+                        frame[1] = dry[1] + (frame[1] - dry[1]) * stage.mix;
+                    }
                 }
             }
         }

@@ -4,15 +4,24 @@
 //!
 //! This is the effect format of Alpaca on Android (its `docs/dsp-plugin-spec.md`), so that one
 //! plug-in file sounds the same on both: the same primitives with the same arithmetic. A
-//! [`Graph`] is checked and arranged into a flat [`Program`]; an [`Engine`] runs a program a
-//! frame at a time. Nodes that only parameters and constants feed run once every
-//! [`CONTROL_PERIOD`] frames; the rest run every frame.
+//! [`Graph`] is checked and arranged into a flat [`Program`]; an [`Engine`] runs a program. Nodes
+//! that only parameters and constants feed run once every [`CONTROL_PERIOD`] frames; the rest
+//! run every frame.
+//!
+//! Given a buffer, the engine runs each instruction over a block of frames before the next
+//! ([`Program::block`]), which saves the dispatch per instruction per frame. That is valid
+//! where nothing in the block needs a sample the block has not made yet: a delay line read
+//! sooner than the block is long, or a feedback pair, makes the block shorter, down to one
+//! frame. The arithmetic is the same either way, so both give the same samples.
 
 use std::collections::HashMap;
 use std::f32::consts::LN_2;
 
 /// Frames between control ticks.
 pub const CONTROL_PERIOD: i32 = 32;
+/// The most frames run through one instruction before the next. A control tick is never
+/// inside a block, so the parameters move at the frames they move at a frame at a time.
+const BLOCK: usize = CONTROL_PERIOD as usize;
 /// How far a value written into a delay line or a feedback pair may go either way.
 const LOOP_CEILING: f32 = 16.0;
 /// The most nodes a graph may have, and the most delay memory in samples.
@@ -377,9 +386,18 @@ pub struct Program {
     lines: Vec<(usize, usize)>,
     memory_size: usize,
     sample_rate: u32,
+    /// How many frames may run through one instruction before the next.
+    block: usize,
 }
 
 impl Program {
+    /// How many frames a buffer may run through one instruction before the next: up to
+    /// 32, fewer when a delay line is read sooner than that, and one with a feedback pair or
+    /// a delay whose time is worked out as it plays.
+    pub fn block(&self) -> usize {
+        self.block
+    }
+
     /// How many parameters the program reads.
     pub fn params(&self) -> usize {
         self.param_slot.len()
@@ -642,7 +660,7 @@ fn check_node(graph: &Graph, index: usize, node: &Node, errors: &mut Vec<String>
                     "{at}: a ceiling of {value}; it is above 0 and at most {LOOP_CEILING}"
                 ));
             }
-            (Prim::Delay, "maxTime") if *value < 1.0 => {
+            (Prim::Delay, "maxTime") if value.is_nan() || *value < 1.0 => {
                 errors.push(format!(
                     "{at}: a maxTime of {value} samples; it is at least 1"
                 ));
@@ -701,6 +719,8 @@ fn lower(graph: &Graph, order: &[usize], writers: &[usize], control: &[bool]) ->
     let mut line_of: HashMap<usize, usize> = HashMap::new();
     let mut memory = 0usize;
     let mut writes: Vec<(Op, Edge, usize)> = Vec::new();
+    // every read of a delay line: the line, and its time when it is a number
+    let mut reads: Vec<(usize, Option<f32>)> = Vec::new();
 
     // a time in milliseconds as the share of the distance an envelope keeps per frame
     let coefficient = |ms: f32| -> f32 {
@@ -929,6 +949,7 @@ fn lower(graph: &Graph, order: &[usize], writers: &[usize], control: &[bool]) ->
                     Op::DelayReadLinear
                 };
                 let time = slot("time", 1.0, &mut constants);
+                reads.push((line, read_time(node)));
                 // the write waits: every reader of the line runs before it, which makes a
                 // loop through the line `time` frames long and not one more
                 writes.push((
@@ -946,6 +967,7 @@ fn lower(graph: &Graph, order: &[usize], writers: &[usize], control: &[bool]) ->
                     Op::DelayReadLinear
                 };
                 let time = slot("time", 1.0, &mut constants);
+                reads.push((line, read_time(node)));
                 emit(&mut pending, op, time, zero, zero, line, 0, false)
             }
             Prim::TapOut => {
@@ -1022,6 +1044,7 @@ fn lower(graph: &Graph, order: &[usize], writers: &[usize], control: &[bool]) ->
         })
         .collect();
     let control_end = pending.iter().filter(|p| p.control).count();
+    let block = block_for(&instrs[control_end..], &lines, &reads, !writers.is_empty());
     let out_slot: Vec<usize> = outs.into_iter().map(place).collect();
     let ticks_per_second = rate / CONTROL_PERIOD as f32;
     Program {
@@ -1047,7 +1070,51 @@ fn lower(graph: &Graph, order: &[usize], writers: &[usize], control: &[bool]) ->
         lines,
         memory_size: memory,
         sample_rate: graph.sample_rate.max(1),
+        block,
     }
+}
+
+/// A delay or a tap's time when it is a number, the same every frame.
+fn read_time(node: &Node) -> Option<f32> {
+    match node.edge("time") {
+        Some(Edge::Const(v)) => Some(v),
+        None => Some(1.0),
+        Some(Edge::Node(_)) => None,
+    }
+}
+
+/// How many frames can run through one instruction before the next (see [`Program::block`]).
+///
+/// A read of a delay line at `time` frames back needs only what was written before the block
+/// while the block is at most `time` long: a read between two frames takes the later one
+/// with no weight when the time is whole. A time worked out as it plays may get as short as
+/// a frame. A feedback pair hands a value on from one frame to the next, so it needs a frame
+/// at a time.
+fn block_for(
+    audio: &[Instr],
+    lines: &[(usize, usize)],
+    reads: &[(usize, Option<f32>)],
+    feedback: bool,
+) -> usize {
+    if feedback {
+        return 1;
+    }
+    // filter coefficients worked out every frame run with their filter, frame by frame
+    let paired = audio.iter().enumerate().all(|(i, instr)| {
+        instr.op != Op::BiquadCoefficients
+            || audio
+                .get(i + 1)
+                .is_some_and(|next| next.op == Op::Biquad && next.state == instr.state)
+    });
+    if !paired {
+        return 1;
+    }
+    reads.iter().fold(BLOCK, |block, &(line, time)| {
+        let longest = (lines[line].1 - 2) as f32;
+        // read_line keeps the time between one frame and the line's length
+        let frames = time.map_or(1, |t| t.max(1.0).min(longest).floor() as usize);
+        block.min(frames.max(1))
+    })
 }
 
 #[inline(always)]
@@ -1201,7 +1268,84 @@ fn read_line(line: &[f32], head: usize, delay: f32, interpolate: bool) -> f32 {
     a + (line[second] - a) * (back - whole as f32)
 }
 
-/// Runs a program, a frame at a time. It allocates when it is made and never after.
+// What the instructions with state do to one frame, shared by the engine's two ways of
+// running a program so that both make the same samples.
+
+#[inline(always)]
+fn crossfade(a: f32, b: f32, t: f32) -> f32 {
+    if t == 0.0 {
+        a
+    } else if t == 1.0 {
+        b
+    } else {
+        a + (b - a) * t
+    }
+}
+
+#[inline(always)]
+fn gain(x: f32, db: f32) -> f32 {
+    x * (db * (std::f32::consts::LN_10 / 20.0)).exp()
+}
+
+#[inline(always)]
+fn onepole(held: f32, x: f32, coefficient: f32) -> f32 {
+    sanitise(x + (held - x) * coefficient)
+}
+
+/// `s` is the last input, then the last output.
+#[inline(always)]
+fn allpass(s: &mut [f32], x: f32, coefficient: f32, ceiling: f32) -> f32 {
+    let next = clip(
+        sanitise(coefficient * x + s[0] - coefficient * s[1]),
+        -ceiling,
+        ceiling,
+    );
+    s[0] = x;
+    s[1] = next;
+    next
+}
+
+/// `s` is the five coefficients, then x1 x2 y1 y2.
+#[inline(always)]
+fn biquad(s: &mut [f32], x: f32) -> f32 {
+    let input = sanitise(x);
+    let output = sanitise(s[0] * input + s[1] * s[5] + s[2] * s[6] - s[3] * s[7] - s[4] * s[8]);
+    s[6] = s[5];
+    s[5] = input;
+    s[8] = s[7];
+    s[7] = output;
+    output
+}
+
+#[inline(always)]
+fn lfo(at: &mut f32, hz: f32, phase: f32, sample_rate: u32, sine: bool) -> f32 {
+    let turn = fraction(*at + phase);
+    *at = fraction(*at + hz / sample_rate as f32);
+    if sine {
+        (2.0 * std::f32::consts::PI * turn).sin()
+    } else {
+        1.0 - 4.0 * (fraction(turn + 0.25) - 0.5).abs()
+    }
+}
+
+#[inline(always)]
+fn envelope(held: &mut f32, x: f32, attack: f32, release: f32, rms: bool) -> f32 {
+    let level = if rms { x * x } else { x.abs() };
+    *held = sanitise(level + (*held - level) * if level > *held { attack } else { release });
+    if rms {
+        held.sqrt()
+    } else {
+        *held
+    }
+}
+
+#[inline(always)]
+fn noise(at: &mut f32, seed: u32) -> f32 {
+    *at = ((*at as i64 * NOISE_MULTIPLIER + 2 * i64::from(seed) + 1) & NOISE_MASK) as f32;
+    *at / NOISE_HALF - 1.0
+}
+
+/// Runs a program. It allocates when it is made and never after.
 pub struct Engine {
     program: Program,
     bus: Vec<f32>,
@@ -1213,13 +1357,28 @@ pub struct Engine {
     here: Vec<f32>,
     moved: bool,
     until_tick: i32,
+    /// A block of frames for each slot of the bus, [`BLOCK`] apart; empty when the program
+    /// runs a frame at a time.
+    rows: Vec<f32>,
+    /// Whether the rows of the parameters and the control instructions hold what the bus
+    /// does. A control tick of a single frame leaves them behind.
+    rows_held: bool,
 }
 
 impl Engine {
     /// An engine that runs `program`, with its state cleared.
     pub fn new(program: Program) -> Engine {
+        let slots = program.constants.len() + program.instrs.len();
+        let mut rows = Vec::new();
+        if program.block > 1 {
+            rows = vec![0.0; slots * BLOCK];
+            // a constant's row is filled once; nothing writes it after
+            for (slot, value) in program.constants.iter().enumerate() {
+                rows[slot * BLOCK..(slot + 1) * BLOCK].fill(*value);
+            }
+        }
         let mut engine = Engine {
-            bus: vec![0.0; program.constants.len() + program.instrs.len()],
+            bus: vec![0.0; slots],
             state: vec![0.0; program.state_size.max(1)],
             memory: vec![0.0; program.memory_size.max(1)],
             head: vec![0; program.lines.len().max(1)],
@@ -1227,6 +1386,8 @@ impl Engine {
             here: program.param_default.clone(),
             moved: false,
             until_tick: 0,
+            rows,
+            rows_held: false,
             program,
         };
         engine.reset();
@@ -1249,6 +1410,7 @@ impl Engine {
         self.target.copy_from_slice(&self.program.param_default);
         self.here.copy_from_slice(&self.program.param_default);
         self.until_tick = 0;
+        self.rows_held = false;
     }
 
     /// Forgets what was heard, and keeps the parameters where they are.
@@ -1277,6 +1439,7 @@ impl Engine {
             self.bus[*slot] = *value;
         }
         self.moved = true;
+        self.rows_held = false;
     }
 
     /// Runs one frame: `frame` has a sample for each channel coming in, and going out.
@@ -1288,20 +1451,8 @@ impl Engine {
             self.bus[*slot] = *sample;
         }
         if self.until_tick <= 0 || self.moved {
-            self.moved = false;
-            for i in 0..self.here.len() {
-                let wanted = self.target[i];
-                let next = if (wanted - self.here[i]).abs() < CLOSE {
-                    wanted
-                } else {
-                    // on its way: every control tick takes it a step further
-                    self.here[i] + (wanted - self.here[i]) * self.program.param_step[i]
-                };
-                self.here[i] = next;
-                self.bus[self.program.param_slot[i]] = next;
-            }
-            self.step(0, self.program.control_end);
-            self.until_tick = CONTROL_PERIOD;
+            self.tick();
+            self.rows_held = false;
         }
         self.until_tick -= 1;
         self.step(self.program.control_end, self.program.instrs.len());
@@ -1312,12 +1463,86 @@ impl Engine {
         }
     }
 
-    /// Runs `samples`, the channels in turn, through the program.
+    /// Runs `samples`, the channels in turn, through the program, a block of frames through
+    /// each instruction before the next where the program allows it.
     pub fn run(&mut self, samples: &mut [f32]) {
         let channels = self.program.in_slot.len().max(1);
-        for frame in samples.chunks_exact_mut(channels) {
-            self.process(frame);
+        if self.rows.is_empty() {
+            for frame in samples.chunks_exact_mut(channels) {
+                self.process(frame);
+            }
+            return;
         }
+        let frames = samples.len() / channels;
+        let mut at = 0;
+        while at < frames {
+            if self.until_tick <= 0 || self.moved {
+                self.tick();
+                self.rows_held = false;
+            }
+            if !self.rows_held {
+                self.hold_rows();
+            }
+            // a block ends where the next control tick is due
+            let count = self
+                .program
+                .block
+                .min(frames - at)
+                .min(self.until_tick as usize);
+            self.until_tick -= count as i32;
+            let part = &mut samples[at * channels..(at + count) * channels];
+            for (channel, slot) in self.program.in_slot.iter().enumerate() {
+                let row = &mut self.rows[slot * BLOCK..slot * BLOCK + count];
+                for (value, frame) in row.iter_mut().zip(part.chunks_exact(channels)) {
+                    *value = frame[channel];
+                }
+            }
+            run_block(
+                &self.program,
+                &mut self.rows,
+                &mut self.state,
+                &mut self.memory,
+                &mut self.head,
+                count,
+            );
+            for (channel, slot) in self.program.out_slot.iter().enumerate() {
+                let row = &self.rows[slot * BLOCK..slot * BLOCK + count];
+                for (value, frame) in row.iter().zip(part.chunks_exact_mut(channels)) {
+                    frame[channel] = *value;
+                }
+            }
+            at += count;
+        }
+    }
+
+    /// A control tick: every parameter a step on its way, and the control instructions run.
+    fn tick(&mut self) {
+        self.moved = false;
+        for i in 0..self.here.len() {
+            let wanted = self.target[i];
+            let next = if (wanted - self.here[i]).abs() < CLOSE {
+                wanted
+            } else {
+                // on its way: every control tick takes it a step further
+                self.here[i] + (wanted - self.here[i]) * self.program.param_step[i]
+            };
+            self.here[i] = next;
+            self.bus[self.program.param_slot[i]] = next;
+        }
+        self.step(0, self.program.control_end);
+        self.until_tick = CONTROL_PERIOD;
+    }
+
+    /// Fills the rows of the parameters and the control instructions with what the bus holds,
+    /// which stays so until the next control tick.
+    fn hold_rows(&mut self) {
+        let control = self.program.instrs[..self.program.control_end]
+            .iter()
+            .map(|instr| instr.dst);
+        for slot in self.program.param_slot.iter().copied().chain(control) {
+            self.rows[slot * BLOCK..(slot + 1) * BLOCK].fill(self.bus[slot]);
+        }
+        self.rows_held = true;
     }
 
     fn step(&mut self, from: usize, to: usize) {
@@ -1340,79 +1565,27 @@ impl Engine {
                 Op::Div => x / y,
                 Op::Min => x.min(y),
                 Op::Max => x.max(y),
-                Op::Crossfade => {
-                    if z == 0.0 {
-                        x
-                    } else if z == 1.0 {
-                        y
-                    } else {
-                        x + (y - x) * z
-                    }
-                }
+                Op::Crossfade => crossfade(x, y, z),
                 Op::Clip => clip(x, y, z),
                 Op::Sanitise => sanitise(x),
                 Op::Math => math(aux, x),
-                Op::Gain => x * (y * (std::f32::consts::LN_10 / 20.0)).exp(),
+                Op::Gain => gain(x, y),
                 Op::Softclip => softclip(x * y, z),
                 Op::Onepole => {
-                    let held = sanitise(x + (self.state[state] - x) * y);
-                    self.state[state] = held;
-                    held
+                    self.state[state] = onepole(self.state[state], x, y);
+                    self.state[state]
                 }
-                Op::Allpass1 => {
-                    let next = clip(
-                        sanitise(y * x + self.state[state] - y * self.state[state + 1]),
-                        -z,
-                        z,
-                    );
-                    self.state[state] = x;
-                    self.state[state + 1] = next;
-                    next
-                }
+                Op::Allpass1 => allpass(&mut self.state[state..state + 2], x, y, z),
                 Op::BiquadCoefficients => {
                     coefficients(&mut self.state[state..state + 5], aux, x, y, z, rate);
                     0.0
                 }
-                Op::Biquad => {
-                    let s = &mut self.state[state..state + BIQUAD_WORDS];
-                    let input = sanitise(x);
-                    let output = sanitise(
-                        s[0] * input + s[1] * s[5] + s[2] * s[6] - s[3] * s[7] - s[4] * s[8],
-                    );
-                    s[6] = s[5];
-                    s[5] = input;
-                    s[8] = s[7];
-                    s[7] = output;
-                    output
-                }
+                Op::Biquad => biquad(&mut self.state[state..state + BIQUAD_WORDS], x),
                 Op::LfoSine | Op::LfoTriangle => {
-                    let at = self.state[state];
-                    let turn = fraction(at + y);
-                    self.state[state] = fraction(at + x / rate as f32);
-                    if op == Op::LfoSine {
-                        (2.0 * std::f32::consts::PI * turn).sin()
-                    } else {
-                        1.0 - 4.0 * (fraction(turn + 0.25) - 0.5).abs()
-                    }
+                    lfo(&mut self.state[state], x, y, rate, op == Op::LfoSine)
                 }
-                Op::Envelope => {
-                    let level = if aux == 1 { x * x } else { x.abs() };
-                    let held = self.state[state];
-                    let held = sanitise(level + (held - level) * if level > held { y } else { z });
-                    self.state[state] = held;
-                    if aux == 1 {
-                        held.sqrt()
-                    } else {
-                        held
-                    }
-                }
-                Op::Noise => {
-                    let next =
-                        ((self.state[state] as i64 * NOISE_MULTIPLIER + 2 * i64::from(aux) + 1)
-                            & NOISE_MASK) as f32;
-                    self.state[state] = next;
-                    next / NOISE_HALF - 1.0
-                }
+                Op::Envelope => envelope(&mut self.state[state], x, y, z, aux == 1),
+                Op::Noise => noise(&mut self.state[state], aux),
                 Op::DelayReadLinear | Op::DelayReadNearest => {
                     let (offset, length) = self.program.lines[state];
                     read_line(
@@ -1437,5 +1610,126 @@ impl Engine {
             };
             self.bus[dst] = out;
         }
+    }
+}
+
+/// Runs the instructions after the control ones over `count` frames of `rows`, each over every
+/// frame before the next. The program's block says this is valid ([`Program::block`]).
+fn run_block(
+    program: &Program,
+    rows: &mut [f32],
+    state: &mut [f32],
+    memory: &mut [f32],
+    head: &mut [usize],
+    count: usize,
+) {
+    let rate = program.sample_rate;
+    let mut index = program.control_end;
+    while index < program.instrs.len() {
+        let Instr {
+            op,
+            dst,
+            a,
+            b,
+            c,
+            state: at,
+            aux,
+        } = program.instrs[index];
+        let row = |slot: usize| &rows[slot * BLOCK..slot * BLOCK + count];
+        let (x, y, z) = (row(a), row(b), row(c));
+        let mut out = [0.0f32; BLOCK];
+        let out = &mut out[..count];
+        // a filter whose coefficients follow a signal is worked out and run frame by frame
+        let mut filtered = None;
+        macro_rules! each {
+            (|$x:ident, $y:ident, $z:ident| $value:expr) => {
+                for (((o, $x), $y), $z) in out.iter_mut().zip(x).zip(y).zip(z) {
+                    let ($x, $y, $z) = (*$x, *$y, *$z);
+                    *o = $value;
+                }
+            };
+        }
+        match op {
+            Op::Add => each!(|x, y, _z| x + y),
+            Op::Sub => each!(|x, y, _z| x - y),
+            Op::Mul => each!(|x, y, _z| x * y),
+            Op::Div => each!(|x, y, _z| x / y),
+            Op::Min => each!(|x, y, _z| x.min(y)),
+            Op::Max => each!(|x, y, _z| x.max(y)),
+            Op::Crossfade => each!(|x, y, z| crossfade(x, y, z)),
+            Op::Clip => each!(|x, y, z| clip(x, y, z)),
+            Op::Sanitise => each!(|x, _y, _z| sanitise(x)),
+            Op::Math => each!(|x, _y, _z| math(aux, x)),
+            Op::Gain => each!(|x, y, _z| gain(x, y)),
+            Op::Softclip => each!(|x, y, z| softclip(x * y, z)),
+            Op::Onepole => {
+                let mut held = state[at];
+                each!(|x, y, _z| {
+                    held = onepole(held, x, y);
+                    held
+                });
+                state[at] = held;
+            }
+            Op::Allpass1 => {
+                let s = &mut state[at..at + 2];
+                each!(|x, y, z| allpass(s, x, y, z));
+            }
+            Op::BiquadCoefficients => {
+                let filter = program.instrs[index + 1];
+                let input = row(filter.a);
+                let s = &mut state[at..at + BIQUAD_WORDS];
+                for (f, o) in out.iter_mut().enumerate() {
+                    coefficients(s, aux, x[f], y[f], z[f], rate);
+                    *o = biquad(s, input[f]);
+                }
+                filtered = Some(filter.dst);
+                index += 1;
+            }
+            Op::Biquad => {
+                let s = &mut state[at..at + BIQUAD_WORDS];
+                each!(|x, _y, _z| biquad(s, x));
+            }
+            Op::LfoSine | Op::LfoTriangle => {
+                let sine = op == Op::LfoSine;
+                let mut turn = state[at];
+                each!(|x, y, _z| lfo(&mut turn, x, y, rate, sine));
+                state[at] = turn;
+            }
+            Op::Envelope => {
+                let mut held = state[at];
+                each!(|x, y, z| envelope(&mut held, x, y, z, aux == 1));
+                state[at] = held;
+            }
+            Op::Noise => {
+                let mut step = state[at];
+                each!(|_x, _y, _z| noise(&mut step, aux));
+                state[at] = step;
+            }
+            Op::DelayReadLinear | Op::DelayReadNearest => {
+                // every read of a line runs before its write, so the head is where the block
+                // started and frame f reads from `head + f`
+                let (offset, length) = program.lines[at];
+                let line = &memory[offset..offset + length];
+                let start = head[at];
+                let interpolate = op == Op::DelayReadLinear;
+                for (f, (o, time)) in out.iter_mut().zip(x).enumerate() {
+                    *o = read_line(line, start + f, *time, interpolate);
+                }
+            }
+            Op::DelayWrite => {
+                let (offset, length) = program.lines[at];
+                let mut place = head[at];
+                for value in x {
+                    memory[offset + place] = hold(*value);
+                    place = if place + 1 == length { 0 } else { place + 1 };
+                }
+                head[at] = place;
+            }
+            // a program with a feedback pair runs a frame at a time
+            Op::TapRead | Op::TapWrite => {}
+        }
+        let dst = filtered.unwrap_or(dst);
+        rows[dst * BLOCK..dst * BLOCK + count].copy_from_slice(out);
+        index += 1;
     }
 }
