@@ -36,5 +36,6 @@ published on (`darwin-aarch64`) and the helpers the app's unit tests drive a ski
 | 0.7.1 | v0.7.1 (ff3136a) | a classic equalizer opens above the playlist, so the playlist stays last and keeps filling the view |
 | 0.7.2 | v0.7.2 (a27a38d) | a classic main window's close and minimize buttons send `CLOSE` and `MINIMIZE` to the host |
 | 0.7.3 | v0.7.3 (18b2440) | a press made precise (`setPointerPrecise`) and steered onto another control is let go as a click on that control |
+| 0.10.4 | v0.10.4 (d3f32c6) | classic text, the equalizer graph and a modern skin's EQ curve land on Winamp's pixels, a modern skin's text is drawn smoothed; a classic skin can take the bitmaps it leaves out from a base skin under `wasabi-base/` |
 
 Only the current version's files are kept; the rows above are the log of what was kept here.
