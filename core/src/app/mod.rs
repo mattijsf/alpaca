@@ -84,6 +84,13 @@ pub struct App {
     /// How much of the windows shows over what is behind them, in percent.
     opacity: i32,
     vis_open: bool,
+    /// Where the skin shows the visualizer, as of the last step ([`App::vis_area`]).
+    vis_area: Option<(u32, walkit::draw::Rect)>,
+    /// Set when the skin changed: the next step looks again where it shows the visualizer.
+    vis_unsure: bool,
+    /// Set when the Visualizer command opened the skin's visualizer window, to the steps left
+    /// for it to show a place for the visualizer.
+    vis_window_opening: u8,
     /// The skin file worn.
     worn: Option<PathBuf>,
     /// Where the main window of the skin before this one was, for the next to open at.
@@ -176,6 +183,9 @@ impl App {
             on_top: settings.get("ontop") == Some("1"),
             opacity: if opacity >= 20 { opacity.min(100) } else { 100 },
             vis_open: false,
+            vis_area: None,
+            vis_unsure: false,
+            vis_window_opening: 0,
             worn: None,
             main_corner: None,
             requests: Vec::new(),
@@ -252,7 +262,7 @@ impl App {
         // the songs are read after the first step, so the skin shows before them
         self.playlist_due = 2;
         if self.options.show_vis {
-            self.request(Request::Vis(true));
+            self.toggle_visualizer();
         }
         if self.options.show_effects {
             self.request(Request::Effects);

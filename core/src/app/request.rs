@@ -37,8 +37,11 @@ pub mod command {
     pub const ON_TOP: i32 = 21;
     /// Show the Effects window.
     pub const EFFECTS: i32 = 22;
-    /// Open the Visualizer window, or close it.
+    /// Show the visualizer, or stop it: in the skin's visualizer window when it has one, else in
+    /// the Milkdrop window.
     pub const VISUALIZER: i32 = 23;
+    /// Open the Milkdrop window, or close it.
+    pub const MILKDROP_WINDOW: i32 = 29;
     /// Let the listener pick the folder of Milkdrop presets.
     pub const CHOOSE_PRESETS: i32 = 24;
     /// Show who made the app.
@@ -257,8 +260,10 @@ pub enum Request {
     Open(PathBuf),
     /// Show this file in its folder.
     Reveal(PathBuf),
-    /// Open the Visualizer window, or close it; [`App::vis_shown`](super::App::vis_shown) says when it is done.
+    /// Open the Milkdrop window, or close it; [`App::vis_shown`](super::App::vis_shown) says when it is done.
     Vis(bool),
+    /// Where the skin shows the visualizer changed ([`App::vis_area`](super::App::vis_area)).
+    VisArea,
     /// Show this preset in the Visualizer window, blending into it or cutting to it, with
     /// this title on the window.
     Preset {
@@ -277,7 +282,7 @@ impl Request {
     /// The request as a line of text, its parts with tabs between, for a shell behind the C
     /// interface: `quit`, `hide`, `about`, `ask` and what, `popup` with the menu's number and
     /// the place when there is one, `skin`, `look`, `menu`, `effects`, `preferences`, `info` with the playlist's row, `open`
-    /// and `reveal` with a file, `vis` with 1 or 0,
+    /// and `reveal` with a file, `vis` with 1 or 0, `visarea`,
     /// `preset` with 1 for blending, the title and the file, `error` and the message.
     pub fn line(&self) -> String {
         let plain = |text: &str| text.replace(['\t', '\n'], " ");
@@ -300,6 +305,7 @@ impl Request {
             Request::Open(file) => format!("open\t{}", file.to_string_lossy()),
             Request::Reveal(file) => format!("reveal\t{}", file.to_string_lossy()),
             Request::Vis(open) => format!("vis\t{}", u8::from(*open)),
+            Request::VisArea => "visarea".into(),
             Request::Preset { file, title, blend } => {
                 format!(
                     "preset\t{}\t{}\t{}",

@@ -511,22 +511,23 @@ fn presets_go_round_by_name() {
     assert!(!presets.pass(), "held: time passing does not change it");
     assert_eq!(presets.index(), 1);
 
-    // the app: the window opens, the first preset is asked for, and the folder is kept
+    // the app: the skin's visualizer window opens, the first preset is asked for, and the
+    // folder is kept
     let config = scratch("presets-app");
     let mut app = start("", &config);
     app.take_requests();
     app.command(command::CHOOSE_PRESETS);
     assert_eq!(app.take_requests(), [Request::Ask(Ask::Presets)]);
     app.picked(Ask::Presets, &[dir.to_string_lossy().into_owned()]);
-    assert_eq!(app.take_requests(), [Request::Vis(true)]);
-    app.vis_shown(true);
+    assert_eq!(app.take_requests(), []);
+    app.step();
     let requests = app.take_requests();
     let first = Request::Preset {
         file: dir.join("A.milk"),
         title: "Visualizer: A".into(),
         blend: false,
     };
-    assert_eq!(requests, [Request::Menu, first]);
+    assert_eq!(requests, [Request::Menu, first, Request::VisArea]);
     assert_eq!(Request::Vis(true).line(), "vis\t1");
     assert!(app.vis_key("right"));
     assert_eq!(
@@ -540,7 +541,9 @@ fn presets_go_round_by_name() {
     app.vis_tick();
     assert_eq!(app.take_requests().len(), 1);
     app.command(command::VISUALIZER);
-    assert_eq!(app.take_requests(), [Request::Vis(false)]);
+    app.step();
+    assert!(!app.vis_running());
+    assert_eq!(app.take_requests(), [Request::Menu, Request::VisArea]);
 }
 
 /// Something a button of the skin asks, as the engine hands it over.
@@ -1871,4 +1874,203 @@ fn the_preferences_spell_themselves_out_and_take_changes() {
     assert!(again
         .preferences()
         .contains("\"id\":\"vis.mode\",\"kind\":\"choice\",\"label\":\"Shows\",\"value\":\"off\""));
+}
+
+/// A folder of two presets, for the visualizer's tests.
+fn presets_folder(name: &str) -> PathBuf {
+    let dir = scratch(name).join("presets");
+    std::fs::create_dir_all(&dir).unwrap();
+    for file in ["A.milk", "B.milk"] {
+        std::fs::write(dir.join(file), "[preset00]\n").unwrap();
+    }
+    dir
+}
+
+#[test]
+fn a_classic_skin_shows_the_visualizer_in_its_own_window() {
+    let config = scratch("vis-classic");
+    let presets = presets_folder("vis-classic");
+    let mut app = start(&format!("--presets {}", presets.display()), &config);
+    app.take_requests();
+    assert_eq!(app.vis_area(), None);
+    assert!(!app.vis_running());
+
+    // Visualizer opens the skin's visualizer window, framed by gen.bmp, and not the shell's
+    app.command(command::VISUALIZER);
+    app.step();
+    let requests = app.take_requests();
+    assert!(!requests.contains(&Request::Vis(true)), "{requests:?}");
+    assert!(requests.contains(&Request::VisArea), "{requests:?}");
+    assert!(
+        requests.contains(&Request::Preset {
+            file: presets.join("A.milk"),
+            title: "Visualizer: A".into(),
+            blend: false,
+        }),
+        "the first preset shows: {requests:?}"
+    );
+    // it is put beside the main window, and made Winamp's size, which shows at the next
+    // step; its area grows with it
+    app.step();
+    assert_eq!(app.take_requests(), [Request::VisArea]);
+    let (window, area) = app.vis_area().expect("shown in the skin");
+    let main = app.main_window().unwrap();
+    let skin = app.skin().unwrap();
+    let frame = skin.windows().iter().find(|w| w.id == window).unwrap().rect;
+    let main = skin.windows().iter().find(|w| w.id == main).unwrap().rect;
+    assert_eq!(
+        (frame.left, frame.top),
+        (main.left + main.width, main.top),
+        "against the main window's right edge"
+    );
+    assert_eq!((frame.width, frame.height), (586, 475), "at Winamp's size");
+    let avs = skin
+        .runtime
+        .window_of("avs")
+        .expect("the visualizer window");
+    assert_eq!(avs.0, window, "in the visualizer window");
+    // inside the gen.bmp frame: its title bar above, its borders around
+    assert_eq!((area.left, area.top), (11, 20));
+    assert_eq!(
+        (area.width, area.height),
+        (frame.width - 19, frame.height - 34)
+    );
+    assert!(app.vis_running());
+    assert!(app
+        .menu(Menu::Bar)
+        .contains("C\t23\t1\t0\tVisualizer\tshift+k"));
+
+    // the Milkdrop window takes it while it is open, and gives it back
+    app.command(command::MILKDROP_WINDOW);
+    assert_eq!(app.take_requests(), [Request::Vis(true)]);
+    app.vis_shown(true);
+    assert_eq!(app.vis_area(), None, "it shows in the Milkdrop window");
+    assert!(app.vis_running());
+    app.take_requests();
+    app.vis_shown(false);
+    assert!(app.take_requests().contains(&Request::VisArea));
+    assert_eq!(app.vis_area().map(|(w, _)| w), Some(window));
+
+    // the window's arrow buttons
+    app.asked(&asks("VIS_NEXT", None));
+    let requests = app.take_requests();
+    assert!(
+        matches!(&requests[..], [Request::Preset { blend: true, .. }]),
+        "{requests:?}"
+    );
+
+    // Visualizer again shuts the window, and the visualizer stops
+    app.command(command::VISUALIZER);
+    app.step();
+    assert_eq!(app.vis_area(), None);
+    assert!(!app.vis_running());
+    assert!(app.take_requests().contains(&Request::VisArea));
+
+    // and opens it again where it was, at its size
+    app.command(command::VISUALIZER);
+    app.step();
+    app.step();
+    let (again, _) = app.vis_area().expect("shown again");
+    let back = app
+        .skin()
+        .unwrap()
+        .windows()
+        .iter()
+        .find(|w| w.id == again)
+        .unwrap()
+        .rect;
+    assert_eq!(back, frame);
+}
+
+/// A modern skin that holds Winamp's visualizer in its main window.
+const HOLDER_XML: &str = r#"<WinampAbstractionLayer version="0.8">
+<container id="main" name="Holder" default_visible="1"><layout id="normal" w="300" h="100">
+<windowholder id="vis" hold="guid:avs" x="20" y="30" w="120" h="50"/>
+</layout></container>
+</WinampAbstractionLayer>"#;
+
+#[test]
+fn a_modern_skin_shows_the_visualizer_where_it_holds_it() {
+    use std::io::Write;
+    let config = scratch("vis-modern");
+    let presets = presets_folder("vis-modern");
+    let holder = config.join("Holder.wal");
+    {
+        let mut to = zip::ZipWriter::new(std::fs::File::create(&holder).unwrap());
+        to.start_file("skin.xml", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        to.write_all(HOLDER_XML.as_bytes()).unwrap();
+        to.finish().unwrap();
+    }
+    let mut app = start(&format!("--presets {}", presets.display()), &config);
+    assert!(app.wear(&holder));
+    app.take_requests();
+    app.step();
+    // it shows there from the start, with the first preset
+    let (window, area) = app.vis_area().expect("the skin holds it");
+    assert_eq!(app.skin().unwrap().windows()[0].id, window);
+    assert_eq!(
+        (area.left, area.top, area.width, area.height),
+        (20, 30, 120, 50)
+    );
+    let requests = app.take_requests();
+    assert!(requests.contains(&Request::VisArea), "{requests:?}");
+    assert!(
+        requests
+            .iter()
+            .any(|r| matches!(r, Request::Preset { blend: false, .. })),
+        "{requests:?}"
+    );
+    // a skin with no visualizer window of its own: Visualizer opens the Milkdrop window
+    app.command(command::VISUALIZER);
+    assert_eq!(app.take_requests(), [Request::Vis(true)]);
+}
+
+#[test]
+fn a_skin_with_no_place_for_the_visualizer_opens_the_milkdrop_window() {
+    let config = scratch("vis-none");
+    let mut app = start("--modern", &config);
+    app.take_requests();
+    app.step();
+    assert_eq!(app.vis_area(), None);
+    app.command(command::VISUALIZER);
+    assert_eq!(app.take_requests(), [Request::Vis(true)]);
+    app.vis_shown(true);
+    assert!(app.vis_running());
+    app.command(command::VISUALIZER);
+    assert!(app.take_requests().contains(&Request::Vis(false)));
+}
+
+/// A modern skin with a visualizer window that holds no visualizer.
+const EMPTY_VIS_XML: &str = r#"<WinampAbstractionLayer version="0.8">
+<container id="main" name="Empty" default_visible="1"><layout id="normal" w="200" h="100"/></container>
+<container id="avs" name="Vis" default_visible="0"><layout id="normal" w="200" h="100"/></container>
+</WinampAbstractionLayer>"#;
+
+#[test]
+fn a_visualizer_window_with_no_place_for_it_gives_way_to_the_milkdrop_window() {
+    use std::io::Write;
+    let config = scratch("vis-empty");
+    let file = config.join("Empty.wal");
+    {
+        let mut to = zip::ZipWriter::new(std::fs::File::create(&file).unwrap());
+        to.start_file("skin.xml", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        to.write_all(EMPTY_VIS_XML.as_bytes()).unwrap();
+        to.finish().unwrap();
+    }
+    let mut app = start("", &config);
+    assert!(app.wear(&file));
+    app.step();
+    app.take_requests();
+    app.command(command::VISUALIZER);
+    assert_eq!(app.take_requests(), []);
+    for _ in 0..4 {
+        app.step();
+    }
+    assert!(app.take_requests().contains(&Request::Vis(true)));
+    assert!(
+        app.skin().unwrap().runtime.window_of("avs").is_none() || app.vis_area().is_none(),
+        "its window shut again"
+    );
 }

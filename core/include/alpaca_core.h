@@ -182,8 +182,9 @@ int64_t alpaca_app_next_due_ms(AlpacaApp *app);
 /// - `info` and a row of the playlist: show what is known of it (alpaca_app_file_info).
 /// - `open` and a file: open it with whatever the system opens it with.
 /// - `reveal` and a file or folder: show it in its folder.
-/// - `vis` and 1 to open the Visualizer window, 0 to close it; alpaca_app_vis_shown says when
+/// - `vis` and 1 to open the Milkdrop window, 0 to close it; alpaca_app_vis_shown says when
 ///   it is done.
+/// - `visarea`: where the skin shows the visualizer changed (alpaca_app_vis_area).
 /// - `preset`, 1 for blending into it, the window's title and the preset's file.
 /// - `error` and a message for the listener.
 char *alpaca_app_take_requests(AlpacaApp *app);
@@ -326,6 +327,12 @@ void alpaca_app_vis_shown(AlpacaApp *app, bool open);
 /// A key in the Visualizer window, by its name: `right` the next preset, `left` the one
 /// before, `r` one at random, `space` holds the one shown or lets it go. False for any other.
 bool alpaca_app_vis_key(AlpacaApp *app, const char *key);
+
+/// Where the skin shows the visualizer: `window`, the engine's id of the window it is in, and
+/// the part of it in layout pixels from that window's top left corner. False when it shows in
+/// the Milkdrop window or the skin shows none, and nothing is written.
+bool alpaca_app_vis_area(AlpacaApp *app, uint32_t *window, int32_t *x, int32_t *y, int32_t *width,
+                         int32_t *height);
 
 /// Seconds a preset stays, as the listener set it: the shell calls alpaca_app_vis_tick that
 /// often while the Visualizer window can be seen.

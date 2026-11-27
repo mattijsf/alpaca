@@ -104,7 +104,12 @@ impl App {
                 self.opacities(&mut m);
                 m.separator();
                 m.item(command::EFFECTS, "Effects…", "e", false);
-                m.item(command::VISUALIZER, "Visualizer", "shift+k", self.vis_open);
+                m.item(
+                    command::VISUALIZER,
+                    "Visualizer",
+                    "shift+k",
+                    self.vis_running(),
+                );
                 m.sub("Visualization");
                 self.visualization(&mut m);
                 m.end();
@@ -124,7 +129,7 @@ impl App {
                 m.item(command::ON_TOP, "Always on Top", "", self.on_top);
                 self.opacities(&mut m);
                 m.item(command::EFFECTS, "Effects…", "", false);
-                m.item(command::VISUALIZER, "Visualizer", "", self.vis_open);
+                m.item(command::VISUALIZER, "Visualizer", "", self.vis_running());
                 m.separator();
                 m.item(command::PREFERENCES, "Preferences…", "", false);
                 m.separator();
@@ -289,7 +294,12 @@ impl App {
         );
         m.item(command::VIS_OFF, "Off", "", mode == VisMode::Off);
         m.separator();
-        m.item(command::VISUALIZER, "Milkdrop Window", "", self.vis_open);
+        m.item(
+            command::MILKDROP_WINDOW,
+            "Milkdrop Window",
+            "",
+            self.vis_open,
+        );
         m.item(
             command::CHOOSE_PRESETS,
             "Choose Milkdrop Presets…",
