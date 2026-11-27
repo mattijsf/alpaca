@@ -6,16 +6,13 @@ import android.app.Application
 import android.content.ComponentCallbacks2
 import android.content.Context
 import android.os.Looper
-import androidx.compose.ui.graphics.Color
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import nl.mattix.alpaca.skin.BundledSkins
-import nl.mattix.alpaca.skin.FakePalette
-import nl.mattix.alpaca.skin.LiveSkins
-import nl.mattix.alpaca.skin.SkinDist
+import nl.mattix.alpaca.skin.TestSkins
 import nl.mattix.alpaca.wal.WalEngine
 import nl.mattix.alpaca.wal.WalFit
 import nl.mattix.alpaca.wal.WalLook
@@ -24,6 +21,7 @@ import nl.mattix.walkit.FakePlayer
 import nl.mattix.walkit.SkinRuntime
 import nl.mattix.walkit.fixtures.popScriptMenu
 import org.junit.After
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -60,6 +58,12 @@ class SkinOpsWearTest {
     /** A skin of the listener's own, so a pick has a row to pick that is not a bundled one. */
     private lateinit var mine: String
 
+    /** The listener's choice before this launch. */
+    private lateinit var light: String
+
+    /** The skin a music source asks for. */
+    private lateinit var spot: String
+
     @Before
     fun setUp() {
         app
@@ -75,12 +79,14 @@ class SkinOpsWearTest {
         java.io.File(app.filesDir, "skins").deleteRecursively()
         library = SkinLibrary(app)
         // the listener's own choice, made before this launch
-        library.currentId = BundledSkins.LIGHT.id
-        mine = library.save(app.assets.open(BundledSkins.SPOT.asset).use { it.readBytes() }, "Mine.wsz").id
+        light = library.save(TestSkins.classic(app, "Light"), "Light.wsz").id
+        library.currentId = light
+        spot = library.save(TestSkins.classic(app, "Spot"), "Spot.wsz").id
+        mine = library.save(TestSkins.classic(app, "Mine"), "Mine.wsz").id
         ops = opsOn(state)
         ops.start()
         // the rows too, listed a hop after the skin itself goes on
-        await { ops.skin != null && ops.currentId == BundledSkins.LIGHT.id && state.skinEntries.isNotEmpty() }
+        await { ops.skin != null && ops.currentId == light && state.skinEntries.isNotEmpty() }
     }
 
     /** Whether modern skins are on now, as the switch has them; [SkinOps.betaChanged] is told of a change. */
@@ -98,15 +104,17 @@ class SkinOpsWearTest {
     private fun opsOn(
         state: WinampState,
         modernOn: Boolean = true,
-        live: LiveSkins = CurrentSkin.live,
         main: CoroutineDispatcher = Dispatchers.Main,
+        held: HeldCall? = null,
     ) = SkinOps(
         app,
         state,
         CoroutineScope(SupervisorJob() + main),
         library,
-        live = live,
-        modernOn = { modernOn && gate },
+        modernOn = {
+            held?.pass()
+            modernOn && gate
+        },
         // these are about modern skins: a classic skin gets no look
         classicLooks = false,
         openModern = { id, file, name, siblings ->
@@ -148,20 +156,20 @@ class SkinOpsWearTest {
 
     @Test
     fun `a source's skin goes on without changing what the listener chose`() {
-        ops.wear(BundledSkins.SPOT.id)
-        await { ops.currentId == BundledSkins.SPOT.id }
+        ops.wear(spot)
+        await { ops.currentId == spot }
 
-        assertEquals("the listener's choice is untouched", BundledSkins.LIGHT.id, library.currentId)
-        assertEquals("the worn skin is recorded for the home screen", BundledSkins.SPOT.id, library.worn)
+        assertEquals("the listener's choice is untouched", light, library.currentId)
+        assertEquals("the worn skin is recorded for the home screen", spot, library.worn)
     }
 
     @Test
     fun `a track from elsewhere puts the listener's own back on`() {
-        ops.wear(BundledSkins.SPOT.id)
-        await { ops.currentId == BundledSkins.SPOT.id }
+        ops.wear(spot)
+        await { ops.currentId == spot }
 
         ops.wear(null)
-        await { ops.currentId == BundledSkins.LIGHT.id }
+        await { ops.currentId == light }
 
         assertNull(library.wearing)
     }
@@ -170,14 +178,14 @@ class SkinOpsWearTest {
     fun `a skin that is not installed is not worn - the listener's own goes back on`() {
         // worn first, so what is asserted afterwards is a move only the second
         // wear can have made rather than the state the setup left behind
-        ops.wear(BundledSkins.SPOT.id)
-        await { ops.currentId == BundledSkins.SPOT.id }
+        ops.wear(spot)
+        await { ops.currentId == spot }
 
         ops.wear("no-such-skin")
-        await { ops.currentId == BundledSkins.LIGHT.id }
+        await { ops.currentId == light }
 
         assertNull(library.wearing)
-        assertEquals(BundledSkins.LIGHT.id, library.worn)
+        assertEquals(light, library.worn)
     }
 
     @Test
@@ -187,10 +195,10 @@ class SkinOpsWearTest {
         await { ops.currentId == mine }
 
         ops.wear(rotten)
-        await { ops.currentId == BundledSkins.LIGHT.id }
+        await { ops.currentId == light }
 
         assertNull("a skin that will not open is not recorded as worn", library.wearing)
-        assertEquals(BundledSkins.LIGHT.id, library.worn)
+        assertEquals(light, library.worn)
     }
 
     @Test
@@ -199,33 +207,33 @@ class SkinOpsWearTest {
         await { ops.currentId == mine }
 
         ops.remove(mine)
-        await { ops.currentId == BundledSkins.LIGHT.id }
+        await { ops.currentId == light }
 
         assertNull(library.wearing)
-        assertEquals(BundledSkins.LIGHT.id, library.currentId)
+        assertEquals(light, library.currentId)
     }
 
     @Test
     fun `picking the skin a source is wearing makes it the listener's own`() {
         // the menu ticks what is on screen, so this is the listener tapping the
         // skin they can already see to keep it
-        ops.wear(BundledSkins.SPOT.id)
-        await { ops.currentId == BundledSkins.SPOT.id }
+        ops.wear(spot)
+        await { ops.currentId == spot }
 
-        ops.apply(BundledSkins.SPOT.id)
-        await { library.currentId == BundledSkins.SPOT.id }
+        ops.apply(spot)
+        await { library.currentId == spot }
 
         // and the next track from the phone's own files leaves the pick alone
         ops.wear(null)
         settle()
-        assertEquals(BundledSkins.SPOT.id, ops.currentId)
+        assertEquals(spot, ops.currentId)
         assertNull(library.wearing)
-        assertEquals(BundledSkins.SPOT.id, library.worn)
+        assertEquals(spot, library.worn)
     }
 
     @Test
     fun `a skin the listener picks beats a source's skin that was already on its way`() {
-        ops.wear(BundledSkins.SPOT.id)
+        ops.wear(spot)
         ops.apply(mine)
 
         await { ops.currentId == mine }
@@ -256,14 +264,14 @@ class SkinOpsWearTest {
         ops.apply(modern)
 
         await { ops.currentId == modern }
-        assertEquals(BundledSkins.LIGHT.name, ops.skin!!.name)
+        assertEquals("Light.wsz", ops.skin!!.name)
         assertEquals(modern, library.currentId)
-        assertEquals(BundledSkins.LIGHT.id, ops.widgetSkin)
+        assertEquals(light, ops.widgetSkin)
         assertTrue(library.widgetSkinAutomatic)
     }
 
     @Test
-    fun `picking Alpaca Dark while a modern skin is worn shows the base and lets go of the pin`() {
+    fun `picking the base skin while a modern skin is worn shows the base and lets go of the pin`() {
         val modern = library.addModern(app, "Bento")
         ops.apply(modern)
         await { ops.currentId == modern }
@@ -296,9 +304,9 @@ class SkinOpsWearTest {
 
         ops.remove(modern)
 
-        await { ops.currentId == BundledSkins.LIGHT.id }
-        assertEquals(BundledSkins.LIGHT.name, ops.skin!!.name)
-        assertEquals(BundledSkins.LIGHT.id, library.currentId)
+        await { ops.currentId == light }
+        assertEquals("Light.wsz", ops.skin!!.name)
+        assertEquals(light, library.currentId)
         assertNull("the automatic pin goes with it", ops.widgetSkin)
     }
 
@@ -323,21 +331,21 @@ class SkinOpsWearTest {
         ops.apply(modern)
         await { ops.currentId == modern }
 
-        ops.wear(BundledSkins.SPOT.id)
-        await { ops.currentId == BundledSkins.SPOT.id }
-        assertEquals(BundledSkins.LIGHT.id, ops.widgetSkin)
+        ops.wear(spot)
+        await { ops.currentId == spot }
+        assertEquals(light, ops.widgetSkin)
         assertTrue(library.widgetSkinAutomatic)
 
         ops.wear(null)
         await { ops.currentId == modern }
-        assertEquals(BundledSkins.LIGHT.name, ops.skin!!.name)
+        assertEquals("Light.wsz", ops.skin!!.name)
     }
 
     @Test
     fun `a widget skin picked by hand is kept and not marked automatic`() {
-        ops.chooseWidgetSkin(BundledSkins.SPOT.id)
+        ops.chooseWidgetSkin(spot)
 
-        await { ops.widgetSkin == BundledSkins.SPOT.id }
+        await { ops.widgetSkin == spot }
         assertFalse(library.widgetSkinAutomatic)
 
         ops.chooseWidgetSkin(null)
@@ -354,8 +362,8 @@ class SkinOpsWearTest {
         await { ops.currentId == modern }
         assertEquals("not pinned over", mine, ops.widgetSkin)
 
-        ops.apply(BundledSkins.SPOT.id)
-        await { ops.currentId == BundledSkins.SPOT.id }
+        ops.apply(spot)
+        await { ops.currentId == spot }
         assertEquals("not let go", mine, ops.widgetSkin)
         assertFalse(library.widgetSkinAutomatic)
     }
@@ -370,7 +378,7 @@ class SkinOpsWearTest {
 
         ops.remove(modern)
 
-        await { ops.currentId == BundledSkins.LIGHT.id }
+        await { ops.currentId == light }
         assertEquals(mine, ops.widgetSkin)
     }
 
@@ -383,7 +391,7 @@ class SkinOpsWearTest {
         val restarted = opsOn(WinampState(), modernOn = false)
         restarted.start()
 
-        await { restarted.currentId == BundledSkins.LIGHT.id && restarted.skin != null }
+        await { restarted.currentId == light && restarted.skin != null }
         assertEquals(mine, restarted.widgetSkin)
     }
 
@@ -392,11 +400,11 @@ class SkinOpsWearTest {
         ops.chooseWidgetSkin(mine)
         await { ops.widgetSkin == mine }
 
-        ops.wear(BundledSkins.SPOT.id)
-        await { ops.currentId == BundledSkins.SPOT.id }
+        ops.wear(spot)
+        await { ops.currentId == spot }
 
         assertEquals(mine, ops.widgetSkin)
-        assertEquals("Mine.wsz", CurrentSkin.widgetKeyed(app, library, LiveSkins(FakePalette(null)))!!.second.name)
+        assertEquals("Mine.wsz", CurrentSkin.widgetKeyed(app, library)!!.second.name)
     }
 
     @Test
@@ -417,29 +425,29 @@ class SkinOpsWearTest {
     @Test
     fun `with modern skins off a modern choice gives way to the last classic choice at start`() {
         val modern = library.addModern(app, "Bento")
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
         library.choose(modern)
 
         val restarted = opsOn(WinampState(), modernOn = false)
         restarted.start()
 
-        await { restarted.currentId == BundledSkins.LIGHT.id && restarted.skin != null }
-        assertEquals(BundledSkins.LIGHT.id, library.currentId)
+        await { restarted.currentId == light && restarted.skin != null }
+        assertEquals(light, library.currentId)
         assertNull("the automatic pin goes", restarted.widgetSkin)
     }
 
     @Test
     fun `with modern skins on a modern choice stays on at start with the last classic choice on screen`() {
         val modern = library.addModern(app, "Bento")
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
         library.choose(modern)
 
         val restarted = opsOn(WinampState())
         restarted.start()
 
         await { restarted.currentId == modern && restarted.skin != null }
-        assertEquals(BundledSkins.LIGHT.name, restarted.skin!!.name)
-        assertEquals(BundledSkins.LIGHT.id, restarted.widgetSkin)
+        assertEquals("Light.wsz", restarted.skin!!.name)
+        assertEquals(light, restarted.widgetSkin)
     }
 
     @Test
@@ -466,19 +474,19 @@ class SkinOpsWearTest {
         val modern = library.addModern(app, "Bento")
         ops.apply(modern)
         await { ops.currentId == modern }
-        ops.wear(BundledSkins.SPOT.id)
-        await { ops.currentId == BundledSkins.SPOT.id }
+        ops.wear(spot)
+        await { ops.currentId == spot }
         val drawn = ops.skin
 
         gate = false
         ops.betaChanged(false)
 
-        await { library.currentId == BundledSkins.LIGHT.id && state.skinEntries.none { it.id == modern } }
+        await { library.currentId == light && state.skinEntries.none { it.id == modern } }
         settle()
-        assertEquals(BundledSkins.SPOT.id, ops.currentId)
+        assertEquals(spot, ops.currentId)
         assertSame("the source's skin is not loaded again", drawn, ops.skin)
         ops.wear(null)
-        await { ops.currentId == BundledSkins.LIGHT.id }
+        await { ops.currentId == light }
     }
 
     @Test
@@ -492,8 +500,8 @@ class SkinOpsWearTest {
         ops.betaChanged(true)
 
         await { state.skinEntries.any { it.id == modern } }
-        assertEquals(BundledSkins.LIGHT.id, ops.currentId)
-        assertEquals(BundledSkins.LIGHT.id, library.currentId)
+        assertEquals(light, ops.currentId)
+        assertEquals(light, library.currentId)
     }
 
     // the modern skin's look
@@ -518,11 +526,21 @@ class SkinOpsWearTest {
     }
 
     @Test
+    fun `the modern skin that ships with the app goes on with a look of the file it ships`() {
+        ops.apply(BundledSkins.MODERN.id)
+
+        await { ops.wal?.id == BundledSkins.MODERN.id }
+        assertEquals("the last classic choice under it", "Light.wsz", ops.skin!!.name)
+        val shipped = app.assets.open(BundledSkins.MODERN.asset).use { it.readBytes() }
+        assertArrayEquals(shipped, ops.wal!!.file.readBytes())
+    }
+
+    @Test
     fun `a source's skin parks the modern look, and the same look comes back when the source stops`() {
         val look = wornModern()
 
-        ops.wear(BundledSkins.SPOT.id)
-        await { ops.currentId == BundledSkins.SPOT.id }
+        ops.wear(spot)
+        await { ops.currentId == spot }
         assertNull("not on screen under the source's skin", ops.wal)
         assertFalse("parked, not let go", look.released)
 
@@ -530,26 +548,6 @@ class SkinOpsWearTest {
         await { ops.currentId == look.id }
         assertSame(look, ops.wal)
         assertEquals("opened once", 1, opened.size)
-    }
-
-    @Test
-    fun `a palette change keeps the modern look and opens nothing`() {
-        val dark = SkinDist.baselineScheme("dark")
-        val palette = FakePalette(dark)
-        val modern = library.addModern(app, "Bento")
-        library.choose(modern)
-        val live = opsOn(WinampState(), live = LiveSkins(palette))
-        live.start()
-        await { live.wal != null }
-        val look = live.wal
-        val skin = live.skin
-
-        palette.scheme = dark.copy(primary = Color(0xFF00E250))
-        live.paletteChanged()
-
-        await { live.skin !== skin }
-        assertSame(look, live.wal)
-        assertEquals(1, opened.size)
     }
 
     @Test
@@ -565,15 +563,15 @@ class SkinOpsWearTest {
     @Test
     fun `turning modern skins off lets go of a parked look`() {
         val look = wornModern()
-        ops.wear(BundledSkins.SPOT.id)
-        await { ops.currentId == BundledSkins.SPOT.id }
+        ops.wear(spot)
+        await { ops.currentId == spot }
 
         gate = false
         ops.betaChanged(false)
 
         await { look.released }
         ops.wear(null)
-        await { ops.currentId == BundledSkins.LIGHT.id }
+        await { ops.currentId == light }
         assertNull(ops.wal)
         assertEquals("nothing new opened", 1, opened.size)
     }
@@ -586,7 +584,7 @@ class SkinOpsWearTest {
 
         ops.remove(modern)
 
-        await { ops.currentId == BundledSkins.LIGHT.id }
+        await { ops.currentId == light }
         assertTrue(look.released)
         thread.join(5_000)
         settle()
@@ -597,7 +595,7 @@ class SkinOpsWearTest {
     }
 
     @Test
-    fun `picking Alpaca Dark lets go of the modern look`() {
+    fun `picking the base skin lets go of the modern look`() {
         val look = wornModern()
 
         ops.reset()
@@ -609,7 +607,7 @@ class SkinOpsWearTest {
     private fun failedModern(): String {
         val look = wornModern()
         look.fit(phone)
-        await { ops.wal == null && ops.currentId == BundledSkins.LIGHT.id }
+        await { ops.wal == null && ops.currentId == light }
         return look.id
     }
 
@@ -617,7 +615,7 @@ class SkinOpsWearTest {
     fun `a modern skin whose look does not start shows the classic skin ticked and keeps the choice`() {
         val modern = failedModern()
 
-        assertEquals(BundledSkins.LIGHT.name, ops.skin!!.name)
+        assertEquals("Light.wsz", ops.skin!!.name)
         assertEquals("the choice stays, to be tried at the next start", modern, library.currentId)
         assertTrue(opened.single().released)
         assertNull("a start that fails says nothing", state.prompt)
@@ -629,10 +627,10 @@ class SkinOpsWearTest {
 
         ops.remove(mine)
         settle()
-        ops.wear(BundledSkins.SPOT.id)
-        await { ops.currentId == BundledSkins.SPOT.id }
+        ops.wear(spot)
+        await { ops.currentId == spot }
         ops.wear(null)
-        await { ops.currentId == BundledSkins.LIGHT.id }
+        await { ops.currentId == light }
         settle()
 
         assertEquals(1, opened.size)
@@ -668,7 +666,7 @@ class SkinOpsWearTest {
 
         await { ops.wal == null && state.prompt != null }
         assertEquals("“Bento” stopped working", state.prompt!!.title)
-        assertEquals(BundledSkins.LIGHT.id, ops.currentId)
+        assertEquals(light, ops.currentId)
         assertEquals(look.id, library.currentId)
         assertTrue(look.released)
     }
@@ -676,39 +674,37 @@ class SkinOpsWearTest {
     @Test
     fun `picking the source's skin on screen lets go of the modern look parked under it`() {
         val look = wornModern()
-        ops.wear(BundledSkins.SPOT.id)
-        await { ops.currentId == BundledSkins.SPOT.id }
+        ops.wear(spot)
+        await { ops.currentId == spot }
         assertFalse(look.released)
 
         // the Skins menu ticks the source's skin; tapping it makes it the listener's choice
-        ops.apply(BundledSkins.SPOT.id)
+        ops.apply(spot)
 
-        await { library.currentId == BundledSkins.SPOT.id && look.released }
+        await { library.currentId == spot && look.released }
         ops.wear(null)
         settle()
-        assertEquals(BundledSkins.SPOT.id, ops.currentId)
+        assertEquals(spot, ops.currentId)
         assertNull(ops.wal)
         assertEquals("nothing opened again", 1, opened.size)
     }
 
     @Test
     fun `a look that fails while a load holding it is on its way shows the classic skin ticked, and a pick opens it again`() {
-        val dark = SkinDist.baselineScheme("dark")
-        val palette = FakePalette(dark)
-        // holds a palette change's load before it picks up the look on screen
-        val held = HeldPalette(palette)
+        // holds a load before it picks up the look on screen
+        val held = HeldCall()
         val main = CountingMain()
         val modern = library.addModern(app, "Bento", loads = true)
         library.choose(modern)
         val prompted = WinampState()
-        val live = opsOn(prompted, live = LiveSkins(held), main = main)
+        val live = opsOn(prompted, main = main, held = held)
         live.start()
         await { live.wal != null }
         val look = fitted(live.wal!!)
 
         held.arm()
-        palette.scheme = dark.copy(primary = Color(0xFF00E250))
-        live.paletteChanged()
+        // the skin on screen picked again: its load keeps the look
+        live.load(library.fileOf(modern)!!.readBytes().inputStream(), "Bento.wal")
         await { held.holding.count == 0L }
         // the look stops working while the load waits: the news is on its way to main
         repeat(WalEngine.MAX_FAILURES) { look.drawFailed(IllegalStateException("draw")) }
@@ -721,7 +717,7 @@ class SkinOpsWearTest {
         // main hears of the failure first, then puts what the load gave
         settle()
 
-        assertEquals("the classic skin under it is ticked", BundledSkins.LIGHT.id, live.currentId)
+        assertEquals("the classic skin under it is ticked", light, live.currentId)
         assertNull(live.wal)
         assertTrue(look.released)
         assertEquals("“Bento” stopped working", prompted.prompt?.title)
@@ -737,11 +733,11 @@ class SkinOpsWearTest {
     fun `a wear dropped by a later choice lets go of the look it opened`() {
         val modern = library.addModern(app, "Bento")
         library.choose(modern)
-        library.wear(BundledSkins.SPOT.id, SkinLibrary.choices)
+        library.wear(spot, SkinLibrary.choices)
         // the source's skin is worn at the start, so the modern choice has no look yet
         val restarted = opsOn(WinampState())
         restarted.start()
-        await { restarted.currentId == BundledSkins.SPOT.id }
+        await { restarted.currentId == spot }
         assertTrue(opened.isEmpty())
         val loading = CountDownLatch(1)
         val letGo = CountDownLatch(1)
@@ -758,14 +754,14 @@ class SkinOpsWearTest {
 
         await { opened.size == 1 && opened.single().released }
         assertNull(restarted.wal)
-        assertEquals(BundledSkins.SPOT.id, restarted.currentId)
+        assertEquals(spot, restarted.currentId)
     }
 
     @Test
     fun `a trim lets go of a parked look's drawing and leaves the menu of the look on screen open`() {
         val look = fitted(wornModern(loads = true))
-        ops.wear(BundledSkins.SPOT.id)
-        await { ops.currentId == BundledSkins.SPOT.id }
+        ops.wear(spot)
+        await { ops.currentId == spot }
 
         app.onTrimMemory(ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN)
         assertEquals("the parked look let go", 1, look.trims)

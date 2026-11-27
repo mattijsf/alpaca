@@ -45,6 +45,14 @@ class SourceSkinsTest {
     }
 
     @Test
+    fun `a choice of a skin the app no longer ships reads as the base skin`() {
+        val prefs = app.getSharedPreferences("skins-retired-${System.nanoTime()}", Context.MODE_PRIVATE)
+        prefs.edit().putString(example.id, "andamp-spot").commit()
+
+        assertEquals(SkinEntry.BASE_ID, SourceSkins(prefs).of(example))
+    }
+
+    @Test
     fun `a skin that leaves the library leaves every source that asked for it on Default`() {
         val skins = skins()
         skins.choose(example, "gone")

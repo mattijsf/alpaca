@@ -619,7 +619,7 @@ class WalFittingTest {
         WalFilled.forget(app)
         try {
             val wsz = java.io.File(app.cacheDir, "classic.wsz")
-            app.assets.open(nl.mattix.alpaca.skin.BundledSkins.SPOT.asset).use { input ->
+            app.assets.open(nl.mattix.alpaca.skin.BundledSkins.BASE.asset).use { input ->
                 wsz.outputStream().use { input.copyTo(it) }
             }
             val files = WalFiles.open(wsz, emptyMap<String, java.io.File>())

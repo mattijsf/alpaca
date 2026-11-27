@@ -13,7 +13,6 @@ import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import nl.mattix.alpaca.skin.BundledSkins
-import nl.mattix.alpaca.skin.LiveSkins
 import nl.mattix.alpaca.skin.SkinLoader
 import nl.mattix.alpaca.ui.window.testViewModel
 import nl.mattix.alpaca.wal.WalBundled
@@ -39,8 +38,8 @@ class RemoteScreenGoldenTest {
         name: String,
     ) {
         val vm = testViewModel()
-        val file = WalBundled.fileOf(app, BundledSkins.SPOT, LiveSkins { _, _ -> null })
-        val skin = app.assets.open(BundledSkins.SPOT.asset).use { SkinLoader.load(it, null, "Spot") }
+        val file = WalBundled.fileOf(app, BundledSkins.BASE)
+        val skin = app.assets.open(BundledSkins.BASE.asset).use { SkinLoader.load(it, null, BundledSkins.BASE.name) }
         val showing = Showing().apply { this.up = up }
         compose.mainClock.autoAdvance = false
         compose.setContent {
@@ -58,10 +57,10 @@ class RemoteScreenGoldenTest {
     }
 
     @Test
-    fun `the main window on a car's screen matches its golden`() = capture(Up.MAIN, "car_main_spot")
+    fun `the main window on a car's screen matches its golden`() = capture(Up.MAIN, "car_main")
 
     @Test
-    fun `the equalizer on a car's screen matches its golden`() = capture(Up.EQUALIZER, "car_equalizer_spot")
+    fun `the equalizer on a car's screen matches its golden`() = capture(Up.EQUALIZER, "car_equalizer")
 
     private companion object {
         const val STEPS = 30

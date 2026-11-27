@@ -41,7 +41,7 @@ import java.util.zip.ZipOutputStream
 class SkinPersistenceTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
     private val library = SkinLibrary(app)
-    private val baseBytes by lazy { app.assets.open("skins/Alpaca Light.wsz").use { it.readBytes() } }
+    private val baseBytes by lazy { app.assets.open("skins/walkit-classic.wsz").use { it.readBytes() } }
 
     /** Every view model a test made; each is stopped after the test, so none reads the switch in the next one. */
     private val made = ArrayList<WinampViewModel>()
@@ -116,7 +116,7 @@ class SkinPersistenceTest {
         val first = vm()
         val baseName = awaitSkin(first)
 
-        // pick: the Alpaca Light skin's bytes under a custom name stand in for any .wsz
+        // pick: the base skin's bytes under a custom name stand in for any .wsz
         first.skinOps.load(baseBytes.inputStream(), "MyCustom.wsz")
         await { first.skin?.name == "MyCustom.wsz" }
         await { library.currentId != SkinEntry.BASE_ID }
@@ -244,7 +244,7 @@ class SkinPersistenceTest {
 
         assertFalse(unfinished.exists())
         assertFalse(copy.exists())
-        assertTrue(vm.state.skinEntries.none { it.kind == SkinKind.MODERN })
+        assertTrue(vm.state.skinEntries.none { it.id == library.idFor(walBytes) })
     }
 
     /**

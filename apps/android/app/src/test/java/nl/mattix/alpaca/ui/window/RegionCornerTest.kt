@@ -156,21 +156,4 @@ class RegionCornerTest {
         compose.waitForIdle()
         assertTrue("a press on the cut-away corner reaches what is behind", behind > 0)
     }
-
-    @Test
-    fun `the bundled skin declares a corner`() {
-        val skin = SkinLoader.loadBase(ApplicationProvider.getApplicationContext<Application>())
-
-        assertNotNull("the bundled REGION.TXT has a [Corners] section", skin.regions.corner)
-        assertNotNull(RegionShape.corners(skin.regions.corner, scale = 1))
-
-        // and the staircase it ships takes the corners off
-        val real = skin.regions.corner!!
-        val path = RegionShape.cornerPath(real, Size(275f, 400f), scale = 1).asAndroidPath()
-        val cut = AndroidRegion().apply { setPath(path, AndroidRegion(0, 0, 275, 400)) }
-        assertTrue("the middle is kept", cut.contains(137, 200))
-        listOf(0 to 0, 274 to 0, 0 to 399, 274 to 399).forEach { (x, y) ->
-            assertFalse("the shipped corner cuts $x,$y", cut.contains(x, y))
-        }
-    }
 }

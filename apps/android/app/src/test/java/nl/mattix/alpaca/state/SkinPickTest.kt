@@ -464,7 +464,11 @@ class SkinPickTest {
         assertEquals("“Broken.wal” couldn't be opened", title)
         assertEquals("the file goes and no record changes", before, records())
         assertEquals(SkinEntry.BASE_ID, ops.currentId)
-        assertTrue(state.skinEntries.none { it.kind == SkinKind.MODERN })
+        assertEquals(
+            "only the modern skin that ships with the app is listed",
+            listOf(BundledSkins.MODERN.id),
+            state.skinEntries.filter { it.kind == SkinKind.MODERN }.map { it.id },
+        )
         assertNull(ops.wal)
         assertTrue("its look is let go", looks.single().released)
         await { engineThreads().isEmpty() }
@@ -488,12 +492,12 @@ class SkinPickTest {
 
     @Test
     fun `a classic skin that cannot be flushed to the disk still goes on, is not stored and changes no record`() {
-        library.choose(BundledSkins.SPOT.id)
+        library.choose(BundledSkins.BASE_ID)
         val ops = started()
         val before = records()
         flushFails = true
 
-        picked(ops, app.assets.open("skins/Alpaca Light.wsz").use { it.readBytes() }, "Light.wsz")
+        picked(ops, app.assets.open("skins/walkit-classic.wsz").use { it.readBytes() }, "Light.wsz")
 
         assertEquals("Light.wsz", ops.skin!!.name)
         assertEquals(SkinOps.UNSTORED_ID, ops.currentId)

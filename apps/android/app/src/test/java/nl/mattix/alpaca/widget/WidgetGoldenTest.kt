@@ -6,7 +6,6 @@ import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import nl.mattix.alpaca.core.model.Transport
 import nl.mattix.alpaca.skin.BundledSkins
-import nl.mattix.alpaca.skin.LiveSkins
 import nl.mattix.alpaca.state.VisMode
 import nl.mattix.alpaca.ui.window.MAIN_H
 import nl.mattix.alpaca.ui.window.MAIN_W
@@ -46,7 +45,7 @@ class WidgetGoldenTest {
     @Before
     fun loadSkin() {
         val app = ApplicationProvider.getApplicationContext<android.app.Application>()
-        skin = WalStill.of(WalBundled.fileOf(app, BundledSkins.BASE, LiveSkins { _, _ -> null }), app.cacheDir)
+        skin = WalStill.of(WalBundled.fileOf(app, BundledSkins.BASE), app.cacheDir)
     }
 
     @After

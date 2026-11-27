@@ -4,7 +4,6 @@ package nl.mattix.alpaca.state
 
 import android.content.Context
 import android.os.Looper
-import androidx.compose.material3.ColorScheme
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import java.io.ByteArrayOutputStream
@@ -96,12 +95,10 @@ internal class CountingMain : CoroutineDispatcher() {
 }
 
 /**
- * A palette that, once [arm]ed, holds the first read made off the main thread until [release]:
- * a load that reads it waits there. [holding] opens when a read is held.
+ * Once [arm]ed, holds the first call to [pass] made off the main thread until [release]: a load
+ * that makes it waits there. [holding] opens when a call is held.
  */
-internal class HeldPalette(
-    private val palette: (Context, Boolean) -> ColorScheme?,
-) : (Context, Boolean) -> ColorScheme? {
+internal class HeldCall {
     private val armed = AtomicBoolean(false)
     private val go = CountDownLatch(1)
     val holding = CountDownLatch(1)
@@ -110,14 +107,10 @@ internal class HeldPalette(
 
     fun release() = go.countDown()
 
-    override fun invoke(
-        context: Context,
-        dark: Boolean,
-    ): ColorScheme? {
+    fun pass() {
         if (Looper.myLooper() != Looper.getMainLooper() && armed.compareAndSet(true, false)) {
             holding.countDown()
             go.await(10, TimeUnit.SECONDS)
         }
-        return palette(context, dark)
     }
 }

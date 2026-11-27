@@ -35,7 +35,7 @@
     <string name="welcome_pick_a_look">Kies een uiterlijk</string>
     <string name="welcome_skins_in_the_menu">Via Skins in het menu wissel je wanneer je maar wilt.</string>
     <string name="welcome_own_skin">Van Alpaca zelf</string>
-    <string name="welcome_own_skin_summary">Getekend voor deze app, en op Android 12 en hoger neemt de skin de kleuren van je achtergrond over.</string>
+    <string name="welcome_own_skin_summary">Hoort bij de app: een vlakke, donkere look met een blauwgroen accent.</string>
     <string name="welcome_keep_this">Deze houden</string>
     <string name="welcome_classic_skin">Een klassieke skin</string>
     <string name="welcome_classic_skins_count">%1$s klassieke skins</string>

@@ -57,9 +57,9 @@ Min SDK is 26. It turns with the phone, and remembers one window arrangement for
 
 ### Skins
 
-Three skins ship with the app: Alpaca Dark (the default), Light and Spot. To load another,
-tap the menu button in the top-left corner of the titlebar and pick Skins > Load skin...
-for a classic `.wsz` file, or Skins > << Get more skins! >> to browse the
+Two skins ship with the app, walkit's example skins: walkit classic (the default) and walkit
+modern, listed while modern skins are on. To load another, tap the menu button in the
+top-left corner of the titlebar and pick Skins > Load skin... for a classic `.wsz` file, or Skins > << Get more skins! >> to browse the
 [Winamp Skin Museum](https://skins.webamp.org). Loaded skins are kept and listed under
 Skins. Winamp modern skins (`.wal`) can be worn too, in beta: turn on Preferences > Player >
 Modern skins (beta), or load a `.wal` and accept the offer to turn them on.
@@ -173,8 +173,10 @@ distribute the combination, although those libraries are not under the GPL. The 
 applying to all of Alpaca's own code. The APK on the releases page is built without that
 library (`-Palpaca.store=none`), and its support page opens the website instead.
 
-**The bundled skins are artwork.** Alpaca Dark, Light and Spot (the `.wsz` files in
-`skin/dist/` and the art inside them) are licensed under
+**The bundled skins** are walkit's example skins (`app/src/main/assets/skins/`), drawn
+pixel by pixel by a script in the walkit repository and under its license, GPL-3.0-or-later.
+Alpaca Dark, Light and Spot, which the Mac app ships (the `.wsz` files in `skin/dist/` and
+the art inside them), are licensed under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The Python build in `skin/`
 that draws them is GPL like the rest of the code.
 

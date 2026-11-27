@@ -579,7 +579,6 @@ class PreferencesInteractionTest {
             EffectBackend(scope),
             PrefsSections(
                 overlay = OverlayPrefs(offered = true, wanted = true),
-                palette = PalettePrefs(offered = true, enabled = false),
                 modern = ModernSkinPrefs(enabled = true, sharp = true),
                 androidAuto = AndroidAutoPrefs(offered = true),
                 support = SupportPrefs(given = true),
@@ -593,7 +592,7 @@ class PreferencesInteractionTest {
             mapOf(
                 "prefs.source.phone" to "Access, library and scanning",
                 "prefs.open.dsp" to "Effect chain, plug-ins and peak limiter",
-                "prefs.open.player" to "Windows, lists, touch, colors and skins",
+                "prefs.open.player" to "Windows, lists, touch and skins",
                 "prefs.open.visualizer" to "Plug-in, preset packs, favorites, presets and shuffle",
                 "prefs.open.widget" to "Visualizer, refresh rate, size, taps and skin",
                 "prefs.open.android_auto" to "Status, skin, playlist and versions",

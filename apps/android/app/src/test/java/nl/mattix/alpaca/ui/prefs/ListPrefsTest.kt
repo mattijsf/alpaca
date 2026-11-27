@@ -11,7 +11,6 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.alpaca.state.EnglishWords
 import nl.mattix.alpaca.state.ListFont
 import nl.mattix.alpaca.state.ListStyleStore
 import nl.mattix.alpaca.state.RowHeight
@@ -92,33 +91,5 @@ class ListPrefsTest {
         assertEquals(RowHeight.ROOMY, ListStyleStore(prefs).rowHeight)
         // the font is its own choice
         assertEquals(ListFont.SKIN, ListStyleStore(prefs).font)
-    }
-
-    @Test
-    fun `the player row says what the page holds, whatever its switches are set to`() {
-        val plain = PrefsSections()
-        val changed =
-            PrefsSections(
-                overlay = OverlayPrefs(wanted = true),
-                shade = ShadePrefs(shadeEnabled = false),
-                lists = ListPrefs(font = ListFont.REGULAR, rowHeight = RowHeight.ROOMY),
-                tapAssist = TapAssistPrefs(enabled = false),
-                modern = ModernSkinPrefs(enabled = true, sharp = true),
-            )
-        assertEquals(plain.playerSummary(), changed.playerSummary())
-    }
-
-    @Test
-    fun `the player row names the sections this phone shows, and not the Always on top switch`() {
-        val overlay = OverlayPrefs(offered = true)
-        val colors = PalettePrefs(offered = true)
-        val cases =
-            mapOf(
-                PrefsSections(overlay = overlay, palette = colors) to "Windows, lists, touch, colors and skins",
-                PrefsSections(palette = colors) to "Windows, lists, touch, colors and skins",
-                PrefsSections(overlay = overlay) to "Windows, lists, touch and skins",
-                PrefsSections() to "Windows, lists, touch and skins",
-            )
-        cases.forEach { (sections, line) -> assertEquals(line, EnglishWords.get(sections.playerSummary())) }
     }
 }

@@ -27,7 +27,7 @@ class WalStillTest {
 
     private val skin =
         File(app.cacheDir, "still-spot.wsz").apply {
-            writeBytes(app.assets.open(BundledSkins.SPOT.asset).use { it.readBytes() })
+            writeBytes(app.assets.open(BundledSkins.BASE.asset).use { it.readBytes() })
         }
 
     private val still = WalStill.of(skin, app.cacheDir)

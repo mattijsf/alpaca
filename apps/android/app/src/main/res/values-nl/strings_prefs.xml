@@ -138,19 +138,12 @@
     <string name="prefs_pack_notice_ahead">%1$s is ingesteld voor een nieuwere Alpaca en krijgt niets af te spelen. Als je Alpaca bijwerkt, komen de nummers terug.</string>
     <string name="prefs_pack_update">%1$s bijwerken</string>
 
-    <!-- PalettePrefs.kt -->
-    <string name="prefs_palette_title">Kleuren van de achtergrond volgen</string>
-    <string name="prefs_palette_on">Alpaca Dark en Alpaca Light nemen de kleuren van je achtergrond over, net als de rest van de telefoon.</string>
-    <string name="prefs_palette_off">Alpaca Dark en Alpaca Light houden hun vaste kleuren.</string>
-
     <!-- PlayerPage.kt -->
     <string name="prefs_player_windows_section">Vensters</string>
     <string name="prefs_player_lists_section">Lijsten</string>
     <string name="prefs_player_touch_section">Aanraking</string>
-    <string name="prefs_player_colors_section">Kleuren</string>
     <string name="prefs_player_skins_section">Skins</string>
-    <string name="prefs_player_summary_all_skins">Vensters, lijsten, aanraking, kleuren en skins</string>
-    <string name="prefs_player_summary_no_colors_skins">Vensters, lijsten, aanraking en skins</string>
+    <string name="prefs_player_summary_with_skins">Vensters, lijsten, aanraking en skins</string>
 
     <!-- ModernSkinPrefs.kt -->
     <string name="prefs_modern_skins_title">Moderne skins (bèta)</string>

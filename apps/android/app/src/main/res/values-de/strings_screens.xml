@@ -35,7 +35,7 @@
     <string name="welcome_pick_a_look">Wähle ein Aussehen</string>
     <string name="welcome_skins_in_the_menu">Über „Skins“ im Menü änderst du es, wann immer du willst.</string>
     <string name="welcome_own_skin">Alpacas eigener Skin</string>
-    <string name="welcome_own_skin_summary">Für diese App gezeichnet; ab Android 12 übernimmt er seine Farben von deinem Hintergrundbild.</string>
+    <string name="welcome_own_skin_summary">Kommt mit der App: ein flacher, dunkler Look mit türkisem Akzent.</string>
     <string name="welcome_keep_this">Diesen behalten</string>
     <string name="welcome_classic_skin">Ein klassischer Skin</string>
     <string name="welcome_classic_skins_count">%1$s klassische Skins</string>

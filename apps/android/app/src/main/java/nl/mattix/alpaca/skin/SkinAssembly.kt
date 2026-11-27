@@ -2,7 +2,6 @@
 
 package nl.mattix.alpaca.skin
 
-import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.toPixelMap
@@ -34,7 +33,6 @@ internal object SkinAssembly {
         parts: Parts,
         fallback: Skin?,
         name: String,
-        liveScheme: ColorScheme? = null,
     ): Skin {
         val sheets = mutableMapOf<Sheet, ImageBitmap>()
         val balanceUsesVolume = resolveSheets(sheets, parts.sheets, fallback, name)
@@ -70,7 +68,6 @@ internal object SkinAssembly {
             ownsGenArt = ownGen,
             regions = regions,
             readme = parts.readme,
-            liveScheme = liveScheme,
         )
     }
 

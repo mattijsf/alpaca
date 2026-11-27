@@ -22,7 +22,6 @@ data class SkinEntry(
     val id: String,
     val name: String,
     val sizeBytes: Long,
-    /** Every skin that ships with the app is classic. */
     val kind: SkinKind = SkinKind.CLASSIC,
 ) {
     /** The row's words in the Skins menu and the Skin Browser: a modern skin says so after its name. */
@@ -35,7 +34,8 @@ data class SkinEntry(
         val BASE = of(BundledSkins.BASE)
 
         /** A skin that ships inside the app, as a library row. */
-        fun of(bundled: BundledSkin) = SkinEntry(bundled.id, bundled.name, 0)
+        fun of(bundled: BundledSkin) =
+            SkinEntry(bundled.id, bundled.name, 0, if (bundled.modern) SkinKind.MODERN else SkinKind.CLASSIC)
     }
 }
 
@@ -72,6 +72,17 @@ class SkinLibrary internal constructor(
 
     init {
         migrateLegacySlot()
+        migrateRetired()
+    }
+
+    /** A record that names a skin the app no longer ships names the base skin instead; see [BundledSkins.current]. */
+    private fun migrateRetired() {
+        val moved =
+            listOf(CURRENT_KEY, WEARING_KEY, CLASSIC_KEY, WIDGET_KEY).mapNotNull { key ->
+                prefs.getString(key, null)?.let { id -> (key to BundledSkins.current(id)).takeIf { it.second != id } }
+            }
+        if (moved.isEmpty()) return
+        prefs.edit().apply { moved.forEach { (key, id) -> putString(key, id) } }.apply()
     }
 
     /**
@@ -242,8 +253,15 @@ class SkinLibrary internal constructor(
     /** Whether [id] is installed and classic: what a widget, Android Auto or a source can wear. */
     fun hasClassic(id: String): Boolean = has(id) && kindOf(id) == SkinKind.CLASSIC
 
-    /** MODERN when [id] is stored as a modern skin; CLASSIC otherwise, also for an id that is not installed. */
-    fun kindOf(id: String): SkinKind = if (File(dir, "$id$MODERN_EXT").isFile) SkinKind.MODERN else SkinKind.CLASSIC
+    /**
+     * MODERN when [id] is a modern skin that ships with the app or is stored as one; CLASSIC
+     * otherwise, also for an id that is not installed.
+     */
+    fun kindOf(id: String): SkinKind =
+        when {
+            BundledSkins.of(id)?.modern ?: File(dir, "$id$MODERN_EXT").isFile -> SkinKind.MODERN
+            else -> SkinKind.CLASSIC
+        }
 
     /** The stored file of [id], or null for a skin that ships with the app or is not installed. */
     fun fileOf(id: String): File? = fileFor(id).takeIf { BundledSkins.of(id) == null && it.isFile }

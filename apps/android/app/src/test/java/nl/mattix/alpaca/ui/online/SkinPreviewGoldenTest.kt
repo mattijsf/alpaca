@@ -35,8 +35,8 @@ class SkinPreviewGoldenTest {
     @Test
     fun `a skin on the demo player matches its golden`() {
         val file =
-            File(app.cacheDir, "golden-spot.wsz").apply {
-                writeBytes(app.assets.open(BundledSkins.SPOT.asset).use { it.readBytes() })
+            File(app.cacheDir, "golden-base.wsz").apply {
+                writeBytes(app.assets.open(BundledSkins.BASE.asset).use { it.readBytes() })
             }
         compose.mainClock.autoAdvance = false
         compose.setContent {
@@ -52,7 +52,7 @@ class SkinPreviewGoldenTest {
         // the analyzer's bars and peaks fall by the ticks the engine ran, which thread timing moves
         // by a few pixels; anything more is a change
         compose.onNodeWithTag("preview").captureRoboImage(
-            "src/test/snapshots/skin_preview_spot.png",
+            "src/test/snapshots/skin_preview_base.png",
             RoborazziOptions(compareOptions = RoborazziOptions.CompareOptions(changeThreshold = PEAK_SLACK)),
         )
     }

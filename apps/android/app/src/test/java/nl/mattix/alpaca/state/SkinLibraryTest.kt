@@ -25,6 +25,12 @@ class SkinLibraryTest {
         size: Int = 64,
     ) = ByteArray(size) { (it + seed).toByte() }
 
+    /** A stored classic skin, for the listener's own choice. */
+    private val light by lazy { library.save(bytes(101), "Light.wsz").id }
+
+    /** Another, for a source's skin or the widget's. */
+    private val spot by lazy { library.save(bytes(102), "Spot.wsz").id }
+
     @Test
     fun `a fresh library offers the skins that ship with the app and nothing else`() {
         assertEquals(BundledSkins.all.map { it.id }, library.list().map { it.id })
@@ -83,7 +89,8 @@ class SkinLibraryTest {
         val entry = library.save(bytes(10), "Here.wsz")
 
         assertTrue(library.has(entry.id))
-        assertTrue(library.has(BundledSkins.SPOT.id))
+        assertTrue(library.has(BundledSkins.BASE_ID))
+        assertTrue(library.has(BundledSkins.MODERN.id))
 
         library.delete(entry.id)
 
@@ -93,13 +100,13 @@ class SkinLibraryTest {
 
     @Test
     fun `a source's skin goes on over the listener's own without changing it`() {
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
         val asked = SkinLibrary.choices
 
-        assertEquals(BundledSkins.SPOT.id, library.wear(BundledSkins.SPOT.id, asked))
+        assertEquals(spot, library.wear(spot, asked))
 
-        assertEquals(BundledSkins.SPOT.id, library.worn)
-        assertEquals("the listener's own choice stays", BundledSkins.LIGHT.id, library.currentId)
+        assertEquals(spot, library.worn)
+        assertEquals("the listener's own choice stays", light, library.currentId)
     }
 
     /**
@@ -112,7 +119,7 @@ class SkinLibraryTest {
         val asked = SkinLibrary.choices
         library.choose(own.id)
 
-        assertNull(library.wear(BundledSkins.SPOT.id, asked))
+        assertNull(library.wear(spot, asked))
 
         assertNull(library.wearing)
         assertEquals(own.id, library.worn)
@@ -127,28 +134,28 @@ class SkinLibraryTest {
 
         library.delete(worn.id)
 
-        assertNull(library.wear(BundledSkins.SPOT.id, asked))
+        assertNull(library.wear(spot, asked))
         assertEquals(SkinEntry.BASE_ID, library.worn)
     }
 
     @Test
     fun `a source asking for the skin that is already the listener's own wears nothing`() {
-        library.choose(BundledSkins.SPOT.id)
+        library.choose(spot)
 
-        assertEquals(BundledSkins.SPOT.id, library.wear(BundledSkins.SPOT.id, SkinLibrary.choices))
+        assertEquals(spot, library.wear(spot, SkinLibrary.choices))
 
         assertNull("nothing is worn over a skin that is already on", library.wearing)
     }
 
     @Test
     fun `a skin that was worn for a source and will not open is taken off`() {
-        library.choose(BundledSkins.LIGHT.id)
-        library.wear(BundledSkins.SPOT.id, SkinLibrary.choices)
+        library.choose(light)
+        library.wear(spot, SkinLibrary.choices)
 
-        library.unwear(BundledSkins.SPOT.id)
+        library.unwear(spot)
 
         assertNull(library.wearing)
-        assertEquals(BundledSkins.LIGHT.id, library.worn)
+        assertEquals(light, library.worn)
     }
 
     @Test
@@ -267,9 +274,9 @@ class SkinLibraryTest {
         val classic = library.save(bytes(1), "A.wsz").id
 
         assertEquals(SkinKind.CLASSIC, library.kindOf(classic))
-        assertEquals(SkinKind.CLASSIC, library.kindOf(BundledSkins.SPOT.id))
+        assertEquals(SkinKind.CLASSIC, library.kindOf(BundledSkins.BASE_ID))
         assertEquals(SkinKind.CLASSIC, library.kindOf("a-skin-from-a-build-that-no-longer-exists"))
-        assertNull("a skin that ships with the app has no file", library.fileOf(BundledSkins.SPOT.id))
+        assertNull("a skin that ships with the app has no file", library.fileOf(BundledSkins.BASE_ID))
         assertNull(library.fileOf("a-skin-from-a-build-that-no-longer-exists"))
     }
 
@@ -330,30 +337,30 @@ class SkinLibraryTest {
 
     @Test
     fun `the last classic choice is the current skin until one is stored`() {
-        library.currentId = BundledSkins.LIGHT.id
+        library.currentId = light
 
-        assertEquals(BundledSkins.LIGHT.id, library.lastClassic)
+        assertEquals(light, library.lastClassic)
     }
 
     @Test
     fun `every classic choice becomes the last classic choice`() {
-        library.choose(BundledSkins.SPOT.id)
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(spot)
+        library.choose(light)
 
-        assertEquals(BundledSkins.LIGHT.id, skinsPrefs.getString("classic", null))
+        assertEquals(light, skinsPrefs.getString("classic", null))
     }
 
     @Test
     fun `a modern choice keeps the classic choice before it as the last one`() {
         // a current skin from before the key existed, so the key is still absent
-        library.currentId = BundledSkins.LIGHT.id
+        library.currentId = light
         val modern = library.addModern(app, "Bento")
 
         library.choose(modern)
 
         assertEquals(modern, library.currentId)
-        assertEquals(BundledSkins.LIGHT.id, library.lastClassic)
-        assertEquals(BundledSkins.LIGHT.id, skinsPrefs.getString("classic", null))
+        assertEquals(light, library.lastClassic)
+        assertEquals(light, skinsPrefs.getString("classic", null))
     }
 
     @Test
@@ -383,12 +390,12 @@ class SkinLibraryTest {
      */
     @Test
     fun `a modern skin going on over a classic one pins a following widget to that classic skin`() {
-        library.currentId = BundledSkins.LIGHT.id
+        library.currentId = light
         val modern = library.addModern(app, "Bento")
 
         library.choose(modern)
 
-        assertEquals(BundledSkins.LIGHT.id, library.widgetSkin)
+        assertEquals(light, library.widgetSkin)
         assertTrue("the pin is marked as automatic", library.widgetSkinAutomatic)
     }
 
@@ -403,18 +410,18 @@ class SkinLibraryTest {
 
     @Test
     fun `a widget skin picked by hand is not replaced when a modern skin goes on`() {
-        library.choose(BundledSkins.LIGHT.id)
-        library.chooseWidgetSkin(BundledSkins.SPOT.id)
+        library.choose(light)
+        library.chooseWidgetSkin(spot)
 
         library.choose(library.addModern(app, "Bento"))
 
-        assertEquals(BundledSkins.SPOT.id, library.widgetSkin)
+        assertEquals(spot, library.widgetSkin)
         assertFalse(library.widgetSkinAutomatic)
     }
 
     @Test
     fun `a modern skin after a modern skin does not pin the widget again`() {
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
         library.choose(library.addModern(app, "Bento", seed = 1))
         library.chooseWidgetSkin(null)
 
@@ -425,7 +432,7 @@ class SkinLibraryTest {
 
     @Test
     fun `choosing the modern skin that is already chosen does not pin the widget again`() {
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
         val modern = library.addModern(app, "Bento")
         library.choose(modern)
         library.chooseWidgetSkin(null)
@@ -437,10 +444,10 @@ class SkinLibraryTest {
 
     @Test
     fun `a classic skin chosen over a modern one lets go of the automatic widget pin`() {
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
         library.choose(library.addModern(app, "Bento"))
 
-        library.choose(BundledSkins.SPOT.id)
+        library.choose(spot)
 
         assertNull("the widget follows the player again", library.widgetSkin)
         assertFalse(library.widgetSkinAutomatic)
@@ -448,7 +455,7 @@ class SkinLibraryTest {
 
     @Test
     fun `the base chosen over a modern skin lets go of the automatic widget pin`() {
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
         library.choose(library.addModern(app, "Bento"))
 
         library.choose(SkinEntry.BASE_ID)
@@ -459,84 +466,84 @@ class SkinLibraryTest {
 
     @Test
     fun `a widget skin picked by hand stays when a classic skin goes on again`() {
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
         library.choose(library.addModern(app, "Bento"))
-        library.chooseWidgetSkin(BundledSkins.SPOT.id)
+        library.chooseWidgetSkin(spot)
 
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
 
-        assertEquals(BundledSkins.SPOT.id, library.widgetSkin)
+        assertEquals(spot, library.widgetSkin)
     }
 
     @Test
     fun `a widget skin picked by hand stays when modern skins go off`() {
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
         library.choose(library.addModern(app, "Bento"))
-        library.chooseWidgetSkin(BundledSkins.SPOT.id)
+        library.chooseWidgetSkin(spot)
 
         assertTrue(library.dropModern())
 
-        assertEquals(BundledSkins.SPOT.id, library.widgetSkin)
+        assertEquals(spot, library.widgetSkin)
     }
 
     @Test
     fun `a widget skin picked by hand stays when the worn modern skin is deleted`() {
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
         val modern = library.addModern(app, "Bento")
         library.choose(modern)
-        library.chooseWidgetSkin(BundledSkins.SPOT.id)
+        library.chooseWidgetSkin(spot)
 
         library.delete(modern)
 
-        assertEquals(BundledSkins.SPOT.id, library.widgetSkin)
+        assertEquals(spot, library.widgetSkin)
     }
 
     @Test
     fun `a source's skin going on or off touches neither the last classic choice nor the widget`() {
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
         library.choose(library.addModern(app, "Bento"))
 
-        library.wear(BundledSkins.SPOT.id, SkinLibrary.choices)
-        library.unwear(BundledSkins.SPOT.id)
+        library.wear(spot, SkinLibrary.choices)
+        library.unwear(spot)
 
-        assertEquals(BundledSkins.LIGHT.id, library.lastClassic)
-        assertEquals(BundledSkins.LIGHT.id, library.widgetSkin)
+        assertEquals(light, library.lastClassic)
+        assertEquals(light, library.widgetSkin)
         assertTrue(library.widgetSkinAutomatic)
     }
 
     @Test
     fun `dropping a modern choice puts the last classic choice back without counting a choice`() {
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
         library.choose(library.addModern(app, "Bento"))
-        library.wear(BundledSkins.SPOT.id, SkinLibrary.choices)
+        library.wear(spot, SkinLibrary.choices)
         val choices = SkinLibrary.choices
 
         assertTrue(library.dropModern())
 
-        assertEquals(BundledSkins.LIGHT.id, library.currentId)
+        assertEquals(light, library.currentId)
         assertNull("the automatic pin goes", library.widgetSkin)
-        assertEquals("a source's skin worn over it stays on", BundledSkins.SPOT.id, library.wearing)
+        assertEquals("a source's skin worn over it stays on", spot, library.wearing)
         assertEquals(choices, SkinLibrary.choices)
     }
 
     @Test
     fun `dropping a classic choice changes nothing`() {
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
 
         assertFalse(library.dropModern())
 
-        assertEquals(BundledSkins.LIGHT.id, library.currentId)
+        assertEquals(light, library.currentId)
     }
 
     @Test
     fun `deleting the worn modern skin puts the last classic choice on and lets go of the pin`() {
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
         val modern = library.addModern(app, "Bento")
         library.choose(modern)
 
         library.delete(modern)
 
-        assertEquals(BundledSkins.LIGHT.id, library.currentId)
+        assertEquals(light, library.currentId)
         assertNull(library.widgetSkin)
     }
 
@@ -574,13 +581,13 @@ class SkinLibraryTest {
 
     @Test
     fun `the widget's skin and the last classic choice survive a restart`() {
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
         library.choose(library.addModern(app, "Bento"))
 
         val reopened = SkinLibrary(app)
 
-        assertEquals(BundledSkins.LIGHT.id, reopened.lastClassic)
-        assertEquals(BundledSkins.LIGHT.id, reopened.widgetSkin)
+        assertEquals(light, reopened.lastClassic)
+        assertEquals(light, reopened.widgetSkin)
         assertTrue(reopened.widgetSkinAutomatic)
     }
 
@@ -645,7 +652,7 @@ class SkinLibraryTest {
         library.chooseWidgetSkin(junk)
         library.wear(junk, SkinLibrary.choices)
         // worn over another choice, so the source's record is written
-        library.currentId = BundledSkins.LIGHT.id
+        library.currentId = light
         library.wear(junk, SkinLibrary.choices)
 
         library.migrateModern()
@@ -659,14 +666,69 @@ class SkinLibraryTest {
     @Test
     fun `records that name other skins are left alone by the move`() {
         plantClassic(zipOf("skin.xml"), "Bento.wal")
-        library.choose(BundledSkins.LIGHT.id)
-        library.chooseWidgetSkin(BundledSkins.SPOT.id)
-        library.wear(BundledSkins.SPOT.id, SkinLibrary.choices)
+        library.choose(light)
+        library.chooseWidgetSkin(spot)
+        library.wear(spot, SkinLibrary.choices)
 
         library.migrateModern()
 
-        assertEquals(BundledSkins.SPOT.id, library.wearing)
-        assertEquals(BundledSkins.LIGHT.id, skinsPrefs.getString("classic", null))
-        assertEquals(BundledSkins.SPOT.id, library.widgetSkin)
+        assertEquals(spot, library.wearing)
+        assertEquals(light, skinsPrefs.getString("classic", null))
+        assertEquals(spot, library.widgetSkin)
+    }
+
+    @Test
+    fun `the modern skin that ships with the app reads modern, is listed as one and cannot be removed`() {
+        val modern = BundledSkins.MODERN.id
+
+        assertEquals(SkinKind.MODERN, library.kindOf(modern))
+        assertFalse("not what a widget, Android Auto or a source can wear", library.hasClassic(modern))
+        assertEquals(SkinKind.MODERN, library.list().single { it.id == modern }.kind)
+        assertNull("it has no stored file", library.fileOf(modern))
+
+        library.delete(modern)
+
+        assertTrue(library.has(modern))
+    }
+
+    @Test
+    fun `choosing the bundled modern skin keeps the classic choice under it`() {
+        library.choose(light)
+
+        library.choose(BundledSkins.MODERN.id)
+
+        assertEquals(BundledSkins.MODERN.id, library.currentId)
+        assertEquals(light, library.lastClassic)
+        assertTrue(library.dropModern())
+        assertEquals(light, library.currentId)
+    }
+
+    @Test
+    fun `records that name a skin the app no longer ships name the base skin`() {
+        skinsPrefs
+            .edit()
+            .putString("current", "andamp-light")
+            .putString("classic", "andamp-spot")
+            .putString("widget", "andamp-light")
+            .putString("wearing", "andamp-spot")
+            .commit()
+
+        val reopened = SkinLibrary(app)
+
+        assertEquals(SkinEntry.BASE_ID, reopened.currentId)
+        assertEquals(SkinEntry.BASE_ID, skinsPrefs.getString("classic", null))
+        assertEquals(SkinEntry.BASE_ID, reopened.widgetSkin)
+        assertEquals(SkinEntry.BASE_ID, reopened.worn)
+    }
+
+    @Test
+    fun `records that name the base skin or one of the listener's own are left alone`() {
+        library.choose(light)
+        library.chooseWidgetSkin(spot)
+
+        val reopened = SkinLibrary(app)
+
+        assertEquals(light, reopened.currentId)
+        assertEquals(spot, reopened.widgetSkin)
     }
 }

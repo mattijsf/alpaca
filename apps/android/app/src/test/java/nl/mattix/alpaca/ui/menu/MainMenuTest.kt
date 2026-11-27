@@ -5,7 +5,7 @@ package nl.mattix.alpaca.ui.menu
 import android.app.Application
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.alpaca.skin.BundledSkins
+import nl.mattix.alpaca.skin.TestSkins
 import nl.mattix.alpaca.state.AmpMenuItem
 import nl.mattix.alpaca.state.MenuAnchor
 import nl.mattix.alpaca.state.MusicSource
@@ -37,6 +37,9 @@ class MainMenuTest {
     }
 
     private val app = ApplicationProvider.getApplicationContext<Application>()
+
+    /** A stored classic skin a music source asks for. */
+    private val spot by lazy { SkinLibrary(app).save(TestSkins.classic(app, "Spot"), "Spot.wsz").id }
 
     /** The view models that wore a modern skin; let go after each test. */
     private val wearing = ArrayList<WinampViewModel>()
@@ -523,7 +526,7 @@ class MainMenuTest {
         assertTrue("on screen it offers them", "Color Themes" in skinsShape(vm))
 
         try {
-            vm.skinOps.wear(BundledSkins.SPOT.id)
+            vm.skinOps.wear(spot)
             awaitModern("the source's skin parks the modern look") { vm.skinOps.wal == null }
 
             assertFalse(skinsShape(vm).toString(), "Color Themes" in skinsShape(vm))

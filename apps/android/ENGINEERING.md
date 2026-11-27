@@ -169,8 +169,8 @@ The app was called Andamp. The code and what a listener reads say Alpaca; a name
   (`WireNamesTest`, `ProtocolTest`).
 - **What a launcher stores:** the launcher entry is an `activity-alias` named
   `nl.mattix.andamp.MainActivity`; the widget provider stays in `nl/mattix/andamp/widget/`.
-- **What is stored on a phone:** effect plug-in ids (also the Mac's), the bundled skin ids
-  `andamp-light`/`andamp-spot`, the pack launcher's prefs file, and the intro track's file.
+- **What is stored on a phone:** effect plug-in ids (also the Mac's), the pack launcher's
+  prefs file, and the intro track's file.
   Playlists are written with `#ALPACA` markers and the old `#ANDAMP` ones are still read
   (`PlaylistCodecTest`). The AVS pack installed as `AndAmp` is moved to `Alpaca` once, its
   files and favorites with it (`PresetOpsPluginTest`).
@@ -227,10 +227,9 @@ ui  ──▶  player domain  ◀──  backends  ──▶  dsp        skin (s
                      the player. It holds no skin and no player
 ```
 
-`skin/` is a Python build, not a Gradle module. It writes the three bundled skins from one
-source and verifies them (declared color roles, contrast sweeps, a geometry audit).
-`:app:bundledSkins` copies the `.wsz` files and the two template zips from `skin/dist/`
-into the packaged assets.
+`skin/` is a Python build, not a Gradle module. It writes the Alpaca Dark, Light and Spot
+skins that the Mac app ships (copies in `core/resources/skins/`); the Android app does not
+package them.
 
 **The split rule.** A backend that needs an external SDK gets its own module right away,
 as `:backend:media3` did. A backend can also be an app of its own, a source (see
@@ -638,7 +637,7 @@ sentences, Arrange-Act-Assert.
 ### 2. Golden screenshot tests
 
 `WindowGoldenTest` uses Roborazzi with Robolectric native graphics. Each window's draw
-function renders at scale 1 with the base skin (Alpaca Dark) through `CanvasDrawScope` and
+function renders at scale 1 with the base skin (walkit classic) through `CanvasDrawScope` and
 is compared with the goldens in `app/src/test/snapshots/`. `verifyRoborazziDebug` is part
 of `gate`. `recordRoborazziDebug` records new goldens.
 
@@ -822,17 +821,14 @@ the phone's language.
 
 ## Assets
 
-The three bundled skins (Alpaca Dark, Light and Spot) are built by `skin/` from one Python
-source: `python3 skin/build.py all`. `:app:bundledSkins` copies the output into the
-packaged assets. Dark is the base skin: a fresh install uses it, a skin that lacks a sheet
-borrows from it, and the goldens are drawn with it.
-
-On Android 12 and later, Dark and Light are rebuilt from the phone's palette.
-`SkinTemplate` binds the build's role image to `dynamicDarkColorScheme` or
-`dynamicLightColorScheme`; the design is in [docs/dynamic-skins.md](docs/dynamic-skins.md).
-The two template zips ship next to the `.wsz` files for this. If you change `skin/`, run
-`python3 skin/build.py all`, or `SkinTemplateBitmapsTest` fails the gate. The listener can
-switch this off under Preferences > Player > Colors > Match wallpaper colors.
+The two bundled skins are walkit's example skins, `walkit-classic.wsz` and
+`walkit-modern.wal` in `app/src/main/assets/skins/` (`BundledSkins`). They are built by
+`examples/skins/make-skins.py` in the walkit repository and copied here as they are; to
+update them, copy the two files from there. walkit classic is the base skin: a fresh
+install uses it, a classic skin that lacks a sheet borrows from it, and the goldens are
+drawn with it. walkit modern is listed while modern skins are on. A stored choice that
+names `andamp-light` or `andamp-spot`, ids of skins the app no longer ships, reads as the
+base (`BundledSkins.current`): in the skin library, a source's skin and Android Auto's.
 
 Other skins load at runtime through the titlebar menu. The one bundled asset that is not
 this project's own is the intro audio; see NOTICE.md.

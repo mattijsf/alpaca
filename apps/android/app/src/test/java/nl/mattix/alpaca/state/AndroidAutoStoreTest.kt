@@ -40,6 +40,14 @@ class AndroidAutoStoreTest {
     }
 
     @Test
+    fun `a chosen skin the app no longer ships reads as the base skin`() {
+        val kept = prefs()
+        kept.edit().putString("skin", "andamp-light").commit()
+
+        assertEquals(SkinEntry.BASE_ID, AndroidAutoStore(kept).skin)
+    }
+
+    @Test
     fun `choosing Default again forgets the skin`() {
         val kept = prefs()
         AndroidAutoStore(kept).skin = "neon"

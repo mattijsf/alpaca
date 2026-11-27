@@ -86,12 +86,8 @@ class WelcomeScreenTest {
     fun `it draws with a real skin in the card`() {
         val app = ApplicationProvider.getApplicationContext<android.app.Application>()
         val skin =
-            nl.mattix.alpaca.wal.WalBundled.fileOf(
-                app,
-                nl.mattix.alpaca.skin.BundledSkins.BASE,
-                nl.mattix.alpaca.skin
-                    .LiveSkins { _, _ -> null },
-            )
+            nl.mattix.alpaca.wal.WalBundled
+                .fileOf(app, nl.mattix.alpaca.skin.BundledSkins.BASE)
 
         compose.setContent {
             WelcomeScreen(WelcomeChoice(skin = skin, tiles = front, museumCount = 93_603))
