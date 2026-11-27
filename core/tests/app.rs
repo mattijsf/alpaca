@@ -1991,17 +1991,9 @@ const HOLDER_XML: &str = r#"<WinampAbstractionLayer version="0.8">
 
 #[test]
 fn a_modern_skin_shows_the_visualizer_where_it_holds_it() {
-    use std::io::Write;
     let config = scratch("vis-modern");
     let presets = presets_folder("vis-modern");
-    let holder = config.join("Holder.wal");
-    {
-        let mut to = zip::ZipWriter::new(std::fs::File::create(&holder).unwrap());
-        to.start_file("skin.xml", zip::write::SimpleFileOptions::default())
-            .unwrap();
-        to.write_all(HOLDER_XML.as_bytes()).unwrap();
-        to.finish().unwrap();
-    }
+    let holder = modern_skin(&config, "Holder.wal", HOLDER_XML);
     let mut app = start(&format!("--presets {}", presets.display()), &config);
     assert!(app.wear(&holder));
     app.take_requests();
@@ -2026,10 +2018,29 @@ fn a_modern_skin_shows_the_visualizer_where_it_holds_it() {
     assert_eq!(app.take_requests(), [Request::Vis(true)]);
 }
 
+/// Writes a modern skin of `skin.xml` alone into `folder`, as `name`.
+fn modern_skin(folder: &Path, name: &str, xml: &str) -> PathBuf {
+    use std::io::Write;
+    let file = folder.join(name);
+    let mut to = zip::ZipWriter::new(std::fs::File::create(&file).unwrap());
+    to.start_file("skin.xml", zip::write::SimpleFileOptions::default())
+        .unwrap();
+    to.write_all(xml.as_bytes()).unwrap();
+    to.finish().unwrap();
+    file
+}
+
+/// A modern skin with a main window and no place for the visualizer.
+const NO_VIS_XML: &str = r#"<WinampAbstractionLayer version="0.8">
+<container id="main" name="Plain" default_visible="1"><layout id="normal" w="200" h="100"/></container>
+</WinampAbstractionLayer>"#;
+
 #[test]
 fn a_skin_with_no_place_for_the_visualizer_opens_the_milkdrop_window() {
     let config = scratch("vis-none");
-    let mut app = start("--modern", &config);
+    let file = modern_skin(&config, "Plain.wal", NO_VIS_XML);
+    let mut app = start("", &config);
+    assert!(app.wear(&file));
     app.take_requests();
     app.step();
     assert_eq!(app.vis_area(), None);
@@ -2049,16 +2060,8 @@ const EMPTY_VIS_XML: &str = r#"<WinampAbstractionLayer version="0.8">
 
 #[test]
 fn a_visualizer_window_with_no_place_for_it_gives_way_to_the_milkdrop_window() {
-    use std::io::Write;
     let config = scratch("vis-empty");
-    let file = config.join("Empty.wal");
-    {
-        let mut to = zip::ZipWriter::new(std::fs::File::create(&file).unwrap());
-        to.start_file("skin.xml", zip::write::SimpleFileOptions::default())
-            .unwrap();
-        to.write_all(EMPTY_VIS_XML.as_bytes()).unwrap();
-        to.finish().unwrap();
-    }
+    let file = modern_skin(&config, "Empty.wal", EMPTY_VIS_XML);
     let mut app = start("", &config);
     assert!(app.wear(&file));
     app.step();
@@ -2103,16 +2106,8 @@ const RANDOM_XML: &str = r#"<WinampAbstractionLayer version="0.8">
 
 #[test]
 fn a_skins_random_button_picks_presets_at_random_and_is_kept() {
-    use std::io::Write;
     let config = scratch("vis-random");
-    let file = config.join("Random.wal");
-    {
-        let mut to = zip::ZipWriter::new(std::fs::File::create(&file).unwrap());
-        to.start_file("skin.xml", zip::write::SimpleFileOptions::default())
-            .unwrap();
-        to.write_all(RANDOM_XML.as_bytes()).unwrap();
-        to.finish().unwrap();
-    }
+    let file = modern_skin(&config, "Random.wal", RANDOM_XML);
     let mut app = start("", &config);
     assert!(app.wear(&file));
     app.step();

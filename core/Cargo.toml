@@ -11,7 +11,7 @@ rust-version = "1.85"
 crate-type = ["staticlib", "rlib"]
 
 [dependencies]
-walkit = { version = "0.10.4", features = ["truetype"] }
+walkit = { version = "0.10.5", features = ["truetype"] }
 image = { version = "0.25.10", default-features = false, features = ["png", "bmp", "gif", "jpeg"] }
 zip = { version = "2.6.1", default-features = false, features = ["deflate"] }
 # the audio: decoding, the output unit, the ring between them, and the visualizer's spectrum
@@ -22,13 +22,6 @@ rustfft = "6.4.1"
 ureq = "3"
 # effect plug-ins are Lua files: the interpreter, built from its own sources
 mlua = { version = "0.10", features = ["lua54", "vendored"] }
-
-# walkit main after 0.10.4, until the next release is on crates.io. Needed for playlist
-# scrolling and keys, frame dividers, cursor shapes, window focus, slider snap, hover, app focus
-# loss, tooltips, and older skins' playlist frames and scrollbars. Remove once released and bump
-# the version above.
-[patch.crates-io]
-walkit = { git = "https://github.com/mattijsf/walkit", rev = "4ac65efefa83d0d5d00b8ffc5baa9932f99dcfee" }
 
 # the audio device: the Mac's own output unit there, the cpal crate everywhere else
 [target.'cfg(target_os = "macos")'.dependencies]

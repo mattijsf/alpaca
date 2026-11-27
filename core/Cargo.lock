@@ -1413,8 +1413,9 @@ dependencies = [
 
 [[package]]
 name = "walkit"
-version = "0.10.4"
-source = "git+https://github.com/mattijsf/walkit?rev=4ac65efefa83d0d5d00b8ffc5baa9932f99dcfee#4ac65efefa83d0d5d00b8ffc5baa9932f99dcfee"
+version = "0.10.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7f465e644ec22f754e4526d1ba1da9b62a80bf48ee7c15312ae1472d78cdbfa"
 dependencies = [
  "skrifa",
 ]
