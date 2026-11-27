@@ -42,6 +42,8 @@ pub mod command {
     pub const VISUALIZER: i32 = 23;
     /// Open the Milkdrop window, or close it.
     pub const MILKDROP_WINDOW: i32 = 29;
+    /// Pick the preset after a stay at random, or the next by name.
+    pub const RANDOM_PRESETS: i32 = 63;
     /// Let the listener pick the folder of Milkdrop presets.
     pub const CHOOSE_PRESETS: i32 = 24;
     /// Show who made the app.

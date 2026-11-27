@@ -2074,3 +2074,98 @@ fn a_visualizer_window_with_no_place_for_it_gives_way_to_the_milkdrop_window() {
         "its window shut again"
     );
 }
+
+#[test]
+fn presets_after_a_stay_can_come_at_random() {
+    let dir = presets_folder("vis-random-order");
+    for name in ["C.milk", "D.milk", "E.milk"] {
+        std::fs::write(dir.join(name), "[preset00]\n").unwrap();
+    }
+    let mut presets = Presets::default();
+    presets.read(&dir);
+    presets.random = true;
+    let mut seen = std::collections::HashSet::new();
+    for _ in 0..60 {
+        let before = presets.index();
+        assert!(presets.pass());
+        assert_ne!(presets.index(), before, "never the one shown");
+        seen.insert(presets.index());
+    }
+    assert!(seen.len() > 2, "not only the next one: {seen:?}");
+}
+
+/// A modern skin with a Random button for the visualizer, as Winamp Modern's.
+const RANDOM_XML: &str = r#"<WinampAbstractionLayer version="0.8">
+<container id="main" name="Random" default_visible="1"><layout id="normal" w="100" h="50">
+<togglebutton id="random" x="0" y="0" w="20" h="20" cfgattrib="{0000000A-000C-0010-FF7B-01014263450C};Random"/>
+</layout></container>
+</WinampAbstractionLayer>"#;
+
+#[test]
+fn a_skins_random_button_picks_presets_at_random_and_is_kept() {
+    use std::io::Write;
+    let config = scratch("vis-random");
+    let file = config.join("Random.wal");
+    {
+        let mut to = zip::ZipWriter::new(std::fs::File::create(&file).unwrap());
+        to.start_file("skin.xml", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        to.write_all(RANDOM_XML.as_bytes()).unwrap();
+        to.finish().unwrap();
+    }
+    let mut app = start("", &config);
+    assert!(app.wear(&file));
+    app.step();
+    assert!(!app.vis_random());
+    let main = {
+        let skin = app.skin().unwrap();
+        let id = skin.runtime.main_window().unwrap();
+        skin.runtime.window_rect(id)
+    };
+    let click = |app: &mut App| {
+        app.pointer_down(main.left + 5, main.top + 5, 1);
+        app.pointer_up(main.left + 5, main.top + 5);
+        // a press too short to see is let go of a moment later
+        std::thread::sleep(std::time::Duration::from_millis(150));
+        app.step();
+        app.step();
+    };
+    // the button shows the app's setting and turns it, both ways
+    click(&mut app);
+    assert!(app.vis_random());
+    assert!(app.menu(Menu::Visualization).contains("Random Presets"));
+    click(&mut app);
+    assert!(!app.vis_random());
+    // and the menu turns it too, kept for the next run
+    app.command(command::RANDOM_PRESETS);
+    assert!(app.vis_random());
+    app.save();
+    assert!(start("", &config).vis_random());
+}
+
+#[test]
+fn the_visualizers_own_window_takes_its_keys() {
+    let config = scratch("vis-keys");
+    let presets = presets_folder("vis-keys");
+    let mut app = start(&format!("--presets {}", presets.display()), &config);
+    app.command(command::VISUALIZER);
+    app.step();
+    app.step();
+    app.take_requests();
+    let (window, _) = app.vis_area().expect("shown in the skin");
+    // in its window the arrows change the preset; in the main window they still seek
+    assert!(app.key_in(window, "right"));
+    let requests = app.take_requests();
+    assert!(
+        matches!(&requests[..], [Request::Preset { blend: true, .. }]),
+        "{requests:?}"
+    );
+    let main = app.main_window().unwrap();
+    app.key_in(main, "right");
+    assert!(
+        !app.take_requests()
+            .iter()
+            .any(|r| matches!(r, Request::Preset { .. })),
+        "the main window's arrows are Winamp's"
+    );
+}

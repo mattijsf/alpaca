@@ -291,6 +291,7 @@ impl App {
                 &folder(self.presets_folder()).unwrap_or_else(|| "None chosen".into()),
             ),
             action("milk.choose", "Choose Presets Folder…"),
+            toggle("milk.random", "Pick presets at random", self.vis_random()),
             slider(
                 "milk.stay",
                 "A preset stays",
@@ -376,6 +377,7 @@ impl App {
                 self.settings.set(id, Some(value));
                 self.apply_switches();
             }
+            "milk.random" => self.set_vis_random(on),
             "milk.open" => {
                 if self.vis_open != on {
                     self.command(command::MILKDROP_WINDOW);

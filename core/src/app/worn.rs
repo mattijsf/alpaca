@@ -421,10 +421,13 @@ impl App {
     /// Tells the skin which of the app's switches are on, so its buttons show them.
     pub(super) fn tell_switches(&mut self) {
         let (double, on_top, vis) = (self.zoom > 1, self.on_top, self.vis_running());
+        let random = self.vis_random();
         if let Some(skin) = self.skin.as_mut() {
             skin.set_switch("doublesize", double);
             skin.set_switch("ontop", on_top);
             skin.set_switch("vis", vis);
+            // a modern skin's Random button for the visualizer (Winamp Modern's)
+            skin.set_switch("visrandom", random);
         }
     }
 
@@ -519,6 +522,8 @@ impl App {
             ("VIS_PREV", _) if self.vis_running() => {
                 self.vis_key("left");
             }
+            // the Random button: on or off, as it now shows
+            ("VIS_RANDOM", on) => self.set_vis_random(on == Some("1")),
             ("EQ_PRESETS", _) => self.request(popup(Menu::Equalizer)),
             // a modern skin's playlist buttons: the app shows the menu for each
             ("PE_ADD", _) => self.request(popup(Menu::PlaylistAdd)),

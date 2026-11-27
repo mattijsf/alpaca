@@ -34,6 +34,8 @@ pub struct Presets {
     held: bool,
     /// The state of the random numbers; 0 before the first one.
     seed: u64,
+    /// Whether the preset after a stay is one at random, not the next by name.
+    pub random: bool,
 }
 
 impl Presets {
@@ -128,10 +130,20 @@ impl Presets {
         }
     }
 
-    /// The stay is over: the next preset is current, unless the listener holds this one.
-    /// True when another preset is current.
+    /// The stay is over: the next preset is current, or one at random other than this one
+    /// when `random` is set, unless the listener holds this one. True when another
+    /// preset is current.
     pub fn pass(&mut self) -> bool {
-        !self.held && self.files.len() > 1 && self.go(self.index as i64 + 1)
+        if self.held || self.files.len() < 2 {
+            return false;
+        }
+        let step = if self.random {
+            // any but the one shown
+            1 + self.random() % (self.files.len() as i64 - 1)
+        } else {
+            1
+        };
+        self.go(self.index as i64 + step)
     }
 
     /// A number to pick a preset by: an xorshift generator, started from the clock.
