@@ -25,7 +25,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.cancel
 import nl.mattix.alpaca.R
-import nl.mattix.alpaca.skin.BundledSkins
+import nl.mattix.alpaca.skin.TestSkins
 import nl.mattix.alpaca.state.SkinKind
 import nl.mattix.alpaca.state.SkinLibrary
 import nl.mattix.alpaca.state.WinampViewModel
@@ -69,6 +69,9 @@ class ModernSkinSwitchTest {
     val compose = createComposeRule()
 
     private val app = ApplicationProvider.getApplicationContext<Application>()
+
+    /** A stored classic skin, the listener's own choice. */
+    private val light by lazy { SkinLibrary(app).save(TestSkins.classic(app, "Light"), "Light.wsz").id }
 
     /** Every player a test made; each is stopped after the test, so none follows the switch in the next one. */
     private val made = ArrayList<WinampViewModel>()
@@ -172,7 +175,7 @@ class ModernSkinSwitchTest {
 
     @Test
     fun `the Skins section comes last, reads off, holds the note, and has no sharp row while off`() {
-        showPlayerPage(PrefsSections(palette = PalettePrefs(offered = true)))
+        showPlayerPage(PrefsSections())
 
         val heading = compose.onNodeWithText(text(R.string.prefs_player_skins_section))
         heading.performScrollTo().assertIsDisplayed()
@@ -183,9 +186,8 @@ class ModernSkinSwitchTest {
         sharpSwitch.assertDoesNotExist()
         apartSwitch.assertDoesNotExist()
 
-        val colors = compose.onNodeWithText(text(R.string.prefs_player_colors_section)).top()
-        assertTrue("after Colors, the section that came last before it", heading.top() > colors)
-        assertTrue(modernSwitch.top() > tag("prefs.palette.switch").top())
+        val touch = compose.onNodeWithText(text(R.string.prefs_player_touch_section)).top()
+        assertTrue("after Touch, the section before it", heading.top() > touch)
         assertTrue("the note under the switch", note.top() > modernSwitch.top())
     }
 
@@ -225,7 +227,8 @@ class ModernSkinSwitchTest {
         vm.skinOps.load(bytes.inputStream(), "Bento.wal") {}
         await("the picked modern skin is on") { vm.skinOps.currentId == id && vm.skinOps.wal != null }
         assertNull("no offer", vm.state.modernOffer)
-        assertTrue(vm.state.skinEntries.any { it.id == id && it.kind == SkinKind.MODERN })
+        // the rows are listed a hop after the skin goes on
+        await("its row is listed") { vm.state.skinEntries.any { it.id == id && it.kind == SkinKind.MODERN } }
 
         assertTrue("stored", storedSwitch())
     }
@@ -234,7 +237,7 @@ class ModernSkinSwitchTest {
     fun `switching off while a modern skin is worn puts the last classic skin back and hides the modern rows`() {
         switchModernSkinsOn(app)
         val library = SkinLibrary(app)
-        library.choose(BundledSkins.LIGHT.id)
+        library.choose(light)
         val modern = library.addModern(app, "Bento", loads = true)
         library.choose(modern)
         val vm = startedPlayer()
@@ -246,8 +249,8 @@ class ModernSkinSwitchTest {
         modernSwitch.performClick()
 
         assertFalse(WalGate.on)
-        await("the last classic skin is back") { vm.skinOps.currentId == BundledSkins.LIGHT.id && vm.skinOps.wal == null }
-        assertEquals(BundledSkins.LIGHT.id, library.currentId)
+        await("the last classic skin is back") { vm.skinOps.currentId == light && vm.skinOps.wal == null }
+        assertEquals(light, library.currentId)
         await("the modern rows leave the Skins menu") { vm.state.skinEntries.none { it.kind == SkinKind.MODERN } }
         modernSwitch.assertIsOff()
         sharpSwitch.assertDoesNotExist()

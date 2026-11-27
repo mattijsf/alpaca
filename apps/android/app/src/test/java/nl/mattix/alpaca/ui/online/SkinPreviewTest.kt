@@ -69,7 +69,7 @@ class SkinPreviewTest {
         base = SkinLoader.loadBase(app)
     }
 
-    private fun bytes() = app.assets.open("skins/Alpaca Light.wsz").use { it.readBytes() }
+    private fun bytes() = app.assets.open("skins/walkit-classic.wsz").use { it.readBytes() }
 
     @Test
     fun `asking for a skin fetches it once and keeps it`() {

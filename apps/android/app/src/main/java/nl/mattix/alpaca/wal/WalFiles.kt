@@ -15,8 +15,9 @@ import java.util.zip.ZipFile
 internal object WalFiles {
     /**
      * The files of [skin]: the skin itself, the other skins in [siblings] it names by folder
-     * (Bento reads "Big Bento"), each opened the first time a path names it, and [base], the
-     * default element set, behind them.
+     * (Bento reads "Big Bento"), each opened the first time a path names it, and [base] behind
+     * them: by default the default element set under a modern skin, and the base skin over it
+     * under a classic one ([ClassicBase]).
      *
      * [siblings] maps the names a path may use for a skin to its file: in the library, each skin's
      * name and its skininfo name, since the files there are named by hash (see [siblings]). Names
@@ -31,10 +32,11 @@ internal object WalFiles {
     fun open(
         skin: File,
         siblings: Map<String, File>,
-        base: SkinFiles = AlpacaDefaultSet,
+        base: SkinFiles? = null,
         openSibling: (File) -> SkinFiles = { ZipSkinFiles.OnDemand(it) },
     ): Opened {
         val skinFiles = ZipSkinFiles(skin)
+        val under = base ?: if (WalArchive.isModern(skinFiles.names())) AlpacaDefaultSet else ClassicBase.files
         val byName = siblings.mapKeys { folderName(it.key) }
         val opened = HashMap<File, SkinFiles?>()
         var closed = false
@@ -61,7 +63,7 @@ internal object WalFiles {
             if (kept !== made) (made as? Closeable)?.close()
             kept
         }
-        return Opened(LayeredSkinFiles(SkinsFolderFiles(skinFiles, sibling), base)) {
+        return Opened(LayeredSkinFiles(SkinsFolderFiles(skinFiles, sibling), under)) {
             val all =
                 synchronized(opened) {
                     closed = true
@@ -75,7 +77,7 @@ internal object WalFiles {
     fun open(
         skin: File,
         siblings: List<File>,
-        base: SkinFiles = AlpacaDefaultSet,
+        base: SkinFiles? = null,
         openSibling: (File) -> SkinFiles = { ZipSkinFiles.OnDemand(it) },
     ): Opened = open(skin, siblings.associateBy { it.nameWithoutExtension }, base, openSibling)
 

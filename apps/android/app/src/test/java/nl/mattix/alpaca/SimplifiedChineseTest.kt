@@ -53,7 +53,7 @@ class SimplifiedChineseTest {
     @Test
     fun `a Preferences row says what its page holds in Chinese`() {
         assertEquals("可视化效果、刷新率、大小、点按和面板", words.get(R.string.prefs_widget_summary))
-        assertEquals("窗口、列表、触控和面板", words.get(R.string.prefs_player_summary_no_colors_skins))
+        assertEquals("窗口、列表、触控和面板", words.get(R.string.prefs_player_summary_with_skins))
     }
 
     @Test

@@ -101,9 +101,6 @@ class WinampViewModel
         /** Whether windows may be collapsed to their title bar; see [ShadeStore]. */
         val shadeStore = ShadeStore(app)
 
-        /** Whether the live skins follow the wallpaper; see [PaletteStore]. */
-        val paletteStore = PaletteStore(app)
-
         /** Whether a hold opens the magnifier; see [TapAssistStore]. */
         val tapAssistStore = TapAssistStore(app)
 

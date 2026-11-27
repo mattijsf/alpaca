@@ -135,19 +135,12 @@
     <string name="prefs_pack_notice_ahead">%1$s 是为新版 Alpaca 设置的，不会被要求播放任何内容。更新 Alpaca 即可恢复它的曲目。</string>
     <string name="prefs_pack_update">更新 %1$s</string>
 
-    <!-- PalettePrefs.kt -->
-    <string name="prefs_palette_title">匹配壁纸颜色</string>
-    <string name="prefs_palette_on">Alpaca Dark 和 Alpaca Light 跟随壁纸取色，与手机的其他部分一致。</string>
-    <string name="prefs_palette_off">Alpaca Dark 和 Alpaca Light 保持自己的颜色。</string>
-
     <!-- PlayerPage.kt -->
     <string name="prefs_player_windows_section">窗口</string>
     <string name="prefs_player_lists_section">列表</string>
     <string name="prefs_player_touch_section">触控</string>
-    <string name="prefs_player_colors_section">颜色</string>
     <string name="prefs_player_skins_section">面板</string>
-    <string name="prefs_player_summary_all_skins">窗口、列表、触控、颜色和面板</string>
-    <string name="prefs_player_summary_no_colors_skins">窗口、列表、触控和面板</string>
+    <string name="prefs_player_summary_with_skins">窗口、列表、触控和面板</string>
 
     <!-- ModernSkinPrefs.kt -->
     <string name="prefs_modern_skins_title">现代面板（测试版）</string>

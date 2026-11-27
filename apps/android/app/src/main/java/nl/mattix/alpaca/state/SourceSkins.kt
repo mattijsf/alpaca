@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import nl.mattix.alpaca.skin.BundledSkins
 
 /**
  * The skin each music source asks for, chosen on its Preferences page.
@@ -66,7 +67,7 @@ class SourceSkins(
 
     private fun read(): Map<String, String> =
         prefs.all
-            .mapNotNull { (key, value) -> (value as? String)?.let { key to it } }
+            .mapNotNull { (key, value) -> (value as? String)?.let { key to BundledSkins.current(it) } }
             .toMap()
 
     private companion object {

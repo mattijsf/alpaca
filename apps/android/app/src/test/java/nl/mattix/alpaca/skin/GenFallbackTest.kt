@@ -21,9 +21,9 @@ import java.util.zip.ZipOutputStream
 class GenFallbackTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
 
-    /** The bundled light skin with its GEN.BMP removed. */
+    /** The bundled base skin with its GEN.BMP removed. */
     private fun skinWithoutGen(base: Skin): Skin {
-        val bytes = app.assets.open("skins/Alpaca Light.wsz").use { it.readBytes() }
+        val bytes = app.assets.open("skins/walkit-classic.wsz").use { it.readBytes() }
         val members = mutableMapOf<String, ByteArray>()
         java.util.zip.ZipInputStream(bytes.inputStream()).use { zip ->
             generateSequence { zip.nextEntry }.forEach { entry ->
@@ -63,7 +63,7 @@ class GenFallbackTest {
     fun `a stub GEN_BMP does not count as the skin's own chrome`() {
         // a 1x1 placeholder holds neither the letter strips nor the frame art
         val base = SkinLoader.loadBase(app)
-        val bytes = app.assets.open("skins/Alpaca Light.wsz").use { it.readBytes() }
+        val bytes = app.assets.open("skins/walkit-classic.wsz").use { it.readBytes() }
         val members = mutableMapOf<String, ByteArray>()
         java.util.zip.ZipInputStream(bytes.inputStream()).use { zip ->
             generateSequence { zip.nextEntry }.forEach { entry ->

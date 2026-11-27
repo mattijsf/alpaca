@@ -114,14 +114,6 @@ class SkinColorsTest {
     }
 
     @Test
-    fun `the bundled skin seeds a color, not a gray`() {
-        val seed = SkinColors.seedOf(base)!!
-        val spread = maxOf(seed.red, seed.green, seed.blue) - minOf(seed.red, seed.green, seed.blue)
-
-        assertTrue("the base skin seeds a color: $seed", spread > MIN_SPREAD)
-    }
-
-    @Test
     fun `a skin with no art at all still yields a readable scheme`() {
         val bare =
             Skin(
@@ -379,7 +371,6 @@ class SkinColorsTest {
         const val HUE_GREEN_TURN = 2f
         const val HUE_BLUE_TURN = 4f
         const val FULL_CIRCLE = 360f
-        const val MIN_SPREAD = 0.08f
         const val READABLE = 4.5
         const val DARK_SURFACE = 0.1
         const val SURFACE_SPREAD = 0.05f

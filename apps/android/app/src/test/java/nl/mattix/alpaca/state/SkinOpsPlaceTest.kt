@@ -9,7 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import nl.mattix.alpaca.skin.BundledSkins
+import nl.mattix.alpaca.skin.TestSkins
 import nl.mattix.alpaca.wal.WalLook
 import nl.mattix.alpaca.wal.WalSettings
 import nl.mattix.walkit.FakePlayer
@@ -38,6 +38,12 @@ import java.util.concurrent.CopyOnWriteArrayList
 class SkinOpsPlaceTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
     private lateinit var library: SkinLibrary
+
+    /** A stored classic skin, the listener's own choice. */
+    private val light by lazy { library.save(TestSkins.classic(app, "Light"), "Light.wsz").id }
+
+    /** A stored classic skin a music source asks for. */
+    private val spot by lazy { library.save(TestSkins.classic(app, "Spot"), "Spot.wsz").id }
     private lateinit var ops: SkinOps
 
     /** Every modern look opened, in order. */
@@ -59,10 +65,10 @@ class SkinOpsPlaceTest {
             .commit()
         java.io.File(app.filesDir, "skins").deleteRecursively()
         library = SkinLibrary(app)
-        library.currentId = BundledSkins.LIGHT.id
+        library.currentId = light
         ops = opsOn(WinampState())
         ops.start()
-        await { ops.skin != null && ops.currentId == BundledSkins.LIGHT.id }
+        await { ops.skin != null && ops.currentId == light }
     }
 
     @After
@@ -129,8 +135,8 @@ class SkinOpsPlaceTest {
         val look = wornModern()
         look.places[false] = moved
 
-        ops.apply(BundledSkins.LIGHT.id)
-        await { ops.currentId == BundledSkins.LIGHT.id && ops.wal == null }
+        ops.apply(light)
+        await { ops.currentId == light && ops.wal == null }
         ops.apply(look.id)
         await { ops.currentId == look.id && ops.wal != null }
 
@@ -143,8 +149,8 @@ class SkinOpsPlaceTest {
         val look = wornModern()
         look.places[false] = moved
 
-        ops.wear(BundledSkins.SPOT.id)
-        await { ops.currentId == BundledSkins.SPOT.id }
+        ops.wear(spot)
+        await { ops.currentId == spot }
         ops.wear(null)
         await { ops.currentId == look.id }
 

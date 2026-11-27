@@ -101,7 +101,7 @@
     <!-- SkinOps.kt: a worn modern skin that stopped working while it ran; %1$s is the skin's name -->
     <string name="skin_modern_stopped_title">“%1$s” stopped working</string>
     <string name="skin_modern_stopped_body">Alpaca shows your last classic skin instead for now. This modern skin is tried again the next time Alpaca starts. To stop that, pick another skin in Skins or remove this one in the Skin Browser.</string>
-    <string name="skin_classic_stopped_body">Alpaca Dark takes its place for now. Alpaca tries this skin again the next time it starts.</string>
+    <string name="skin_classic_stopped_body">walkit classic takes its place for now. Alpaca tries this skin again the next time it starts.</string>
 
     <!-- AmpModals.kt: a modern skin picked while modern skins are off; %1$s is the picked file's name. No-break spaces (&#160;) around > keep the Preferences path on one line. -->
     <string name="skin_modern_offer_title">Turn on modern skins?</string>

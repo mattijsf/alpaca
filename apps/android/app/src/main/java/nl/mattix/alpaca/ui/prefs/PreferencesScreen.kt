@@ -5,7 +5,6 @@ package nl.mattix.alpaca.ui.prefs
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -160,17 +159,6 @@ fun PreferencesScreen(
                         // the windows follow the store
                         onShadeEnabled = { on -> vm.shadeStore.enabled = on },
                     ),
-                palette =
-                    PalettePrefs(
-                        enabled = vm.paletteStore.enabled,
-                        offered = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
-                        onEnabled = { on ->
-                            vm.paletteStore.enabled = on
-                            // the same path a wallpaper change takes: the base skin is rebuilt, and
-                            // whatever is worn follows it
-                            vm.skinOps.paletteChanged()
-                        },
-                    ),
                 // the player follows the switch through WalGate, so nothing here calls into it
                 modern = modernSkinPrefsOf(context),
                 volume =
@@ -272,7 +260,6 @@ data class PrefsSections(
     val shade: ShadePrefs = ShadePrefs(),
     val tapAssist: TapAssistPrefs = TapAssistPrefs(),
     val lists: ListPrefs = ListPrefs(),
-    val palette: PalettePrefs = PalettePrefs(),
     val modern: ModernSkinPrefs = ModernSkinPrefs(),
     val volume: VolumePrefs = VolumePrefs(),
     val widget: WidgetPrefs = WidgetPrefs(),
@@ -561,7 +548,7 @@ private fun Root(
     Group {
         PageRow(
             page = PrefsPage.PLAYER,
-            summary = stringResource(sections.playerSummary()),
+            summary = stringResource(R.string.prefs_player_summary_with_skins),
             onOpen = { onOpen(it.route) },
         )
         PageRow(

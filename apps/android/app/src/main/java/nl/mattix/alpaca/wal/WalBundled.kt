@@ -5,17 +5,16 @@ package nl.mattix.alpaca.wal
 import android.content.Context
 import android.os.Build
 import nl.mattix.alpaca.skin.BundledSkin
-import nl.mattix.alpaca.skin.LiveSkins
+import nl.mattix.alpaca.skin.BundledSkins
 import java.io.File
 
 /**
  * The skins that ship with the app as files the engine can open ([WalFiles.open] takes a file).
  *
- * A live skin ([BundledSkin.live]) is written in the phone's palette, one file per palette, so a
- * new wallpaper gives a new file and a new look. Any other, or a live one while the phone gives no
- * palette, is a copy of the `.wsz` it ships, made again when the app is updated. The files live in
+ * Each is a copy of the asset it ships as, made again when the app is updated. The files live in
  * the app's no-backup folder, and the [KEPT] newest of each skin stay, so a look still showing the
- * one before keeps its file.
+ * one before keeps its file. A file of a skin the app no longer ships is deleted when another is
+ * written.
  */
 internal object WalBundled {
     private const val DIR = "wal-bundled"
@@ -25,30 +24,18 @@ internal object WalBundled {
 
     private val lock = Any()
 
-    /** The file of [bundled] as it looks now, written first when it is not there yet. */
+    /** The file of [bundled] for this build of the app, written first when it is not there yet. */
     fun fileOf(
         context: Context,
         bundled: BundledSkin,
-        live: LiveSkins,
     ): File {
         val dir = File(context.noBackupFilesDir, DIR)
-        val stamp = live.stamp(context, bundled)
-        val name =
-            if (stamp != null) {
-                "${bundled.id}-live-${Integer.toHexString(stamp.contentHashCode())}.wsz"
-            } else {
-                "${bundled.id}-${java.lang.Long.toHexString(installedAt(context))}.wsz"
-            }
+        val name = "${bundled.id}-${java.lang.Long.toHexString(installedAt(context))}.${bundled.asset.substringAfterLast('.')}"
         synchronized(lock) {
             val file = File(dir, name)
             if (file.isFile) return file
             dir.mkdirs()
-            val bytes =
-                if (stamp != null) {
-                    live.archive(context, bundled)?.second
-                } else {
-                    null
-                } ?: context.assets.open(bundled.asset).use { it.readBytes() }
+            val bytes = context.assets.open(bundled.asset).use { it.readBytes() }
             val part = File(dir, "$name.part")
             part.writeBytes(bytes)
             check(part.renameTo(file)) { "could not write $file" }
@@ -57,7 +44,7 @@ internal object WalBundled {
         }
     }
 
-    /** Removes all but the [KEPT] newest files of the skin [id]. */
+    /** Removes all but the [KEPT] newest files of the skin [id], and every file of a skin not shipped. */
     private fun prune(
         dir: File,
         id: String,
@@ -66,6 +53,9 @@ internal object WalBundled {
             .listFiles { f -> f.name.startsWith("$id-") }
             ?.sortedByDescending { it.lastModified() }
             ?.drop(KEPT)
+            ?.forEach { it.delete() }
+        dir
+            .listFiles { f -> BundledSkins.all.none { f.name.startsWith("${it.id}-") } }
             ?.forEach { it.delete() }
     }
 

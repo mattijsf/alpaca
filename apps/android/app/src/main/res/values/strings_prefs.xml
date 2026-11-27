@@ -157,22 +157,14 @@
     <string name="prefs_pack_notice_ahead">%1$s is set up for a newer Alpaca and is not asked to play anything. Updating Alpaca puts its tracks back.</string>
     <string name="prefs_pack_update">Update %1$s</string>
 
-    <!-- PalettePrefs.kt -->
-    <string name="prefs_palette_title">Match wallpaper colors</string>
-    <string name="prefs_palette_on">Alpaca Dark and Alpaca Light take their colors from your wallpaper, like the rest of the phone.</string>
-    <string name="prefs_palette_off">Alpaca Dark and Alpaca Light keep their own colors.</string>
-
     <!-- PlayerPage.kt -->
     <string name="prefs_player_windows_section">Windows</string>
     <string name="prefs_player_lists_section">Lists</string>
     <string name="prefs_player_touch_section">Touch</string>
-    <string name="prefs_player_colors_section">Colors</string>
     <!-- The heading of the last section on Preferences > Player, over the modern skins switch. -->
     <string name="prefs_player_skins_section">Skins</string>
     <!-- The Player row's line: what the page holds. -->
-    <string name="prefs_player_summary_all_skins">Windows, lists, touch, colors and skins</string>
-    <!-- As prefs_player_summary_all_skins, on a phone that cannot take colors from the wallpaper. -->
-    <string name="prefs_player_summary_no_colors_skins">Windows, lists, touch and skins</string>
+    <string name="prefs_player_summary_with_skins">Windows, lists, touch and skins</string>
 
     <!-- ModernSkinPrefs.kt: the Skins section on Preferences > Player -->
     <!-- The switch that lets Winamp modern skins be added and worn. -->

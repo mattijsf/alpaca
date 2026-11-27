@@ -2,32 +2,19 @@
 
 package nl.mattix.alpaca.skin
 
-/**
- * The template a bundled skin is rebuilt from with the phone's own palette; see [SkinTemplate].
- * [dark] is the entry's and not the phone's: Alpaca Dark asks for the dynamic dark scheme whatever
- * the night setting says.
- */
-data class LiveTemplate(
-    val asset: String,
-    val dark: Boolean,
-)
-
-/**
- * A skin that ships inside the app: an id, a name, the asset holding its bytes and, for the two
- * that can follow the phone's palette, the template that rebuilds it.
- */
+/** A skin that ships inside the app: an id, a name, the asset holding its bytes, and whether it is a modern skin. */
 data class BundledSkin(
     val id: String,
     val name: String,
     val asset: String,
-    val live: LiveTemplate? = null,
+    val modern: Boolean = false,
 )
 
 /**
  * The skins Alpaca ships, and the one it falls back to.
  *
- * They are generated: `skin/` in this repository builds all three from one Python source, the same
- * geometry in three color tables.
+ * They are walkit's two example skins, built by `examples/skins/make-skins.py` in the walkit
+ * repository and copied here as they are.
  *
  * [BASE] is what a fresh install wears and what a skin missing a sheet borrows from.
  */
@@ -35,33 +22,18 @@ object BundledSkins {
     /** The id stored in preferences for [BASE]. */
     const val BASE_ID = "base"
 
-    val BASE =
-        BundledSkin(
-            BASE_ID,
-            "Alpaca Dark",
-            "skins/Alpaca Dark.wsz",
-            live = LiveTemplate("skins/alpaca-dark-template.zip", dark = true),
-        )
+    val BASE = BundledSkin(BASE_ID, "walkit classic", "skins/walkit-classic.wsz")
 
-    /**
-     * The same design in a light scheme: the same geometry, another color table. Its id, like
-     * [SPOT]'s, keeps the app's old name: the current skin is stored by id.
-     */
-    val LIGHT =
-        BundledSkin(
-            "andamp-light",
-            "Alpaca Light",
-            "skins/Alpaca Light.wsz",
-            live = LiveTemplate("skins/alpaca-light-template.zip", dark = false),
-        )
+    /** A modern skin, listed while modern skins are on. */
+    val MODERN = BundledSkin("walkit-modern", "walkit modern", "skins/walkit-modern.wal", modern = true)
 
-    /**
-     * Winamp's LCD green and analyzer amber as seed colors. Not live: it keeps those seeds whatever
-     * the wallpaper.
-     */
-    val SPOT = BundledSkin("andamp-spot", "Alpaca Spot", "skins/Alpaca Spot.wsz")
+    val all = listOf(BASE, MODERN)
 
-    val all = listOf(BASE, LIGHT, SPOT)
+    /** Ids a phone may have stored as a choice that name no skin the app ships; each reads as [BASE_ID]. */
+    private val retired = setOf("andamp-light", "andamp-spot")
 
     fun of(id: String) = all.firstOrNull { it.id == id }
+
+    /** [id] as it is read back from a stored choice: a skin the app no longer ships gives [BASE_ID]. */
+    fun current(id: String): String = if (id in retired) BASE_ID else id
 }

@@ -40,7 +40,7 @@
     <string name="welcome_pick_a_look">Pick a look</string>
     <string name="welcome_skins_in_the_menu">Skins in the menu changes it whenever you like.</string>
     <string name="welcome_own_skin">Alpaca\'s own</string>
-    <string name="welcome_own_skin_summary">Drawn for this app, and on Android 12 and later it takes its colors from your wallpaper.</string>
+    <string name="welcome_own_skin_summary">Comes with the app: a flat, dark look with a teal accent.</string>
     <string name="welcome_keep_this">Keep this</string>
     <string name="welcome_classic_skin">A classic skin</string>
     <!-- The placeholder holds the museum's count, grouped for the phone's locale. -->

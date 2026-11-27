@@ -2,7 +2,6 @@
 
 package nl.mattix.alpaca.skin
 
-import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -55,12 +54,6 @@ class Skin(
     val regions: RegionTxt.Regions = RegionTxt.Regions.NONE,
     /** The readme text the artist packed with the skin, if any. */
     val readme: String? = null,
-    /**
-     * The phone's color scheme this skin was built from, when it was built from one; see
-     * [SkinTemplate]. Null for every skin that came from a file. The modern chrome around a live
-     * skin uses this scheme directly.
-     */
-    val liveScheme: ColorScheme? = null,
 ) {
     operator fun get(sheet: Sheet): ImageBitmap =
         sheets[sheet] ?: error("Sheet $sheet missing — loader must guarantee all required sheets")
@@ -80,7 +73,6 @@ class Skin(
             ownsGenArt = ownsGenArt,
             regions = regions,
             readme = readme,
-            liveScheme = liveScheme,
         )
 
     val hasNumsEx: Boolean get() = Sheet.NUMS_EX in sheets

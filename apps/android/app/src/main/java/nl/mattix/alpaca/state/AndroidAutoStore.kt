@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import nl.mattix.alpaca.core.remotewindow.RemoteWindowLink
+import nl.mattix.alpaca.skin.BundledSkins
 
 /**
  * What the listener chose for Android Auto.
@@ -34,7 +35,7 @@ class AndroidAutoStore(
         SkinLibrary(context)::hasClassic,
     )
 
-    private var chosen: String? by mutableStateOf(prefs.getString(SKIN, null))
+    private var chosen: String? by mutableStateOf(prefs.getString(SKIN, null)?.let(BundledSkins::current))
 
     /** The skin chosen for Android Auto, or null for the player's own. */
     var skin: String?

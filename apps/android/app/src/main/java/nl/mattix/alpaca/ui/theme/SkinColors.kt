@@ -307,12 +307,10 @@ object SkinColors {
 /**
  * The scheme for [skin]. `remember` keeps it within this composition; [SkinSchemes] keeps it across
  * all of them.
- *
- * A live skin was made from a scheme and uses that one; [dark] and [style] do not apply to it.
  */
 @Composable
 fun rememberSkinColorScheme(
     skin: Skin,
     dark: Boolean = true,
     style: SkinSchemeStyle = SkinSchemeStyle.VIBRANT,
-): ColorScheme = remember(skin, dark, style) { skin.liveScheme ?: SkinSchemes.of(skin, dark, style) }
+): ColorScheme = remember(skin, dark, style) { SkinSchemes.of(skin, dark, style) }

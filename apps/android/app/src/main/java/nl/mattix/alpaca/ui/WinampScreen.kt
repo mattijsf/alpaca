@@ -55,7 +55,6 @@ import kotlinx.coroutines.withContext
 import nl.mattix.alpaca.R
 import nl.mattix.alpaca.skin.BundledSkins
 import nl.mattix.alpaca.skin.Skin
-import nl.mattix.alpaca.state.CurrentSkin
 import nl.mattix.alpaca.state.MenuAnchor
 import nl.mattix.alpaca.state.WinampState
 import nl.mattix.alpaca.state.WinampViewModel
@@ -646,12 +645,9 @@ private fun Welcome(
 ) {
     if (vm.welcome.seen) return
     val context = LocalContext.current
-    // Alpaca's own skin as the engine opens it, in the phone's palette: written off main
-    val own by produceState<java.io.File?>(null, skin) {
-        value =
-            withContext(Dispatchers.IO) {
-                runCatching { WalBundled.fileOf(context, BundledSkins.BASE, CurrentSkin.live) }.getOrNull()
-            }
+    // the base skin as the engine opens it: written off main
+    val own by produceState<java.io.File?>(null) {
+        value = withContext(Dispatchers.IO) { runCatching { WalBundled.fileOf(context, BundledSkins.BASE) }.getOrNull() }
     }
     val museum = vm.onlineSkins.museum
     // fetches the museum's first tiles for the dialog

@@ -2,7 +2,6 @@
 
 package nl.mattix.alpaca.ui.prefs
 
-import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import nl.mattix.alpaca.R
@@ -27,19 +26,5 @@ internal fun PlayerPage(
     }
     Section(stringResource(R.string.prefs_player_touch_section))
     Group { TapAssistRow(sections.tapAssist) }
-    // shown only on a phone that can take colors from its wallpaper, so the heading never stands
-    // over nothing
-    if (sections.palette.offered) {
-        Section(stringResource(R.string.prefs_player_colors_section))
-        Group { PaletteRow(sections.palette) }
-    }
     ModernSkinsSection(sections.modern)
 }
-
-/**
- * What the page holds, for the Player row's line, by the sections this phone shows: Colors where
- * it can take them from the wallpaper.
- */
-@StringRes
-internal fun PrefsSections.playerSummary(): Int =
-    if (palette.offered) R.string.prefs_player_summary_all_skins else R.string.prefs_player_summary_no_colors_skins

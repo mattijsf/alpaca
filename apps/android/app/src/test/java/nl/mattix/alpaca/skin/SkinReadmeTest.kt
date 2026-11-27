@@ -32,7 +32,7 @@ class SkinReadmeTest {
 
     /** The bundled skin's art, plus whatever text files a case wants. */
     private fun skinCarrying(vararg text: Pair<String, String>): Skin {
-        val bytes = app.assets.open("skins/Alpaca Light.wsz").use { it.readBytes() }
+        val bytes = app.assets.open("skins/walkit-classic.wsz").use { it.readBytes() }
         val members = mutableMapOf<String, ByteArray>()
         java.util.zip.ZipInputStream(bytes.inputStream()).use { zip ->
             generateSequence { zip.nextEntry }.forEach { entry ->

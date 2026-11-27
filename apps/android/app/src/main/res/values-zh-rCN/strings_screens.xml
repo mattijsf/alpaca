@@ -35,7 +35,7 @@
     <string name="welcome_pick_a_look">选择外观</string>
     <string name="welcome_skins_in_the_menu">之后可随时通过菜单中的“面板”更换。</string>
     <string name="welcome_own_skin">Alpaca 自带面板</string>
-    <string name="welcome_own_skin_summary">专为本应用绘制，在 Android 12 及更高版本上会跟随壁纸取色。</string>
+    <string name="welcome_own_skin_summary">随应用附带：扁平的深色外观，带青绿色点缀。</string>
     <string name="welcome_keep_this">就用这个</string>
     <string name="welcome_classic_skin">经典面板</string>
     <string name="welcome_classic_skins_count">%1$s 个经典面板</string>

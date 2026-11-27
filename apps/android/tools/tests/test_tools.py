@@ -118,12 +118,11 @@ class Section(unittest.TestCase):
 
 
 class CommitTypes(unittest.TestCase):
-    def test_main_sources_and_built_skins_ship(self):
+    def test_main_sources_and_bundled_skins_ship(self):
         for path in (
             "apps/android/app/src/main/java/nl/mattix/alpaca/MainActivity.kt",
             "apps/android/core/dsp/src/main/kotlin/nl/mattix/alpaca/core/dsp/GraphEngine.kt",
-            "apps/android/skin/dist/Alpaca Dark.wsz",
-            "apps/android/skin/dist/alpaca-dark-template.zip",
+            "apps/android/app/src/main/assets/skins/walkit-classic.wsz",
         ):
             self.assertTrue(commit_type.SHIPS.search(path), path)
 
@@ -133,6 +132,7 @@ class CommitTypes(unittest.TestCase):
             "apps/android/tools/release.py",
             "apps/android/docs/extend.md",
             "apps/android/skin/dist/preview/dark.png",
+            "apps/android/skin/dist/Alpaca Dark.wsz",
             "apps/android/build.gradle.kts",
         ):
             self.assertFalse(commit_type.SHIPS.search(path), path)

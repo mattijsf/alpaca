@@ -93,42 +93,6 @@ fun versionCodeOf(name: String): Int {
 }
 
 /**
- * The skins Alpaca ships, copied from where they are generated.
- *
- * `skin/` is the source: one Python build that writes three themes. They are copied at build time,
- * so no second copy is kept under assets. What goes: the three .wsz, and the two templates from
- * which Dark and Light are rebuilt on the phone from its own palette (SkinTemplate). The other
- * files in `skin/dist` are not packaged.
- */
-abstract class BundleSkins : DefaultTask() {
-    @get:InputDirectory
-    abstract val from: DirectoryProperty
-
-    @get:OutputDirectory
-    abstract val into: DirectoryProperty
-
-    @get:Inject
-    abstract val files: FileSystemOperations
-
-    @TaskAction
-    fun copy() {
-        files.sync {
-            from(this@BundleSkins.from) {
-                include("Alpaca *.wsz", "alpaca-dark-template.zip", "alpaca-light-template.zip")
-            }
-            // the asset path is skins/
-            into(this@BundleSkins.into.dir("skins"))
-        }
-    }
-}
-
-val bundledSkins =
-    tasks.register<BundleSkins>("bundledSkins") {
-        description = "Copies the generated Alpaca skins into the packaged assets."
-        from.set(rootProject.layout.projectDirectory.dir("skin/dist"))
-    }
-
-/**
  * The license texts of projectM, Liberation Sans and DejaVu, copied into the
  * packaged assets.
  *
@@ -331,7 +295,6 @@ androidComponents {
     onVariants { variant ->
         // AGP 9 does not take a provider through the source-set API; a generated directory is added
         // through the variant API.
-        variant.sources.assets?.addGeneratedSourceDirectory(bundledSkins, BundleSkins::into)
         variant.sources.assets?.addGeneratedSourceDirectory(bundledLicenses, BundleLicenses::into)
 
         // The app read back as it was packaged: its APK before assembling counts as done, and its

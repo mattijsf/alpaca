@@ -59,34 +59,6 @@ class SkinSchemeCacheTest {
         built = 0
     }
 
-    /**
-     * A live skin was made from a scheme and wears that one.
-     */
-    @Test
-    fun `a live skin is not quantized`() {
-        val scheme =
-            darkColorScheme(
-                primary =
-                    androidx.compose.ui.graphics
-                        .Color(0xFF00E250),
-            )
-        val live =
-            Skin(
-                sheets = mapOf(Sheet.MAIN to ImageBitmap(WIDTH, HEIGHT)),
-                balanceUsesVolume = false,
-                pledit = PleditStyle.DEFAULT,
-                visColors = emptyList(),
-                name = "live",
-                liveScheme = scheme,
-            )
-        var worn: ColorScheme? = null
-
-        rule.setContent { worn = rememberSkinColorScheme(live) }
-        rule.waitForIdle()
-
-        assertSame(scheme, worn)
-    }
-
     @Test
     fun `a skin's scheme is grown once, however many surfaces ask for it`() {
         val skin = skin("one")

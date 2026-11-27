@@ -4,9 +4,10 @@ package nl.mattix.alpaca.ui.menu
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.alpaca.skin.BundledSkins
+import nl.mattix.alpaca.skin.TestSkins
 import nl.mattix.alpaca.state.AmpMenu
 import nl.mattix.alpaca.state.AmpMenuItem
+import nl.mattix.alpaca.state.SkinLibrary
 import nl.mattix.alpaca.state.WinampViewModel
 import nl.mattix.alpaca.ui.window.testViewModel
 import nl.mattix.alpaca.wal.WalLook
@@ -33,6 +34,9 @@ import java.util.concurrent.TimeUnit
 @Config(sdk = [35], qualifiers = "w900dp-h1600dp-mdpi")
 class SkinSettingsMenuTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
+
+    /** A stored classic skin a music source asks for. */
+    private val spot by lazy { SkinLibrary(app).save(TestSkins.classic(app, "Spot"), "Spot.wsz").id }
 
     /** The view models that wore a modern skin; let go after each test. */
     private val wearing = ArrayList<WinampViewModel>()
@@ -131,7 +135,7 @@ class SkinSettingsMenuTest {
         (options(vm)[2] as AmpMenuItem.Action).onClick()
         assertTrue(vm.state.skinSettings === look)
         try {
-            vm.skinOps.wear(BundledSkins.SPOT.id)
+            vm.skinOps.wear(spot)
             awaitModern("the source's skin parks the modern look") { vm.skinOps.wal == null }
 
             assertEquals(null, vm.state.skinSettings)
@@ -224,7 +228,7 @@ class SkinSettingsMenuTest {
         val look = vm.skinOps.wal!!
         assertTrue("on screen it offers them", "Skin Settings..." in shape(options(vm)))
         try {
-            vm.skinOps.wear(BundledSkins.SPOT.id)
+            vm.skinOps.wear(spot)
             awaitModern("the source's skin parks the modern look") { vm.skinOps.wal == null }
 
             assertFalse("Skin Settings..." in shape(options(vm)))

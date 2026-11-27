@@ -470,7 +470,7 @@ class ModernPlayerSurfaceTest {
         assertNull(vm.state.windowRects[WindowStore.EQ])
         assertNull(vm.state.windowRects[WindowStore.PLAYLIST])
 
-        vm.skinOps.apply(BundledSkins.LIGHT.id)
+        vm.skinOps.apply(BundledSkins.BASE_ID)
 
         until("the skin is let go") { vm.skinOps.wal == null && look.released }
         frames(5)
@@ -507,7 +507,7 @@ class ModernPlayerSurfaceTest {
         assertFalse(ticked(vm, R.string.menu_playlist_editor))
         assertFalse(ticked(vm, R.string.menu_equalizer))
 
-        vm.skinOps.apply(BundledSkins.LIGHT.id)
+        vm.skinOps.apply(BundledSkins.BASE_ID)
         until("the classic skin is worn") { vm.skinOps.wal == null }
 
         assertTrue(

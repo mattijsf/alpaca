@@ -15,7 +15,7 @@ import nl.mattix.alpaca.backend.mock.MockBackend
 import nl.mattix.alpaca.core.model.Track
 import nl.mattix.alpaca.core.model.Transport
 import nl.mattix.alpaca.core.player.PlayerFacade
-import nl.mattix.alpaca.skin.BundledSkins
+import nl.mattix.alpaca.skin.TestSkins
 import nl.mattix.alpaca.state.MusicSource
 import nl.mattix.alpaca.state.SkinLibrary
 import org.junit.After
@@ -52,15 +52,21 @@ class WidgetOpsSkinTest {
 
     private lateinit var library: SkinLibrary
 
+    /** A stored classic skin, the listener's own choice. */
+    private val light by lazy { library.save(TestSkins.classic(app, "Light"), "Light.wsz").id }
+
+    /** A stored classic skin a music source asks for. */
+    private val spot by lazy { library.save(TestSkins.classic(app, "Spot"), "Spot.wsz").id }
+
     @Before
     fun setUp() {
         library = SkinLibrary(app)
         // the listener's own choice, and the skin the source asks for
-        library.currentId = BundledSkins.LIGHT.id
+        library.currentId = light
         app
             .getSharedPreferences("source_skins", Context.MODE_PRIVATE)
             .edit()
-            .putString(example.id, BundledSkins.SPOT.id)
+            .putString(example.id, spot)
             .commit()
     }
 
@@ -104,9 +110,9 @@ class WidgetOpsSkinTest {
         backend.setQueue(listOf(sourceTrack), 0)
         settle()
 
-        assertEquals(BundledSkins.SPOT.id, library.wearing)
-        assertEquals("the home screen draws what is worn", BundledSkins.SPOT.id, library.worn)
-        assertEquals("the listener's own choice is untouched", BundledSkins.LIGHT.id, library.currentId)
+        assertEquals(spot, library.wearing)
+        assertEquals("the home screen draws what is worn", spot, library.worn)
+        assertEquals("the listener's own choice is untouched", light, library.currentId)
         ops.stop()
     }
 
@@ -115,13 +121,13 @@ class WidgetOpsSkinTest {
         val backend = MockBackend(listOf(sourceTrack), scope)
         val ops = start(backend)
         settle()
-        assertEquals(BundledSkins.SPOT.id, library.wearing)
+        assertEquals(spot, library.wearing)
 
         backend.setQueue(listOf(phoneTrack), 0)
         settle()
 
         assertNull(library.wearing)
-        assertEquals(BundledSkins.LIGHT.id, library.worn)
+        assertEquals(light, library.worn)
         ops.stop()
     }
 
@@ -155,7 +161,7 @@ class WidgetOpsSkinTest {
         settle()
 
         assertNull("the listener's pick stays on", library.wearing)
-        assertEquals(BundledSkins.LIGHT.id, library.worn)
+        assertEquals(light, library.worn)
         ops.stop()
     }
 

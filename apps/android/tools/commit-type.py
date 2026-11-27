@@ -18,11 +18,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-# What ends up on a phone: any path under a `src/main/` directory, and the
-# `.wsz` and `.zip` files directly in skin/dist (the skins and their runtime
-# templates), which :app:bundledSkins packages. The previews and checksums
-# beside them do not ship.
-SHIPS = re.compile(r"(^|/)src/main/|^apps/android/skin/dist/[^/]+\.(wsz|zip)$")
+# What ends up on a phone: any path under a `src/main/` directory. The bundled
+# skins are assets there; skin/dist holds the Mac's skins and does not ship here.
+SHIPS = re.compile(r"(^|/)src/main/")
 # release-please writes the Android app's changelog from the commits that touch
 # its folder; a commit outside it is the core's or another app's, and not news here.
 ANDROID = "apps/android/"

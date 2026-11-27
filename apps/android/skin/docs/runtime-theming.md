@@ -1,9 +1,8 @@
 # Runtime theming
 
-Alpaca builds Alpaca Dark and Alpaca Light at run time from Android's dynamic `ColorScheme`, so
-the player follows Material You. The geometry is still generated and verified by the Python
-build here. This file describes the Python side: the template and how it is checked. The app
-side is [`docs/dynamic-skins.md`](../../docs/dynamic-skins.md).
+The template lets a host build Alpaca Dark and Alpaca Light at run time from a Material
+`ColorScheme`. The geometry is still generated and verified by the Python build here. This file
+describes the template and how it is checked.
 
 ## How it works
 

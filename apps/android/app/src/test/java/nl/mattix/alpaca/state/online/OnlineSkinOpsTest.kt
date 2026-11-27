@@ -54,7 +54,7 @@ class OnlineSkinOpsTest {
         )
 
     /** The bundled skin's bytes stand in for whatever the museum would send. */
-    private fun skinBytes(): ByteArray = app.assets.open("skins/Alpaca Light.wsz").use { it.readBytes() }
+    private fun skinBytes(): ByteArray = app.assets.open("skins/walkit-classic.wsz").use { it.readBytes() }
 
     private fun ops(download: (String) -> ByteArray) =
         OnlineSkinOps(skinOps, library, installed, scope, io = Dispatchers.Unconfined, download = download, words = EnglishWords)

@@ -20,7 +20,6 @@ import kotlinx.coroutines.withContext
 import nl.mattix.alpaca.R
 import nl.mattix.alpaca.skin.BundledSkin
 import nl.mattix.alpaca.skin.BundledSkins
-import nl.mattix.alpaca.skin.LiveSkins
 import nl.mattix.alpaca.skin.Skin
 import nl.mattix.alpaca.skin.SkinLoader
 import nl.mattix.alpaca.wal.WalBundled
@@ -57,8 +56,6 @@ class SkinOps internal constructor(
     private val state: WinampState,
     private val scope: CoroutineScope,
     private val library: SkinLibrary = SkinLibrary(context),
-    /** The skins that follow the phone's palette. */
-    private val live: LiveSkins = CurrentSkin.live,
     /** The words of the notices a pick can end in. */
     private val words: Words = Words.of(context),
     /**
@@ -83,7 +80,7 @@ class SkinOps internal constructor(
      */
     private val classicLooks: Boolean = true,
     /** The file the engine opens for a skin that ships with the app, as it looks now; called on IO. */
-    private val bundledFile: (BundledSkin) -> File = { WalBundled.fileOf(context, it, live) },
+    private val bundledFile: (BundledSkin) -> File = { WalBundled.fileOf(context, it) },
 ) {
     /**
      * The classic skin on screen and in the app's windows and menus. While a modern skin is
@@ -128,9 +125,6 @@ class SkinOps internal constructor(
     // serializes library writes, so two picks, or a pick and a removal, do not interleave
     private val lock = Mutex()
 
-    /** The palette stamp the base was last built from, so an unchanged palette is not rebuilt. */
-    private var lastStamp: IntArray? = null
-
     /** Completed when the base is decoded and the worn skin is on. */
     private val started = CompletableDeferred<Unit>()
 
@@ -143,11 +137,6 @@ class SkinOps internal constructor(
      *
      * If the bundled skin does not decode, the player has no skin and a warning is
      * logged; nothing is thrown.
-     *
-     * Listening for palette changes starts before the palette is first read, so a change
-     * cannot fall between the two. On a fresh install the system applies the package's
-     * color overlays shortly after installing it, as a configuration change. See
-     * [paletteChanged], which waits for this to finish.
      */
     fun start() {
         listenToTheApp()
@@ -161,8 +150,7 @@ class SkinOps internal constructor(
                         ?.forEach { it.delete() }
                     // under the lock, so a pick made meanwhile is not taken for one
                     lock.withLock { library.dropUnfinished() }
-                    lastStamp = live.stamp(context, BundledSkins.BASE)
-                    runCatching { CurrentSkin.base(context, live) }.getOrNull()
+                    runCatching { CurrentSkin.base(context) }.getOrNull()
                 }
             if (base == null) {
                 Log.w(TAG, "the bundled skin would not decode; there is nothing to draw with")
@@ -183,34 +171,7 @@ class SkinOps internal constructor(
     }
 
     /**
-     * The phone's palette may have changed: rebuilds what was built from it. The base
-     * first, because everything else borrows from it, then whatever is worn. The stamp
-     * tells whether the palette changed at all (an orientation change arrives here too).
-     * The listener's choice is not changed. A source's skin that does not open is taken
-     * off.
-     *
-     * It waits for [start] to finish, so a change during the first build is applied over
-     * that build's result and not overwritten by it.
-     */
-    fun paletteChanged() {
-        scope.launch {
-            started.await()
-            val changed =
-                loadAndPut {
-                    val stamp = live.stamp(context, BundledSkins.BASE)
-                    if (stamp.contentEquals(lastStamp)) return@loadAndPut null
-                    lastStamp = stamp
-                    val base = runCatching { CurrentSkin.base(context, live) }.getOrNull() ?: return@loadAndPut null
-                    baseSkin = base
-                    loadWorn()
-                }
-            if (changed) wornSkinChanged()
-        }
-    }
-
-    /**
-     * A wallpaper change, or dynamic color switched on or off, arrives as a configuration
-     * change. Once the app is out of sight ([ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN] and
+     * Once the app is out of sight ([ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN] and
      * above), a modern skin no player surface holds lets go of what it made for drawing; the one
      * a surface holds keeps it, and its menu stays open. The callback is registered on the
      * application and never removed, because the view model that owns this outlives every
@@ -219,7 +180,7 @@ class SkinOps internal constructor(
     private fun listenToTheApp() {
         context.applicationContext.registerComponentCallbacks(
             object : ComponentCallbacks2 {
-                override fun onConfigurationChanged(newConfig: Configuration) = paletteChanged()
+                override fun onConfigurationChanged(newConfig: Configuration) = Unit
 
                 @Deprecated("the platform's own; nothing here to drop")
                 override fun onLowMemory() = Unit
@@ -605,7 +566,7 @@ class SkinOps internal constructor(
         }
     }
 
-    /** Main menu > Skins > Alpaca Dark. The library keeps the files; only the choice changes. */
+    /** Main menu > Skins > walkit classic, the base skin. The library keeps the files; only the choice changes. */
     fun reset() {
         choosing()
         put(Worn(baseSkin, SkinEntry.BASE_ID, SkinEntry.BASE_ID))
@@ -766,7 +727,7 @@ class SkinOps internal constructor(
             ) {
                 baseSkin
             } else {
-                CurrentSkin.stored(context, library, companion, baseSkin, live)
+                CurrentSkin.stored(library, companion, baseSkin)
             }
         val modern = companion != id
         val wal = if (modern) look ?: lookFor(id) else look ?: classicLookFor(id)
@@ -791,8 +752,8 @@ class SkinOps internal constructor(
     private fun lookFor(id: String): WalLook? {
         if (id in failed || !modernOn()) return null
         listOf(wal, parked).firstOrNull { it != null && it.id == id && !it.released }?.let { return it }
-        val file = library.fileOf(id) ?: return null
         return try {
+            val file = engineFile(id) ?: return null
             openLook(id, file, library.nameOf(id))
         } catch (e: Exception) {
             Log.w(TAG, "Modern skin $id has no look", e)
@@ -803,22 +764,21 @@ class SkinOps internal constructor(
 
     /**
      * The look of the classic skin [id] drawn by the engine: the one on screen or parked, else a
-     * new one of its file, the stored one or, for a skin that ships with the app, the one
-     * [bundledFile] writes, which for a live skin follows the phone's palette. Null for a skin with
-     * no file for the engine or whose look failed in this process. Call under the lock.
+     * new one of its file ([engineFile]). Null for a skin with no file for the engine or whose look
+     * failed in this process. Call under the lock.
      */
     @Suppress("TooGenericExceptionCaught") // whatever making a look throws, the skin goes on without a look
     private fun classicLookFor(id: String): WalLook? {
         if (id in failed || !classicLooks) return null
         val file =
             try {
-                library.fileOf(id) ?: BundledSkins.of(id)?.let(bundledFile) ?: return null
+                engineFile(id) ?: return null
             } catch (e: Exception) {
                 Log.w(TAG, "Classic skin $id has no file for the engine", e)
                 failed += id
                 return null
             }
-        // a live skin in another palette is another file, and another look
+        // a skin that ships with the app is another file after an update, and another look
         listOf(wal, parked).firstOrNull { it != null && it.id == id && !it.released && it.file == file }?.let { return it }
         return try {
             openLook(id, file, library.nameOf(id))
@@ -828,6 +788,12 @@ class SkinOps internal constructor(
             null
         }
     }
+
+    /**
+     * The file the engine opens for [id]: the stored one or, for a skin that ships with the app,
+     * the one [bundledFile] writes. Null for a skin that is not installed. Call on IO.
+     */
+    private fun engineFile(id: String): File? = library.fileOf(id) ?: BundledSkins.of(id)?.let(bundledFile)
 
     /**
      * A new look of the modern skin [id] in [file], under [name], with the library's other modern

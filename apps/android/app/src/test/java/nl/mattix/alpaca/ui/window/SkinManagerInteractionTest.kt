@@ -67,8 +67,9 @@ class SkinManagerInteractionTest {
         // a library that outgrows the window; distinct bytes so the content
         // hash keeps them apart instead of deduplicating them into one
         val library = SkinLibrary(app)
-        repeat(overflowing - BundledSkins.all.size) { i -> library.save(ByteArray(16) { i.toByte() }, "skin$i") }
-        vm.state.skinEntries = library.list()
+        repeat(overflowing - BundledSkins.all.count { !it.modern }) { i -> library.save(ByteArray(16) { i.toByte() }, "skin$i") }
+        // as the view model lists them with modern skins off
+        vm.state.skinEntries = library.list().filter { it.kind == SkinKind.CLASSIC }
         assertEquals(overflowing, vm.state.skinEntries.size)
 
         compose.setContent {
@@ -170,7 +171,7 @@ class SkinManagerInteractionTest {
     fun `a press on a row applies that skin even when the list overflows`() {
         // pick a real skin first so the base row is something to switch *to*:
         // the fixture's byte-array entries cannot be applied, but base can
-        val real = app.assets.open("skins/Alpaca Light.wsz").use { it.readBytes() }
+        val real = app.assets.open("skins/walkit-classic.wsz").use { it.readBytes() }
         vm.skinOps.load(real.inputStream(), "Custom.wsz")
         settle()
         vm.state.skinEntries = SkinLibrary(app).list()

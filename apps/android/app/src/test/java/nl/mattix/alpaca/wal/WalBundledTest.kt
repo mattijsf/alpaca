@@ -3,16 +3,11 @@
 package nl.mattix.alpaca.wal
 
 import android.app.Application
-import androidx.compose.material3.ColorScheme
-import androidx.compose.ui.graphics.Color
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.alpaca.skin.BundledSkins
-import nl.mattix.alpaca.skin.LiveSkins
-import nl.mattix.alpaca.skin.SkinDist
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -22,55 +17,53 @@ import org.robolectric.annotation.Config
 import java.io.File
 
 /**
- * The bundled skins as files for the engine: a copy of the shipped file without a palette, one
- * file per palette for a live skin, and only the newest two of a skin kept.
+ * The bundled skins as files for the engine: a copy of the shipped file, written once, and only
+ * the newest two of a skin kept.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class WalBundledTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
 
-    @Volatile
-    private var palette: ColorScheme? = null
-
-    private val live = LiveSkins { _, _ -> palette }
+    private val dir get() = File(app.noBackupFilesDir, "wal-bundled")
 
     @Before
     fun clean() {
-        File(app.noBackupFilesDir, "wal-bundled").deleteRecursively()
+        dir.deleteRecursively()
     }
 
-    private fun tinted(argb: Long) = SkinDist.baselineScheme("dark").copy(primary = Color(argb))
-
     @Test
-    fun `without a palette a bundled skin is the file it ships, written once`() {
-        val file = WalBundled.fileOf(app, BundledSkins.SPOT, live)
-        val shipped = app.assets.open(BundledSkins.SPOT.asset).use { it.readBytes() }
+    fun `a bundled skin is the file it ships, written once`() {
+        val file = WalBundled.fileOf(app, BundledSkins.BASE)
+        val shipped = app.assets.open(BundledSkins.BASE.asset).use { it.readBytes() }
         assertArrayEquals(shipped, file.readBytes())
         file.setLastModified(0)
 
-        assertEquals(file, WalBundled.fileOf(app, BundledSkins.SPOT, live))
+        assertEquals(file, WalBundled.fileOf(app, BundledSkins.BASE))
         assertEquals("not written again", 0L, file.lastModified())
     }
 
     @Test
-    fun `a live skin gets a file per palette, and only the newest two stay`() {
-        palette = tinted(0xFF7A1FA2)
-        val first = WalBundled.fileOf(app, BundledSkins.BASE, live)
-        first.setLastModified(1_000)
-        assertEquals("the same palette, the same file", first, WalBundled.fileOf(app, BundledSkins.BASE, live))
+    fun `the modern skin keeps the extension of its asset`() {
+        val file = WalBundled.fileOf(app, BundledSkins.MODERN)
 
-        palette = tinted(0xFF1FA27A)
-        val second = WalBundled.fileOf(app, BundledSkins.BASE, live)
-        second.setLastModified(2_000)
-        assertNotEquals(first, second)
-        assertTrue("the one before stays for a look still showing it", first.isFile)
+        assertTrue(file.name, file.name.startsWith("${BundledSkins.MODERN.id}-") && file.name.endsWith(".wal"))
+        assertArrayEquals(app.assets.open(BundledSkins.MODERN.asset).use { it.readBytes() }, file.readBytes())
+    }
 
-        palette = tinted(0xFFA27A1F)
-        val third = WalBundled.fileOf(app, BundledSkins.BASE, live)
+    @Test
+    fun `only the newest two files of a skin stay, and files of skins no longer shipped go`() {
+        dir.mkdirs()
+        val oldest = File(dir, "${BundledSkins.BASE_ID}-1.wsz").apply { writeText("") }
+        oldest.setLastModified(1_000)
+        val before = File(dir, "${BundledSkins.BASE_ID}-2.wsz").apply { writeText("") }
+        before.setLastModified(2_000)
+        val retired = File(dir, "andamp-light-live-1a2b.wsz").apply { writeText("") }
 
-        assertFalse("the oldest goes", first.isFile)
-        assertTrue(second.isFile && third.isFile)
-        assertTrue("named for the skin and its palette", third.name.startsWith("${BundledSkins.BASE.id}-live-"))
+        val now = WalBundled.fileOf(app, BundledSkins.BASE)
+
+        assertFalse("the oldest goes", oldest.isFile)
+        assertTrue("the one before stays for a look still showing it", before.isFile && now.isFile)
+        assertFalse("a skin the app no longer ships goes", retired.isFile)
     }
 }

@@ -3,8 +3,9 @@
 Three classic Winamp 2.x skins (`.wsz`), generated from one source by a Python
 script with no third-party dependencies: Alpaca Dark and Light, drawn in
 Material 3 Expressive's style, and Alpaca Spot, in Winamp's own green and
-amber. They are the skins Alpaca ships, and every asset is reproducible byte
-for byte.
+amber. The Mac app ships them (copies in `core/resources/skins/`), and every
+asset is reproducible byte for byte. The Android app ships walkit's example
+skins instead.
 
 | theme | file | look |
 |---|---|---|

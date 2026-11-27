@@ -35,7 +35,7 @@
     <string name="welcome_pick_a_look">Choisissez une apparence</string>
     <string name="welcome_skins_in_the_menu">« Skins » dans le menu permet d’en changer quand vous voulez.</string>
     <string name="welcome_own_skin">Le skin d’Alpaca</string>
-    <string name="welcome_own_skin_summary">Dessiné pour cette appli ; sur Android 12 et versions ultérieures, il reprend les couleurs de votre fond d’écran.</string>
+    <string name="welcome_own_skin_summary">Fourni avec l’appli : un look sombre et épuré, avec une touche de turquoise.</string>
     <string name="welcome_keep_this">Garder celui-ci</string>
     <string name="welcome_classic_skin">Un skin classique</string>
     <string name="welcome_classic_skins_count">%1$s skins classiques</string>

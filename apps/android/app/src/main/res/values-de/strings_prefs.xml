@@ -138,19 +138,12 @@
     <string name="prefs_pack_notice_ahead">%1$s ist für ein neueres Alpaca eingerichtet und wird nicht zum Abspielen herangezogen. Ein Update von Alpaca bringt die Titel zurück.</string>
     <string name="prefs_pack_update">%1$s aktualisieren</string>
 
-    <!-- PalettePrefs.kt -->
-    <string name="prefs_palette_title">Farben des Hintergrundbilds übernehmen</string>
-    <string name="prefs_palette_on">Alpaca Dark und Alpaca Light übernehmen ihre Farben von deinem Hintergrundbild, wie der Rest des Smartphones.</string>
-    <string name="prefs_palette_off">Alpaca Dark und Alpaca Light behalten ihre eigenen Farben.</string>
-
     <!-- PlayerPage.kt -->
     <string name="prefs_player_windows_section">Fenster</string>
     <string name="prefs_player_lists_section">Listen</string>
     <string name="prefs_player_touch_section">Berührung</string>
-    <string name="prefs_player_colors_section">Farben</string>
     <string name="prefs_player_skins_section">Skins</string>
-    <string name="prefs_player_summary_all_skins">Fenster, Listen, Berührung, Farben und Skins</string>
-    <string name="prefs_player_summary_no_colors_skins">Fenster, Listen, Berührung und Skins</string>
+    <string name="prefs_player_summary_with_skins">Fenster, Listen, Berührung und Skins</string>
 
     <!-- ModernSkinPrefs.kt -->
     <string name="prefs_modern_skins_title">Moderne Skins (Beta)</string>

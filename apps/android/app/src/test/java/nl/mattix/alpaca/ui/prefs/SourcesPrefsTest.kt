@@ -144,7 +144,7 @@ class SourcesPrefsTest {
                                     extras,
                                     signedIn = setOf(example),
                                     checkUpdate = { _, _ -> newest },
-                                    skins = listOf(SkinEntry("andamp-spot", "Alpaca Spot", 0)),
+                                    skins = listOf(SkinEntry("0123abcd", "Spot.wsz", 0)),
                                     skinOf = { chosenSkin },
                                     onSkin = { source, skin -> skinsChosen += source to skin },
                                     openSettings = { started += it },
@@ -273,18 +273,18 @@ class SourcesPrefsTest {
 
         compose.onNodeWithText("Default").performScrollTo().assertIsDisplayed()
         tag("prefs.skin.row").performClick()
-        tag("prefs.skin.andamp-spot").performClick()
+        tag("prefs.skin.0123abcd").performClick()
 
-        assertEquals(listOf<Pair<MusicSource, String?>>(example to "andamp-spot"), skinsChosen)
+        assertEquals(listOf<Pair<MusicSource, String?>>(example to "0123abcd"), skinsChosen)
     }
 
     @Test
     fun `each skin on offer is one radio row, and the chosen one reads as selected`() {
-        show(extras = listOf(other), chosenSkin = "andamp-spot")
+        show(extras = listOf(other), chosenSkin = "0123abcd")
         tag("prefs.source.example").performClick()
         tag("prefs.skin.row").performScrollTo().performClick()
 
-        tag("prefs.skin.andamp-spot")
+        tag("prefs.skin.0123abcd")
             .assertIsSelected()
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
         tag("prefs.skin.default").assertIsNotSelected()
