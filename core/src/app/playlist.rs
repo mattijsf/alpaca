@@ -110,6 +110,11 @@ impl App {
             Some(plain) => (true, plain),
             None => (false, key),
         };
+        // in the visualizer's own window the arrows, R and space change the preset, as in the
+        // Milkdrop window
+        if !range && self.vis_window() == Some(window) && self.vis_key(plain) {
+            return true;
+        }
         if self.list_window() != Some(window) && !self.playlist_has_keys(window) {
             return self.key(plain);
         }

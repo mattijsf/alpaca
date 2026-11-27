@@ -159,8 +159,11 @@ Updated with every step. Whoever picks this up, person or model, starts here.
     shows. The Milkdrop window (Visualization > Milkdrop Window, or a double click on the
     skin's visualizer) takes it while open. A skin with no place for it opens the Milkdrop
     window instead (MMD3, and Big Bento, whose visualizer window shows nothing at first).
-  - [ ] In the skin the visualizer takes no keys: the arrows, R and space work only in the
-    Milkdrop window. Winamp Modern's Random button does nothing yet.
+  - [x] In the skin's own visualizer window the arrows, R and space change the preset, as in
+    the Milkdrop window; in the player's windows they stay Winamp's. Random presets
+    (Visualization > Random Presets, Preferences, or a skin's Random button as Winamp
+    Modern's, which walkit hands to the host as `visrandom` and `VIS_RANDOM`) pick the preset
+    after a stay at random; kept between runs.
   - [x] projectM's sources are one submodule at the root, `third_party/projectm` (4.1.8),
     which the Android app and the Mac's both build, and a shell for another system will.
   - [ ] AVS: Alpaca's is 15,000 lines of Kotlin on a framebuffer of its own, with the ns-eel
@@ -312,6 +315,12 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
 
 ### Log
 
+- 2026-11-27, the visualizer's keys and Random: walkit already had Winamp Modern's Random
+  button as the host's (`window_open("visrandom")`, the `VIS_RANDOM` action); the app now
+  answers both, keeps the choice as `milk.random`, and offers it in the Visualization menu and
+  in Preferences. Keys in the skin's visualizer window go to the presets. Tested in the core
+  (a click on a skin's Random button both ways, the keys in the visualizer's window and in
+  the main window, the order at random); not yet tried on the screen.
 - 2026-11-26, Milkdrop in the skin: walkit says where a skin shows the visualizer
   (`SkinRuntime::vis_rect`), for a classic skin's visualizer window as for a modern skin's
   holder. PLAN.md listed this as missing from the engine; it was there. The core finds the

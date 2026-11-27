@@ -17,10 +17,10 @@ impl App {
             ABOUT, ADD_FILES, ADD_FOLDER, ADD_URL, CHOOSE_PRESETS, CLEAR, CROP, DOUBLE_SIZE,
             EFFECTS, EQ_PRESET, FILE_INFO, HIDE, HTML_LIST, LOAD_LIST, MILKDROP_WINDOW, NEXT,
             ON_TOP, OPACITY, OPEN_FILES, OPEN_SKIN, PAUSE, PLAY, PLAY_SELECTED, PREFERENCES,
-            PREVIOUS, QUIT, RANDOMIZE, REMOVE_DEAD, REMOVE_DUPLICATES, REMOVE_SELECTED, REPEAT,
-            REREAD, REVEAL, REVERSE, SAVE_LIST, SELECT_ALL, SELECT_INVERT, SELECT_NONE, SHUFFLE,
-            SKIN, SORT_FILENAME, SORT_PATH, SORT_TITLE, STOP, TIME_ELAPSED, TIME_REMAINING,
-            VISUALIZER, VIS_ANALYZER, VIS_OFF, VIS_SCOPE,
+            PREVIOUS, QUIT, RANDOMIZE, RANDOM_PRESETS, REMOVE_DEAD, REMOVE_DUPLICATES,
+            REMOVE_SELECTED, REPEAT, REREAD, REVEAL, REVERSE, SAVE_LIST, SELECT_ALL, SELECT_INVERT,
+            SELECT_NONE, SHUFFLE, SKIN, SORT_FILENAME, SORT_PATH, SORT_TITLE, STOP, TIME_ELAPSED,
+            TIME_REMAINING, VISUALIZER, VIS_ANALYZER, VIS_OFF, VIS_SCOPE,
         };
         let skins = SKIN..SKIN + super::command::SKINS as i32;
         let presets = EQ_PRESET..=EQ_PRESET + EQ_PRESETS.len() as i32;
@@ -56,6 +56,7 @@ impl App {
             PREFERENCES => self.request(Request::Preferences),
             VISUALIZER => self.toggle_visualizer(),
             MILKDROP_WINDOW => self.request(Request::Vis(!self.vis_open)),
+            RANDOM_PRESETS => self.set_vis_random(!self.vis_random()),
             VIS_ANALYZER => self.set_vis_mode(VisMode::Analyzer),
             VIS_SCOPE => self.set_vis_mode(VisMode::Scope),
             VIS_OFF => self.set_vis_mode(VisMode::Off),

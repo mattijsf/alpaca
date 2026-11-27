@@ -301,6 +301,12 @@ impl App {
             self.vis_open,
         );
         m.item(
+            command::RANDOM_PRESETS,
+            "Random Presets",
+            "",
+            self.vis_random(),
+        );
+        m.item(
             command::CHOOSE_PRESETS,
             "Choose Milkdrop Presets…",
             "",

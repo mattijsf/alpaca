@@ -207,6 +207,7 @@ impl App {
         if let Some(folder) = self.options.presets.clone().or_else(kept) {
             self.presets.read(&folder);
         }
+        self.presets.random = self.vis_random();
         self.show_preset(false);
     }
 
@@ -219,6 +220,29 @@ impl App {
             };
             self.request(request);
         }
+    }
+
+    /// Whether the preset after a stay is one at random, as the listener set it.
+    pub fn vis_random(&self) -> bool {
+        self.settings.get("milk.random") == Some("1")
+    }
+
+    /// Picks the preset after a stay at random, or the next by name; kept for the next run.
+    pub(super) fn set_vis_random(&mut self, on: bool) {
+        self.settings
+            .set("milk.random", Some(if on { "1" } else { "0" }));
+        self.presets.random = on;
+        self.tell_switches();
+        self.request(Request::Menu);
+    }
+
+    /// The skin's window the visualizer has to itself, by the engine's id: a classic skin's
+    /// visualizer window, or a modern skin's (Winamp Modern's); not one the visualizer shares
+    /// with the player, as Winamp Modern's drawer.
+    pub(super) fn vis_window(&mut self) -> Option<u32> {
+        let (window, _) = self.vis_area()?;
+        let own = self.skin.as_mut()?.runtime.window_of(VIS_CONTAINER)?.0;
+        (own == window).then_some(window)
     }
 
     /// A key for the visualizer, by its name ([`vis::Presets::key`]). False for a key that is
