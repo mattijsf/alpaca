@@ -6,6 +6,7 @@ import android.app.Application
 import nl.mattix.alpaca.backend.media3.Media3PlaybackHost
 import nl.mattix.alpaca.state.PackSources
 import nl.mattix.alpaca.state.PlaybackRoot
+import nl.mattix.alpaca.wal.ClassicBase
 import nl.mattix.alpaca.wal.WalApart
 import nl.mattix.alpaca.wal.WalFilled
 import nl.mattix.alpaca.wal.WalGate
@@ -19,6 +20,8 @@ import kotlin.concurrent.thread
  *
  * A car can start the process too, by connecting to the playback service, and then asks for a
  * session before any window has built a player. So the service is told here how to get one.
+ * The engine's classic skins have the base skin under them, from the app's assets
+ * ([ClassicBase]).
  *
  * Whether modern skins may be worn ([WalGate]), whether they are drawn with sharp pixels
  * ([WalSharp]), whether their windows are set out apart ([WalApart]) and whether a classic skin
@@ -29,6 +32,7 @@ class AlpacaApp : Application() {
     override fun onCreate() {
         super.onCreate()
         PackSources.attach(this)
+        ClassicBase.attach(this)
         Media3PlaybackHost.wake = { PlaybackRoot.backend(it) }
         thread(name = "wal-gate") {
             WalGate.read(this)

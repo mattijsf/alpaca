@@ -826,7 +826,9 @@ The two bundled skins are walkit's example skins, `walkit-classic.wsz` and
 `examples/skins/make-skins.py` in the walkit repository and copied here as they are; to
 update them, copy the two files from there. walkit classic is the base skin: a fresh
 install uses it, a classic skin that lacks a sheet borrows from it, and the goldens are
-drawn with it. walkit modern is listed while modern skins are on. A stored choice that
+drawn with it. The engine lays it under every classic skin it opens (`ClassicBase`), so a
+bitmap a skin leaves out is drawn from it, as Winamp draws it from its own base skin. walkit
+modern is listed while modern skins are on. A stored choice that
 names `andamp-light` or `andamp-spot`, ids of skins the app no longer ships, reads as the
 base (`BundledSkins.current`): in the skin library, a source's skin and Android Auto's.
 
