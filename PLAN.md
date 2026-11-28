@@ -253,9 +253,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 
 ### Known about the engine
 
-- The engine is walkit's main branch as of 2026-11-25 (`[patch.crates-io]` in
-  `core/Cargo.toml`, revision `4ac65ef`, walkit #37), fifteen commits ahead of release
-  0.10.4 (walkit #23 to #37). What the app uses from them:
+- The engine is walkit 0.10.6, from its git repository by tag (`v0.10.6`), not crates.io.
+  What the app uses from the releases after 0.10.3:
   - the focus given to a window (`focus_window`), a row of a playlist brought into view
     (`show_playlist_row`) and the list under a point scrolled (`scroll_at`): #26, #27;
   - a frame's divider dragged, and the cursor that belongs at a point (`pointer_shape_at`):
@@ -270,15 +269,17 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   - tooltips with Winamp's timing (`tooltip`): #35;
   - older skins' playlists as Winamp draws them (MMD3: the list inside its frame, the
     scrollbar's colors and thumb): #37;
+  - the example skins with the visualizer and library windows framed (#38) and, in
+    walkit-modern, equalizer, visualizer and library windows (#39), its equalizer presets
+    and band levels (#42), walkit-classic's title lines and button art (#40);
+    `core/resources/skins` holds 0.10.6's copies;
+  - every classic title button drawn pressed while held (#41);
   - and the fix for the debug check below: #24.
-
-  The owner expects more changes to walkit before its next release; with that release the
-  pin goes, and `walkit` in `core/Cargo.toml` takes its version.
-- The same revision has the fix for the engine's own check, under debug assertions, that a
+- It has the fix for the engine's own check, under debug assertions, that a
   window drawn in parts equals the window drawn whole: 0.10.4 stopped two tests of
   `tests/windows.rs` at it. The check can still trip when the player's own time moves
   between its two paintings, such as the second changing, so the gate tests in release. The
-  tests were not run in debug again with this revision.
+  tests were not run in debug again with it.
 - A window's new place (`place_window`) shows in `window_rect` after the next tick.
 - The engine does not say how many rows a classic playlist shows or how high they are. A
   page of the list, for page up and page down, is counted with rows of 16 pixels at most
@@ -315,6 +316,9 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
 
 ### Log
 
+- 2026-11-28, walkit 0.10.6: the engine comes from walkit's git repository by release tag,
+  not crates.io, since it changes too often in this phase for a publish each time; the pin to
+  a revision of its main branch is gone. walkit-classic and walkit-modern are 0.10.6's.
 - 2026-11-27, the visualizer's keys and Random: walkit already had Winamp Modern's Random
   button as the host's (`window_open("visrandom")`, the `VIS_RANDOM` action); the app now
   answers both, keeps the choice as `milk.random`, and offers it in the Visualization menu and

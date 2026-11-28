@@ -97,10 +97,11 @@ shell ──▶ ffi ──▶ app ──┬──▶ skin ──▶ host, render
 - **`player`, `dsp`, `settings` and `vis` know nothing of skins**, and nothing depends on
   `app` but `ffi`. `skin` holds the player for two things only: to let it move on before a
   step, and to answer the playlist window's own buttons.
-- **The engine is walkit from crates.io.** It is not changed from here. What it lacks is
+- **The engine is walkit from its git repository, by release tag** (`core/Cargo.toml`). It
+  changes too often for crates.io to keep up. It is not changed from here. What it lacks is
   noted in PLAN.md and worked around in `skin` or `host`. When the app needs what walkit's
-  main branch has and no release yet, `[patch.crates-io]` in `core/Cargo.toml` pins that
-  revision, and goes with the release.
+  main branch has and no release yet, a `rev` of that branch takes the tag's place until the
+  release.
 - **Only three places know their system**: `player/device/` (the audio device), the list of
   system fonts in `host.rs`, and the app's folder in `settings.rs`. A `cfg(target_os)`
   anywhere else is wrong.
