@@ -151,7 +151,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
     to the window server (`flushBuffer`) is a third of the main thread's time. projectM
     refilled its vertex buffers in place, which made the driver submit work to the GPU
     several times a frame; `vis/build-projectm.sh` now gives them new storage first
-    (`vis/fresh-buffers.h`), which took a quarter off. Not tried at 60.
+    (`vis/fresh-buffers.h`), which took a quarter off. Not tried at 60. Warp detail in
+    Preferences: Coarse (24 by 16 in place of 48 by 32) takes about a fifth more off.
   - [x] Milkdrop shows in the skin: a classic skin's visualizer window, framed by `gen.bmp` and
     titled MILKDROP as Winamp titles it, opens with View > Visualizer, docked to the main
     window's right and at Winamp's size the first time, where it was and as large later; a
@@ -305,8 +306,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
    changed (it is asked for whole, several times a tick).
 3. Milkdrop's cost further: the
    rest is projectM's arithmetic and the system's OpenGL, which a shell cannot reach. What
-   was tried and is not worth it is in the log, ANGLE included. Left: a coarser warp mesh
-   as a choice in Preferences; a Metal renderer for projectM, which is a port of its own.
+   was tried and is not worth it is in the log, ANGLE included. The coarser warp mesh is a
+   choice in Preferences. Left: a Metal renderer for projectM, which is a port of its own.
 4. Step 7, the App Store: the sandbox (files by bookmark, the network for radio), signing.
    The plug-in folder and the settings are already under the app's own names.
 5. AVS.
@@ -318,6 +319,12 @@ where the system has no Arial or Tahoma (`core/src/fonts.rs`).
 
 ### Log
 
+- 2026-11-28, Milkdrop's warp detail: Preferences > Visualizer > Warp detail, Fine (48 by 32,
+  the default) or Coarse (24 by 16), kept as `milk.mesh` and read by the shell through
+  `alpaca_app_vis_mesh`. Four paired 10 s runs with a song and the skin's visualizer window
+  (`--bench`, under a load average of 5 to 8, so the figures are rough): 9.6% of a core
+  against 7.6%, 2.2 ms of the main thread a frame against 1.6. The pictures are nearly the
+  same with Geiss - Vortex 2.
 - 2026-11-28, the built-in skins as on Android: walkit-classic is the default and the base
   under classic skins, walkit-modern the other; Alpaca Dark, Light and Spot no longer come
   with the app, and the Andamp-era skin-name carry-over went with them. A skin kept from

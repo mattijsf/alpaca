@@ -625,6 +625,26 @@ pub unsafe extern "C" fn alpaca_app_vis_fps(app: *mut AlpacaApp) -> i32 {
     with_app(app, 30, |a| a.vis_fps())
 }
 
+/// The grid the Visualizer warps its picture on, as the listener set it: columns into
+/// `columns` and rows into `rows`, 48 by 32 or 24 by 16.
+///
+/// # Safety
+/// `app` is null or a live app; `columns` and `rows` point to writable `int32_t`s.
+#[no_mangle]
+pub unsafe extern "C" fn alpaca_app_vis_mesh(
+    app: *mut AlpacaApp,
+    columns: *mut i32,
+    rows: *mut i32,
+) {
+    let (c, r) = with_app(app, (48, 32), |a| a.vis_mesh());
+    if !columns.is_null() {
+        *columns = c;
+    }
+    if !rows.is_null() {
+        *rows = r;
+    }
+}
+
 /// The preferences as JSON, to free with [`alpaca_string_free`](super::alpaca_string_free),
 /// for the shell to draw as a window: `{"pages": [...]}`, each page a `title` and its `rows`.
 /// A row has an `id`, a `kind` (`toggle`, `choice`, `slider`, `action`, `text` or `heading`),

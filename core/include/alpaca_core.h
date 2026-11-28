@@ -341,6 +341,10 @@ int32_t alpaca_app_vis_stay(AlpacaApp *app);
 /// Frames a second the Visualizer window draws, as the listener set it: 30 or 60.
 int32_t alpaca_app_vis_fps(AlpacaApp *app);
 
+/// The grid the Visualizer warps its picture on, as the listener set it: columns into
+/// columns and rows into rows, 48 by 32 or 24 by 16.
+void alpaca_app_vis_mesh(AlpacaApp *app, int32_t *columns, int32_t *rows);
+
 /// The preferences as JSON, to free with alpaca_string_free, for the shell to draw as a
 /// window: {"pages": [...]}, each page a `title` and its `rows`. A row has an `id`, a `kind`
 /// (toggle, choice, slider, action, text or heading), a `label` and a `value` as text: 1 or 0

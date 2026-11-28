@@ -175,6 +175,15 @@ impl App {
         }
     }
 
+    /// The grid Milkdrop warps the picture on, columns by rows: the fine one follows a
+    /// preset's warp more closely, the coarse one costs less.
+    pub fn vis_mesh(&self) -> (i32, i32) {
+        match self.settings.get("milk.mesh") {
+            Some("coarse") => (24, 16),
+            _ => (48, 32),
+        }
+    }
+
     /// The folder of Milkdrop presets the listener picked.
     fn presets_folder(&self) -> Option<PathBuf> {
         self.options
@@ -305,6 +314,16 @@ impl App {
                 &self.vis_fps().to_string(),
                 &[("30", "30"), ("60", "60")],
             ),
+            choice(
+                "milk.mesh",
+                "Warp detail",
+                if self.vis_mesh() == (24, 16) {
+                    "coarse"
+                } else {
+                    "fine"
+                },
+                &[("Fine", "fine"), ("Coarse, costs less", "coarse")],
+            ),
         ];
         let effects = [
             action("effects.open", "Show Effects…"),
@@ -393,6 +412,9 @@ impl App {
             "milk.fps" => self
                 .settings
                 .set(id, Some(if value == "60" { "60" } else { "30" })),
+            "milk.mesh" => self
+                .settings
+                .set(id, Some(if value == "coarse" { "coarse" } else { "fine" })),
             "effects.open" => self.request(Request::Effects),
             "plugins.reveal" => {
                 if let Some(folder) = self.plugins_folder() {

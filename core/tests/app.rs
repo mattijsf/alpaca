@@ -1802,6 +1802,7 @@ fn the_preferences_spell_themselves_out_and_take_changes() {
         "{\"name\":\"walkit-classic\",\"value\":\"walkit-classic.wsz\"}",
         "\"id\":\"skin\",\"kind\":\"choice\",\"label\":\"Skin\",\"value\":\"walkit-modern.wal\"",
         "\"id\":\"vis.mode\",\"kind\":\"choice\",\"label\":\"Shows\",\"value\":\"analyzer\"",
+        "{\"id\":\"milk.mesh\",\"kind\":\"choice\",\"label\":\"Warp detail\",\"value\":\"fine\",",
         "{\"id\":\"milk.stay\",\"kind\":\"slider\",\"label\":\"A preset stays\",\"value\":\"30\",\"min\":5,\"max\":120,\"step\":5,\"unit\":\"s\"}",
         "{\"title\":\"About\",",
     ] {
@@ -1821,12 +1822,15 @@ fn the_preferences_spell_themselves_out_and_take_changes() {
     app.set_preference("vis.peaks", "0");
     app.set_preference("milk.stay", "45");
     app.set_preference("milk.fps", "60");
+    assert_eq!(app.vis_mesh(), (48, 32));
+    app.set_preference("milk.mesh", "coarse");
     app.set_preference("skin", "walkit-classic.wsz");
     app.set_preference("skin", "../../somewhere/else.wsz");
     app.set_preference("no such preference", "1");
     assert_eq!((app.zoom(), app.on_top(), app.opacity()), (2, true, 70));
     assert!(app.player.borrow().shuffle() && app.player.borrow().repeat());
     assert_eq!((app.vis_stay(), app.vis_fps()), (45, 60));
+    assert_eq!(app.vis_mesh(), (24, 16));
     assert_eq!(
         app.skin_name(),
         "walkit-classic.wsz",
@@ -1873,6 +1877,7 @@ fn the_preferences_spell_themselves_out_and_take_changes() {
     assert!(again.time_remaining());
     assert!(again.player.borrow().shuffle() && again.player.borrow().repeat());
     assert_eq!((again.vis_stay(), again.vis_fps()), (45, 60));
+    assert_eq!(again.vis_mesh(), (24, 16), "kept for the next run");
     assert!(again
         .preferences()
         .contains("\"id\":\"vis.mode\",\"kind\":\"choice\",\"label\":\"Shows\",\"value\":\"off\""));
