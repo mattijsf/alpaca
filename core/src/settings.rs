@@ -4,18 +4,13 @@
 //! every system, so a shell stores nothing itself.
 //!
 //! The file is text, a key and its value to a line with a tab between, sorted by key. A key
-//! is a path of words with dots (`skin`, `places.Alpaca Dark.wsz.1`); a value is any text.
+//! is a path of words with dots (`skin`, `at.walkit-classic.wsz.1`); a value is any text.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 /// The file's name in the app's folder.
 const FILE: &str = "settings.txt";
-
-/// How the names of the skins that come with the app start: `Alpaca Dark.wsz`.
-pub const SKIN_PREFIX: &str = "Alpaca ";
-/// How they started when the app was called Andamp: `AndAmp Dark.wsz`.
-pub const OLD_SKIN_PREFIX: &str = "AndAmp ";
 
 /// The folder the app keeps its settings and the listener's plug-ins in: Application Support
 /// on a Mac, the roaming `AppData` on Windows, the XDG config folder elsewhere. `None` when the
@@ -117,25 +112,6 @@ impl Settings {
         for key in gone {
             self.values.remove(&key);
             self.changed = true;
-        }
-    }
-
-    /// Moves what is kept under the names of the skins that came with the app when it was
-    /// called Andamp (`at.AndAmp Dark.wsz.1`) to the same skins' names now (`at.Alpaca
-    /// Dark.wsz.1`). A key the new name already has stays as it is.
-    pub fn carry_over_old_skin_names(&mut self) {
-        let old: Vec<String> = self
-            .values
-            .keys()
-            .filter(|key| key.contains(OLD_SKIN_PREFIX))
-            .cloned()
-            .collect();
-        for key in old {
-            if let Some(value) = self.values.remove(&key) {
-                let renamed = key.replace(OLD_SKIN_PREFIX, SKIN_PREFIX);
-                self.values.entry(renamed).or_insert(value);
-                self.changed = true;
-            }
         }
     }
 

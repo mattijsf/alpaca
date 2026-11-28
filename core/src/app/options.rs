@@ -17,7 +17,7 @@ use crate::player::{location_kind, LocationKind};
 ///        [--presets <folder>]  the Milkdrop presets it shows
 ///        [--show-effects]      opens the Effects window
 ///        [--show-prefs]        opens the Preferences window
-///        [--base skin.wsz]     a classic skin laid under classic skins, in place of Alpaca Dark
+///        [--base skin.wsz]     a classic skin laid under classic skins, in place of walkit-classic
 ///        [--wasabi base.zip]   a zip of a wasabi folder laid under modern skins, in place of
 ///                              Alpaca's own element set
 /// ```

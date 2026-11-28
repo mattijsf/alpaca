@@ -12,9 +12,10 @@ It is early. [PLAN.md](../../PLAN.md) says what is done, what is not, and what c
 - The skin's windows on the desktop, see-through where the skin is, at Winamp's size or
   double, on any of the Mac's screens and back where they were left. Command-` goes through
   them, and the skin draws the one with the focus as the one in front; while another app
-  has the focus they are drawn inactive. Alpaca Dark, Light and Spot come with the app, and walkit's two example skins; a skin of your own opens from the
-  File menu, from Finder, or by dropping it on a window, and one put in the app's `Skins`
-  folder (Preferences shows it) is in the Skins menu from then on.
+  has the focus they are drawn inactive. walkit-classic, shown first, and walkit-modern come
+  with the app; a skin of your own opens from the File menu, from Finder, or by dropping it
+  on a window, and one put in the app's `Skins` folder (Preferences shows it) is in the
+  Skins menu from then on.
 - The mouse as in Winamp: a modern skin's hover pictures, tooltips with Winamp's timing, a
   classic skin's own cursors, and a frame's divider (Bento's panels) dragged and kept for the
   next run. The wheel and the trackpad scroll the list under them and turn the volume over

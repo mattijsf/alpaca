@@ -210,7 +210,7 @@ fn a_window_is_never_put_where_no_screen_shows_it() {
     let dir = scratch("never");
     std::fs::write(
         dir.join("settings.txt"),
-        "at.Alpaca Dark.wsz.1\t9000,9000\nat.Alpaca Dark.wsz.3\t9000,9116\nat.Alpaca Dark.wsz.5\t-7000,9232\n",
+        "at.walkit-classic.wsz.1\t9000,9000\nat.walkit-classic.wsz.3\t9000,9116\nat.walkit-classic.wsz.5\t-7000,9232\n",
     )
     .unwrap();
     let mut app = start(&dir, &[MAIN, LEFT]);
@@ -281,7 +281,7 @@ fn places_kept_before_the_screens_were_known_count_from_the_main_screen() {
     let dir = scratch("old");
     std::fs::write(
         dir.join("settings.txt"),
-        "at.Alpaca Dark.wsz.1\t478,294\nat.Alpaca Dark.wsz.3\t478,410\nat.Alpaca Dark.wsz.5\t478,526\nat.Alpaca Dark.wsz.zoom\t1\n",
+        "at.walkit-classic.wsz.1\t478,294\nat.walkit-classic.wsz.3\t478,410\nat.walkit-classic.wsz.5\t478,526\nat.walkit-classic.wsz.zoom\t1\n",
     )
     .unwrap();
     let mut app = start(&dir, &[MAIN, LEFT]);
