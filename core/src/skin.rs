@@ -484,10 +484,18 @@ impl Skin {
     pub fn vis_area(&mut self) -> Option<(u32, Rect)> {
         let area = self.runtime.vis_rect()?;
         let (x, y) = (area.left + area.width / 2, area.top + area.height / 2);
-        let window = self.windows.iter().rev().find(|w| {
+        let inside = |w: &&Window| {
             let r = w.rect;
             x >= r.left && x < r.left + r.width && y >= r.top && y < r.top + r.height
-        })?;
+        };
+        // the visualizer window when the area is in it, even under others, as when it opens
+        // over the main window before it is placed; else the top window there
+        let holder = self.runtime.window_of(VIS_CONTAINER).map(|w| w.0);
+        let window = self
+            .windows
+            .iter()
+            .find(|w| Some(w.id) == holder && inside(w))
+            .or_else(|| self.windows.iter().rev().find(inside))?;
         let inside = Rect::new(
             area.left - window.rect.left,
             area.top - window.rect.top,

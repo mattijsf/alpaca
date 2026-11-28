@@ -271,6 +271,7 @@ impl App {
         };
         let fonts = self.fonts.clone();
         let player = self.player.clone();
+        let quiet = self.vis_quiet.clone();
         // the skin worn goes: what it kept is written down first, also for when the skin
         // opened is the same one again
         if self.skin.is_some() {
@@ -286,7 +287,7 @@ impl App {
             file.parent(),
             self.viewport(),
             Some(&kept),
-            |_| Box::new(SkinPlayer(player)),
+            |_| Box::new(SkinPlayer(player, quiet)),
         )?;
         skin.player = Some(self.player.clone());
         // its places are kept too, as the engine has them now: a window moved since the last
@@ -298,11 +299,17 @@ impl App {
             self.main_corner = self.main_place();
         }
         // the visualizer showed in the old skin's windows: it shows in the new one's, if it
-        // has a visualizer window
-        let vis_in_skin = self.vis_area.take().is_some();
+        // has a visualizer window. A classic skin takes it from the Milkdrop window too, which
+        // closes once it shows in the skin.
+        let vis_in_skin = self.vis_area.take().is_some() || (self.vis_open && skin.classic);
         self.vis_unsure = true;
         if vis_in_skin {
-            skin.show_vis_window(true);
+            // placed as when the Visualizer command opens it
+            self.vis_window_opening = if skin.show_vis_window(true) {
+                super::visualizer::OPENING_STEPS
+            } else {
+                0
+            };
             self.request(Request::VisArea);
         }
         self.skin = Some(Box::new(skin));
@@ -422,6 +429,8 @@ impl App {
     pub(super) fn tell_switches(&mut self) {
         let (double, on_top, vis) = (self.zoom > 1, self.on_top, self.vis_running());
         let random = self.vis_random();
+        // while Milkdrop shows, the skin's own visualizers get silence, as in Winamp
+        self.vis_quiet.set(vis);
         if let Some(skin) = self.skin.as_mut() {
             skin.set_switch("doublesize", double);
             skin.set_switch("ontop", on_top);
@@ -506,10 +515,10 @@ impl App {
                 }
             }
             ("VIS_MENU", _) => self.request(popup(Menu::Visualization)),
-            // a double click on the visualizer asks for the full one
+            // a double click on the visualizer asks for Milkdrop
             ("VIS_FS", _) => {
-                if !self.vis_open {
-                    self.request(Request::Vis(true));
+                if !self.milkdrop_shown() {
+                    self.toggle_milkdrop();
                 }
             }
             ("MENU" | "SYSMENU" | "CONTROLMENU", _) => self.request(popup(Menu::Popup)),

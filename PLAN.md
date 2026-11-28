@@ -157,9 +157,12 @@ Updated with every step. Whoever picks this up, person or model, starts here.
     titled MILKDROP as Winamp titles it, opens with View > Visualizer, docked to the main
     window's right and at Winamp's size the first time, where it was and as large later; a
     modern skin's own visualizer window or its place for it (Winamp Modern's), wherever it
-    shows. The Milkdrop window (Visualization > Milkdrop Window, or a double click on the
-    skin's visualizer) takes it while open. A skin with no place for it opens the Milkdrop
-    window instead (MMD3, and Big Bento, whose visualizer window shows nothing at first).
+    shows. In a classic skin every way to Milkdrop (Visualization > Milkdrop Window, the
+    preference, a double click on the main window's visualizer) opens that window, as in
+    Winamp, and a classic skin worn while the Milkdrop window is open takes it from there.
+    Other skins open the Milkdrop window with those, which takes it while open. A skin with
+    no place for it opens the Milkdrop window instead (MMD3, and Big Bento, whose visualizer
+    window shows nothing at first).
   - [x] In the skin's own visualizer window the arrows, R and space change the preset, as in
     the Milkdrop window; in the player's windows they stay Winamp's. Random presets
     (Visualization > Random Presets, Preferences, or a skin's Random button as Winamp
@@ -256,7 +259,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 
 ### Known about the engine
 
-- The engine is walkit 0.10.6, from its git repository by tag (`v0.10.6`), not crates.io.
+- The engine is walkit 0.10.6, from its git repository by tag (`v0.10.6`), not crates.io; for
+  now a revision of main after it (`abdd912`, the gen window's grip), until 0.10.7 is tagged.
   What the app uses from the releases after 0.10.3:
   - the focus given to a window (`focus_window`), a row of a playlist brought into view
     (`show_playlist_row`) and the list under a point scrolled (`scroll_at`): #26, #27;
@@ -319,6 +323,23 @@ where the system has no Arial or Tahoma (`core/src/fonts.rs`).
 
 ### Log
 
+- 2026-11-28, the skin's own visualizers rest while Milkdrop shows: Winamp 5.666 in the VM
+  (base skin, MilkDrop 2.25c, noise playing) leaves the main window's analyzer flat while
+  MilkDrop runs and brings it back when it closes. The skin now gets silence from
+  `SkinPlayer` while Milkdrop shows anywhere, the song playing on. Dumps with noise playing,
+  Winamp Base, with and without `--show-vis`: bars without, the flat dotted baseline with,
+  as in the VM. The oscilloscope and modern skins' visualizers were not compared in the VM.
+- 2026-11-28, the gen window's grip: walkit pasted gen.bmp's plain patch over the grip of
+  every gen window that sizes, so the Milkdrop window had none where Winamp 5.666 shows one
+  (base skin, VM). Fixed in walkit (walkit#47); Alpaca takes main at `abdd912` until 0.10.7.
+  Dragging the grip sizes the window in gen.bmp's steps (25 across, 29 down) and the
+  visualizer with it. Dump: Winamp Base with `--show-vis`, corner as in the VM.
+- 2026-11-28, Milkdrop in a classic skin as in Winamp: Milkdrop Window, the preference and a
+  double click on the main window's visualizer open the skin's visualizer window, not the
+  shell's. A visualizer window opened while wearing a skin is placed as the Visualizer
+  command places it, and the visualizer's area belongs to that window even under others (it
+  opened over the main window and moved the equalizer). Dumps: walkit-classic with
+  `--show-vis`, and a modern skin with no place for it into walkit-classic by `--then-skin`.
 - 2026-11-28, Milkdrop's warp detail: Preferences > Visualizer > Warp detail, Fine (48 by 32,
   the default) or Coarse (24 by 16), kept as `milk.mesh` and read by the shell through
   `alpaca_app_vis_mesh`. Four paired 10 s runs with a song and the skin's visualizer window

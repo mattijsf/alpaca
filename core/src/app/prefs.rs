@@ -294,7 +294,11 @@ impl App {
                 &[("Dots", "dots"), ("Lines", "lines"), ("Solid", "solid")],
             ),
             heading("Milkdrop window"),
-            toggle("milk.open", "Show the Visualizer window", self.vis_open),
+            toggle(
+                "milk.open",
+                "Show the Visualizer window",
+                self.milkdrop_shown(),
+            ),
             text(
                 "Presets folder",
                 &folder(self.presets_folder()).unwrap_or_else(|| "None chosen".into()),
@@ -398,7 +402,7 @@ impl App {
             }
             "milk.random" => self.set_vis_random(on),
             "milk.open" => {
-                if self.vis_open != on {
+                if self.milkdrop_shown() != on {
                     self.command(command::MILKDROP_WINDOW);
                 }
             }

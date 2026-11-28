@@ -11,8 +11,9 @@ rust-version = "1.85"
 crate-type = ["staticlib", "rlib"]
 
 [dependencies]
-# from git by tag, not crates.io: it changes too often for a publish each time
-walkit = { git = "https://github.com/mattijsf/walkit", tag = "v0.10.6", features = ["truetype"] }
+# from git by tag, not crates.io: it changes too often for a publish each time. Main after
+# 0.10.6 for now, for the gen window's grip (walkit#47), until 0.10.7 is tagged.
+walkit = { git = "https://github.com/mattijsf/walkit", rev = "abdd91237817fd5b65520f7b31805564ca7a204c", features = ["truetype"] }
 image = { version = "0.25.10", default-features = false, features = ["png", "bmp", "gif", "jpeg"] }
 zip = { version = "2.6.1", default-features = false, features = ["deflate"] }
 # the audio: decoding, the output unit, the ring between them, and the visualizer's spectrum
