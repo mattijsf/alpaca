@@ -4,6 +4,46 @@ What changed for somebody who uses Alpaca, newest first. It is written from the 
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
+## [0.18.0](https://github.com/mattijsf/alpaca/compare/v0.17.0...v0.18.0) (2026-11-28)
+
+
+### New
+
+* a modern skin's windows can sit apart on the player, as on Winamp's desktop ([#196](https://github.com/mattijsf/alpaca/issues/196)) ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* Alpaca's links go to alpaca.fm and plug-in links from it open the app ([#213](https://github.com/mattijsf/alpaca/issues/213)) ([1789e57](https://github.com/mattijsf/alpaca/commit/1789e575dc4a104386867e73d04ed28cf55d1b6c))
+* classic skins are now drawn as Winamp draws them, with no switch to turn on ([#201](https://github.com/mattijsf/alpaca/issues/201)) ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* classic skins can be drawn as Winamp draws them, with a new renderer to try in Preferences ([#197](https://github.com/mattijsf/alpaca/issues/197)) ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* modern skins can run on Alpaca's native engine, behind a switch in Preferences ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* modern skins run on Alpaca's native engine only ([#193](https://github.com/mattijsf/alpaca/issues/193)) ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* on Android Auto, your classic skin is drawn as the player draws it ([#204](https://github.com/mattijsf/alpaca/issues/204)) ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* skins in the museum and on the welcome screen are previewed as the player draws them ([#203](https://github.com/mattijsf/alpaca/issues/203)) ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* the app icon is an alpaca, on Android, Android Auto and the Mac ([85e56b7](https://github.com/mattijsf/alpaca/commit/85e56b72254a183dbbe4f7523cabbb423a5e7331))
+* the bundled skins carry the alpaca where the bolt was ([85e56b7](https://github.com/mattijsf/alpaca/commit/85e56b72254a183dbbe4f7523cabbb423a5e7331))
+* the home screen widget shows your classic skin as the player draws it ([#202](https://github.com/mattijsf/alpaca/issues/202)) ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* the icon is an alpaca seen from the front ([#215](https://github.com/mattijsf/alpaca/issues/215)) ([2466e52](https://github.com/mattijsf/alpaca/commit/2466e52d09500480f0d7ef68fc9b70317f90ef76))
+* with the new renderer, a classic skin keeps its menus, playlist marks, multi-row selection and the shade setting ([#199](https://github.com/mattijsf/alpaca/issues/199)) ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* with the new renderer, Alpaca's own skins are drawn as Winamp draws them too, in your wallpaper's colors ([#200](https://github.com/mattijsf/alpaca/issues/200)) ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+
+
+### Changed
+
+* the Android Auto app is called Alpaca Auto ([85e56b7](https://github.com/mattijsf/alpaca/commit/85e56b72254a183dbbe4f7523cabbb423a5e7331))
+* the app is named Alpaca ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* the AVS presets that come with the app are the Alpaca pack, favorites kept ([85e56b7](https://github.com/mattijsf/alpaca/commit/85e56b72254a183dbbe4f7523cabbb423a5e7331))
+* the bundled skins say Alpaca in the title bar ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* the intro track is called Alpaca Whippin' Intro ([85e56b7](https://github.com/mattijsf/alpaca/commit/85e56b72254a183dbbe4f7523cabbb423a5e7331))
+* walkit classic and walkit modern replace the built-in skins ([#223](https://github.com/mattijsf/alpaca/issues/223)) ([2f59d8e](https://github.com/mattijsf/alpaca/commit/2f59d8e755af759b25bf62973a4c7ecbb097acbe))
+
+
+### Fixed
+
+* a classic skin the new renderer cannot draw gives way to Alpaca Dark until the next start ([#205](https://github.com/mattijsf/alpaca/issues/205)) ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* Double Size switched on earlier now fills the screen with your skin, and switches off again ([#208](https://github.com/mattijsf/alpaca/issues/208)) ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* holding a button or slider no longer pops up the menu ([#209](https://github.com/mattijsf/alpaca/issues/209)) ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* modern skin windows are black where the skin draws nothing, and a stretched background reaches one pixel further, as in Winamp ([#194](https://github.com/mattijsf/alpaca/issues/194)) ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* modern skins that ask for Arial get the matching font on the phone too ([#180](https://github.com/mattijsf/alpaca/issues/180)) ([c6cd2c1](https://github.com/mattijsf/alpaca/commit/c6cd2c11807e24a6243e5a61487c9eb18efea026))
+* the skin's own visualizer rests while Milkdrop shows, as in Winamp ([#229](https://github.com/mattijsf/alpaca/issues/229)) ([e079af0](https://github.com/mattijsf/alpaca/commit/e079af045752724daf9d62789f3e27d26d233319))
+
 ## [0.17.0](https://github.com/mattijsf/andamp/compare/v0.16.0...v0.17.0) (2026-10-30)
 
 
