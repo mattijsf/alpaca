@@ -2,9 +2,8 @@
 
 Winamp's skins as a music player: classic skins (`.wsz`) and modern ones (`.wal`) drawn by the
 [walkit](https://github.com/mattijsf/walkit) engine, with an equalizer and an effect rack.
-Formerly Andamp. The desktop uses walkit 0.10.4 from crates.io, pinned to a later revision of
-its main branch until the next release ([PLAN.md](PLAN.md#known-about-the-engine) says what
-the app uses from it).
+Formerly Andamp. The desktop uses walkit 0.10.6 from its git repository, by release tag
+([PLAN.md](PLAN.md#known-about-the-engine) says what the app uses from it).
 
 | Folder | What |
 | --- | --- |

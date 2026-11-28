@@ -253,7 +253,7 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 
 ### Known about the engine
 
-- The engine is walkit 0.10.5 from crates.io; no revision of its main branch is pinned.
+- The engine is walkit 0.10.6, from its git repository by tag (`v0.10.6`), not crates.io.
   What the app uses from the releases after 0.10.3:
   - the focus given to a window (`focus_window`), a row of a playlist brought into view
     (`show_playlist_row`) and the list under a point scrolled (`scroll_at`): #26, #27;
@@ -270,10 +270,12 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   - older skins' playlists as Winamp draws them (MMD3: the list inside its frame, the
     scrollbar's colors and thumb): #37;
   - the example skins with the visualizer and library windows framed (#38) and, in
-    walkit-modern, equalizer, visualizer and library windows (#39); `core/resources/skins`
-    holds 0.10.5's copies, the same files Android ships;
+    walkit-modern, equalizer, visualizer and library windows (#39), its equalizer presets
+    and band levels (#42), walkit-classic's title lines and button art (#40);
+    `core/resources/skins` holds 0.10.6's copies;
+  - every classic title button drawn pressed while held (#41);
   - and the fix for the debug check below: #24.
-- 0.10.5 has the fix for the engine's own check, under debug assertions, that a
+- It has the fix for the engine's own check, under debug assertions, that a
   window drawn in parts equals the window drawn whole: 0.10.4 stopped two tests of
   `tests/windows.rs` at it. The check can still trip when the player's own time moves
   between its two paintings, such as the second changing, so the gate tests in release. The
@@ -314,8 +316,9 @@ stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fo
 
 ### Log
 
-- 2026-11-27, walkit 0.10.5: the engine comes from crates.io again and the pin to walkit's
-  main branch is gone; walkit-classic and walkit-modern are 0.10.5's.
+- 2026-11-28, walkit 0.10.6: the engine comes from walkit's git repository by release tag,
+  not crates.io, since it changes too often in this phase for a publish each time; the pin to
+  a revision of its main branch is gone. walkit-classic and walkit-modern are 0.10.6's.
 - 2026-11-27, the visualizer's keys and Random: walkit already had Winamp Modern's Random
   button as the host's (`window_open("visrandom")`, the `VIS_RANDOM` action); the app now
   answers both, keeps the choice as `milk.random`, and offers it in the Visualization menu and
