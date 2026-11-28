@@ -548,6 +548,30 @@ class WalPlayerTest {
     }
 
     @Test
+    fun `the skin's visualizers rest while the visualizer shows, and the song plays on`() {
+        tap = SineTap(1_000.0)
+        assertEquals(1f, player.spectrum().max())
+
+        state.milkdropOn = true
+        controls.advance(FRAME_MS.toLong())
+        val levels = player.spectrum()
+        assertEquals(75, levels.size)
+        assertTrue("its window: flat, as Winamp's analyzer", levels.all { it == 0f })
+        val wave = player.waveform()
+        assertEquals(576, wave.size)
+        assertTrue(wave.all { it == 0f })
+        assertEquals(Player.Status.PLAYING, player.status)
+
+        state.milkdropOn = false
+        state.visInSkin = true
+        assertTrue("in the skin too", player.spectrum().all { it == 0f })
+
+        state.visInSkin = false
+        controls.advance(FRAME_MS.toLong())
+        assertEquals("gone again: the tone shows", 1f, player.spectrum().max())
+    }
+
+    @Test
     fun `the meter is the window's peak, the same on both sides`() {
         tap = SineTap(1_000.0, amplitude = 0.5)
         val (left, right) = player.vu()

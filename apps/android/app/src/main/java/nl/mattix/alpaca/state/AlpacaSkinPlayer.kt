@@ -425,14 +425,33 @@ internal class AlpacaSkinPlayer(
     private var meter = 0 to 0
     private var steppedAt = NEVER
 
-    /** [SPECTRUM_BANDS] levels 0..1 from the audio being heard, or empty while nothing plays or there is no tap. */
-    override fun spectrum(): FloatArray = if (step()) levels else EMPTY
+    /**
+     * Whether the skin's own visualizers rest: while the visualizer shows, in its window or in the
+     * skin, as Winamp's analyzer falls flat while a visualizer plug-in runs.
+     */
+    private val quiet: Boolean get() = winamp.milkdropOn || winamp.visInSkin
+
+    /**
+     * [SPECTRUM_BANDS] levels 0..1 from the audio being heard, all 0 while the visualizer shows,
+     * or empty while nothing plays or there is no tap.
+     */
+    override fun spectrum(): FloatArray =
+        when {
+            !step() -> EMPTY
+            quiet -> QUIET_LEVELS
+            else -> levels
+        }
 
     /**
      * The newest [WAVE_SAMPLES] samples of the audio being heard, -1..1, or empty while nothing
-     * plays or there is no tap; silence while the tap has nothing to give.
+     * plays or there is no tap; silence while the tap has nothing to give or the visualizer shows.
      */
-    override fun waveform(): FloatArray = if (step()) wave else EMPTY
+    override fun waveform(): FloatArray =
+        when {
+            !step() -> EMPTY
+            quiet -> QUIET_WAVE
+            else -> wave
+        }
 
     /** The loudest sample of the window being heard, 0..255, the same for both sides. */
     override fun vu(): Pair<Int, Int> = if (step()) meter else SILENT
@@ -534,6 +553,8 @@ internal class AlpacaSkinPlayer(
         private const val NOT_SHOWN = -1L
         private const val NEVER = Long.MIN_VALUE
         private val EMPTY = FloatArray(0)
+        private val QUIET_LEVELS = FloatArray(SPECTRUM_BANDS)
+        private val QUIET_WAVE = FloatArray(WAVE_SAMPLES)
         private val SILENT = 0 to 0
 
         fun lengthOf(track: Track?): Long = if (track == null || track.isStream) 0 else track.durationMs.coerceAtLeast(0)
