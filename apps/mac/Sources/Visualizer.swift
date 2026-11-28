@@ -75,6 +75,15 @@ final class MilkdropView: NSOpenGLView {
         }
     }
 
+    /// The grid projectM warps the picture on, columns by rows, as the listener set it.
+    var mesh = (columns: 48, rows: 32) {
+        didSet {
+            guard mesh != oldValue, let handle else { return }
+            openGLContext?.makeCurrentContext()
+            engine.setMeshSize(handle, mesh.columns, mesh.rows)
+        }
+    }
+
     init?(engine: ProjectM, player: OpaquePointer) {
         self.engine = engine
         self.player = player
@@ -114,7 +123,7 @@ final class MilkdropView: NSOpenGLView {
         openGLContext?.setValues(&sync, for: .swapInterval)
         handle = engine.create()
         engine.setFps(handle, Int32(fps))
-        engine.setMeshSize(handle, 48, 32)
+        engine.setMeshSize(handle, mesh.columns, mesh.rows)
         engine.setSoftCut(handle, 2)
         // the window changes presets itself
         engine.setPresetDuration(handle, 100_000)
@@ -343,6 +352,10 @@ final class Visualizer: NSObject, NSWindowDelegate {
     private func run() {
         let seen = shownIn.map { $0.isVisible && $0.occlusionState.contains(.visible) } ?? false
         view?.fps = Double(alpaca_app_vis_fps(app))
+        var columns: Int32 = 48
+        var rows: Int32 = 32
+        alpaca_app_vis_mesh(app, &columns, &rows)
+        view?.mesh = (Int(columns), Int(rows))
         view?.run(seen)
         changer?.invalidate()
         changer = nil
