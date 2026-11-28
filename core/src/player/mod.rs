@@ -12,7 +12,7 @@ pub mod decode;
 pub mod device;
 pub mod output;
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -1149,8 +1149,17 @@ pub fn spectrum(samples: &[f32], sample_rate: u32, fft: &dyn Fft<f32>) -> Vec<f3
         .collect()
 }
 
-/// The player as a skin sees it: walkit's `Player` over the app's one [`Player`].
-pub struct SkinPlayer(pub Rc<RefCell<Player>>);
+/// The player as a skin sees it: walkit's `Player` over the app's one [`Player`]. While the
+/// second field is set, the skin's visualizers get silence, as Winamp's do while a visualizer
+/// plug-in runs.
+pub struct SkinPlayer(pub Rc<RefCell<Player>>, pub Rc<Cell<bool>>);
+
+impl SkinPlayer {
+    /// Whether the skin's visualizers get silence in place of what plays.
+    fn quiet(&self) -> bool {
+        self.1.get() && self.0.borrow().status() == Status::Playing
+    }
+}
 
 impl walkit::player::Player for SkinPlayer {
     fn status(&self) -> Status {
@@ -1291,9 +1300,15 @@ impl walkit::player::Player for SkinPlayer {
         }
     }
     fn spectrum(&self) -> Vec<f32> {
+        if self.quiet() {
+            return vec![0.0; SPECTRUM_BANDS];
+        }
         self.0.borrow().spectrum()
     }
     fn waveform(&self) -> Vec<f32> {
+        if self.quiet() {
+            return vec![0.0; WAVE_SAMPLES];
+        }
         self.0.borrow().waveform()
     }
     fn vu(&self) -> (i32, i32) {

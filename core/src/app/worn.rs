@@ -271,6 +271,7 @@ impl App {
         };
         let fonts = self.fonts.clone();
         let player = self.player.clone();
+        let quiet = self.vis_quiet.clone();
         // the skin worn goes: what it kept is written down first, also for when the skin
         // opened is the same one again
         if self.skin.is_some() {
@@ -286,7 +287,7 @@ impl App {
             file.parent(),
             self.viewport(),
             Some(&kept),
-            |_| Box::new(SkinPlayer(player)),
+            |_| Box::new(SkinPlayer(player, quiet)),
         )?;
         skin.player = Some(self.player.clone());
         // its places are kept too, as the engine has them now: a window moved since the last
@@ -428,6 +429,8 @@ impl App {
     pub(super) fn tell_switches(&mut self) {
         let (double, on_top, vis) = (self.zoom > 1, self.on_top, self.vis_running());
         let random = self.vis_random();
+        // while Milkdrop shows, the skin's own visualizers get silence, as in Winamp
+        self.vis_quiet.set(vis);
         if let Some(skin) = self.skin.as_mut() {
             skin.set_switch("doublesize", double);
             skin.set_switch("ontop", on_top);

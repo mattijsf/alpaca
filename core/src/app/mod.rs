@@ -30,7 +30,7 @@ pub use pointer::Cursor;
 pub use request::{command, Ask, Menu, Request};
 pub use screens::{into_view, seen, Area};
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -84,6 +84,8 @@ pub struct App {
     /// How much of the windows shows over what is behind them, in percent.
     opacity: i32,
     vis_open: bool,
+    /// Set while Milkdrop shows: the skin's own visualizers get silence.
+    vis_quiet: Rc<Cell<bool>>,
     /// Where the skin shows the visualizer, as of the last step ([`App::vis_area`]).
     vis_area: Option<(u32, walkit::draw::Rect)>,
     /// Set when the skin changed: the next step looks again where it shows the visualizer.
@@ -182,6 +184,7 @@ impl App {
             on_top: settings.get("ontop") == Some("1"),
             opacity: if opacity >= 20 { opacity.min(100) } else { 100 },
             vis_open: false,
+            vis_quiet: Rc::default(),
             vis_area: None,
             vis_unsure: false,
             vis_window_opening: 0,

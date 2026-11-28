@@ -245,7 +245,7 @@ fn a_list_is_saved_and_read_back() {
 fn a_factory_preset_sets_the_bands_and_switches_the_equalizer_on() {
     use walkit::player::Player as _;
     let player = std::rc::Rc::new(std::cell::RefCell::new(Player::silent()));
-    let skin = alpaca_core::player::SkinPlayer(player.clone());
+    let skin = alpaca_core::player::SkinPlayer(player.clone(), std::rc::Rc::default());
     assert!(!skin.eq_enabled());
     // Full Bass: the low bands up, the high ones down
     let full_bass = alpaca_core::player::EQ_PRESETS
@@ -269,7 +269,7 @@ fn a_factory_preset_sets_the_bands_and_switches_the_equalizer_on() {
 fn what_a_run_leaves_is_put_back_in_the_next() {
     use walkit::player::Player as _;
     let first = std::rc::Rc::new(std::cell::RefCell::new(Player::silent()));
-    let mut skin = alpaca_core::player::SkinPlayer(first.clone());
+    let mut skin = alpaca_core::player::SkinPlayer(first.clone(), std::rc::Rc::default());
     skin.set_eq_enabled(true);
     skin.set_eq_band(3, 200);
     skin.set_eq_preamp(90);
@@ -278,7 +278,7 @@ fn what_a_run_leaves_is_put_back_in_the_next() {
     let left = first.borrow().state();
     let second = std::rc::Rc::new(std::cell::RefCell::new(Player::silent()));
     second.borrow_mut().restore(&left);
-    let skin = alpaca_core::player::SkinPlayer(second.clone());
+    let skin = alpaca_core::player::SkinPlayer(second.clone(), std::rc::Rc::default());
     assert!(skin.eq_enabled() && skin.shuffle() && !skin.repeat());
     assert_eq!(
         (skin.eq_bands()[3], skin.eq_preamp(), skin.pan()),
@@ -420,4 +420,33 @@ fn a_song_at_one_rate_keeps_its_pitch_and_its_time_on_a_device_at_another() {
         .all(|f| (f[0] + f[1]).abs() < 1e-5));
     let loudest = left.iter().fold(0f32, |m, v| m.max(v.abs()));
     assert!((0.95..=1.0).contains(&loudest), "{loudest}");
+}
+
+#[test]
+fn a_skin_hears_silence_while_milkdrop_shows() {
+    use std::cell::{Cell, RefCell};
+    use std::rc::Rc;
+    use walkit::player::Player as _;
+
+    let song = tone_file("quiet.wav", 1000.0, 3.0, 44100);
+    let player = Rc::new(RefCell::new(Player::silent()));
+    player.borrow_mut().add(&song).unwrap();
+    let quiet = Rc::new(Cell::new(true));
+    let skin = alpaca_core::player::SkinPlayer(player.clone(), quiet.clone());
+    // stopped, there is nothing to show either way
+    assert!(skin.spectrum().is_empty() && skin.waveform().is_empty());
+    player.borrow_mut().play();
+    assert_eq!(skin.status(), Status::Playing);
+    // Milkdrop shows: the skin's visualizers get silence while the song plays on, as
+    // Winamp's analyzer falls flat while a visualizer plug-in runs
+    let spectrum = skin.spectrum();
+    assert_eq!(spectrum.len(), 75);
+    assert!(spectrum.iter().all(|&b| b == 0.0));
+    let wave = skin.waveform();
+    assert_eq!(wave.len(), 576);
+    assert!(wave.iter().all(|&s| s == 0.0));
+    // and once it is gone, what plays
+    quiet.set(false);
+    assert_eq!(skin.waveform(), player.borrow().waveform());
+    assert_eq!(skin.spectrum(), player.borrow().spectrum());
 }

@@ -323,6 +323,12 @@ where the system has no Arial or Tahoma (`core/src/fonts.rs`).
 
 ### Log
 
+- 2026-11-28, the skin's own visualizers rest while Milkdrop shows: Winamp 5.666 in the VM
+  (base skin, MilkDrop 2.25c, noise playing) leaves the main window's analyzer flat while
+  MilkDrop runs and brings it back when it closes. The skin now gets silence from
+  `SkinPlayer` while Milkdrop shows anywhere, the song playing on. Dumps with noise playing,
+  Winamp Base, with and without `--show-vis`: bars without, the flat dotted baseline with,
+  as in the VM. The oscilloscope and modern skins' visualizers were not compared in the VM.
 - 2026-11-28, the gen window's grip: walkit pasted gen.bmp's plain patch over the grip of
   every gen window that sizes, so the Milkdrop window had none where Winamp 5.666 shows one
   (base skin, VM). Fixed in walkit (walkit#47); Alpaca takes main at `abdd912` until 0.10.7.
