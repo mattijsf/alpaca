@@ -4,9 +4,10 @@
 //!
 //! It shows in the skin where the skin has a place for it: a classic skin's visualizer window,
 //! framed by `gen.bmp`, which the Visualizer command opens and shuts, or wherever a modern skin
-//! holds Winamp's visualizer. Otherwise it shows in the Milkdrop window, the shell's own,
-//! which a double click on the skin's visualizer also opens. While that window is open the
-//! visualizer shows there and not in the skin.
+//! holds Winamp's visualizer. Otherwise it shows in the Milkdrop window, the shell's, which a
+//! double click on the skin's visualizer also opens. A classic skin never needs that window:
+//! every way to Milkdrop opens its visualizer window, as Winamp's do. While the Milkdrop window
+//! is open the visualizer shows there and not in the skin.
 
 use std::path::{Path, PathBuf};
 
@@ -17,7 +18,7 @@ use crate::skin::VIS_CONTAINER;
 use crate::vis;
 
 /// Steps a skin's visualizer window has to show a place for the visualizer once it opens.
-const OPENING_STEPS: u8 = 3;
+pub(super) const OPENING_STEPS: u8 = 3;
 /// The visualizer's area in a modern skin's visualizer window just opened is made at least
 /// this large, in layout pixels: what a classic skin's shows at its smallest.
 const SMALLEST_AREA: (i32, i32) = (256, 198);
@@ -79,6 +80,27 @@ impl App {
         if !skin_has_one {
             // a modern skin that shows it where it shows it, or one with no place for it
             self.request(Request::Vis(true));
+        }
+    }
+
+    /// The Milkdrop Window command, also the preference and a double click on the skin's
+    /// visualizer. A classic skin shows Milkdrop in its visualizer window, as Winamp does, so
+    /// there it is the Visualizer command; other skins open the Milkdrop window.
+    pub(super) fn toggle_milkdrop(&mut self) {
+        if self.skin.as_ref().is_some_and(|skin| skin.classic) {
+            self.toggle_visualizer();
+        } else {
+            self.request(Request::Vis(!self.vis_open));
+        }
+    }
+
+    /// Whether Milkdrop shows where the Milkdrop Window command puts it: anywhere, in a
+    /// classic skin, else in the Milkdrop window.
+    pub(super) fn milkdrop_shown(&self) -> bool {
+        if self.skin.as_ref().is_some_and(|skin| skin.classic) {
+            self.vis_running()
+        } else {
+            self.vis_open
         }
     }
 

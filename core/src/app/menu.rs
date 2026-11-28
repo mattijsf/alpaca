@@ -298,7 +298,7 @@ impl App {
             command::MILKDROP_WINDOW,
             "Milkdrop Window",
             "",
-            self.vis_open,
+            self.milkdrop_shown(),
         );
         m.item(
             command::RANDOM_PRESETS,

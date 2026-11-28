@@ -298,11 +298,17 @@ impl App {
             self.main_corner = self.main_place();
         }
         // the visualizer showed in the old skin's windows: it shows in the new one's, if it
-        // has a visualizer window
-        let vis_in_skin = self.vis_area.take().is_some();
+        // has a visualizer window. A classic skin takes it from the Milkdrop window too, which
+        // closes once it shows in the skin.
+        let vis_in_skin = self.vis_area.take().is_some() || (self.vis_open && skin.classic);
         self.vis_unsure = true;
         if vis_in_skin {
-            skin.show_vis_window(true);
+            // placed as when the Visualizer command opens it
+            self.vis_window_opening = if skin.show_vis_window(true) {
+                super::visualizer::OPENING_STEPS
+            } else {
+                0
+            };
             self.request(Request::VisArea);
         }
         self.skin = Some(Box::new(skin));
@@ -506,10 +512,10 @@ impl App {
                 }
             }
             ("VIS_MENU", _) => self.request(popup(Menu::Visualization)),
-            // a double click on the visualizer asks for the full one
+            // a double click on the visualizer asks for Milkdrop
             ("VIS_FS", _) => {
-                if !self.vis_open {
-                    self.request(Request::Vis(true));
+                if !self.milkdrop_shown() {
+                    self.toggle_milkdrop();
                 }
             }
             ("MENU" | "SYSMENU" | "CONTROLMENU", _) => self.request(popup(Menu::Popup)),

@@ -157,9 +157,12 @@ Updated with every step. Whoever picks this up, person or model, starts here.
     titled MILKDROP as Winamp titles it, opens with View > Visualizer, docked to the main
     window's right and at Winamp's size the first time, where it was and as large later; a
     modern skin's own visualizer window or its place for it (Winamp Modern's), wherever it
-    shows. The Milkdrop window (Visualization > Milkdrop Window, or a double click on the
-    skin's visualizer) takes it while open. A skin with no place for it opens the Milkdrop
-    window instead (MMD3, and Big Bento, whose visualizer window shows nothing at first).
+    shows. In a classic skin every way to Milkdrop (Visualization > Milkdrop Window, the
+    preference, a double click on the main window's visualizer) opens that window, as in
+    Winamp, and a classic skin worn while the Milkdrop window is open takes it from there.
+    Other skins open the Milkdrop window with those, which takes it while open. A skin with
+    no place for it opens the Milkdrop window instead (MMD3, and Big Bento, whose visualizer
+    window shows nothing at first).
   - [x] In the skin's own visualizer window the arrows, R and space change the preset, as in
     the Milkdrop window; in the player's windows they stay Winamp's. Random presets
     (Visualization > Random Presets, Preferences, or a skin's Random button as Winamp
@@ -319,6 +322,12 @@ where the system has no Arial or Tahoma (`core/src/fonts.rs`).
 
 ### Log
 
+- 2026-11-28, Milkdrop in a classic skin as in Winamp: Milkdrop Window, the preference and a
+  double click on the main window's visualizer open the skin's visualizer window, not the
+  shell's. A visualizer window opened while wearing a skin is placed as the Visualizer
+  command places it, and the visualizer's area belongs to that window even under others (it
+  opened over the main window and moved the equalizer). Dumps: walkit-classic with
+  `--show-vis`, and a modern skin with no place for it into walkit-classic by `--then-skin`.
 - 2026-11-28, Milkdrop's warp detail: Preferences > Visualizer > Warp detail, Fine (48 by 32,
   the default) or Coarse (24 by 16), kept as `milk.mesh` and read by the shell through
   `alpaca_app_vis_mesh`. Four paired 10 s runs with a song and the skin's visualizer window

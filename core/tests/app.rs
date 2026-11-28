@@ -1735,8 +1735,12 @@ fn a_skins_other_buttons_reach_their_menus() {
     assert_eq!(popup(&mut app, "PE_SEL", None), Some(Menu::PlaylistSelect));
     assert_eq!(popup(&mut app, "PE_MISC", None), Some(Menu::PlaylistMisc));
     assert_eq!(popup(&mut app, "PE_LIST", None), Some(Menu::PlaylistList));
+    // a double click on the visualizer: a classic skin opens its visualizer window, and not
+    // the Milkdrop window
     app.asked(&asks("VIS_FS", None));
-    assert_eq!(app.take_requests(), [Request::Vis(true)]);
+    app.step();
+    assert!(!app.take_requests().contains(&Request::Vis(true)));
+    assert!(app.vis_running());
     // every menu spells itself out, each submenu closed, each command with a number
     for menu in Menu::ALL {
         let text = app.menu(menu);
@@ -1947,9 +1951,17 @@ fn a_classic_skin_shows_the_visualizer_in_its_own_window() {
         .menu(Menu::Bar)
         .contains("C\t23\t1\t0\tVisualizer\tshift+k"));
 
-    // the Milkdrop window takes it while it is open, and gives it back
-    app.command(command::MILKDROP_WINDOW);
-    assert_eq!(app.take_requests(), [Request::Vis(true)]);
+    // the Milkdrop Window item and the preference say so too: in a classic skin they are
+    // the visualizer window, as in Winamp
+    assert!(app.menu(Menu::Visualization).contains(&format!(
+        "C\t{}\t1\t0\tMilkdrop Window\t",
+        command::MILKDROP_WINDOW
+    )));
+    assert!(app.preferences().contains(
+        "\"id\":\"milk.open\",\"kind\":\"toggle\",\"label\":\"Show the Visualizer window\",\"value\":\"1\""
+    ));
+
+    // the Milkdrop window, as a shell opens it, takes it while it is open, and gives it back
     app.vis_shown(true);
     assert_eq!(app.vis_area(), None, "it shows in the Milkdrop window");
     assert!(app.vis_running());
@@ -1966,15 +1978,19 @@ fn a_classic_skin_shows_the_visualizer_in_its_own_window() {
         "{requests:?}"
     );
 
-    // Visualizer again shuts the window, and the visualizer stops
-    app.command(command::VISUALIZER);
+    // Milkdrop Window shuts the window, as Visualizer does, and the visualizer stops; the
+    // Milkdrop window does not open
+    app.command(command::MILKDROP_WINDOW);
     app.step();
     assert_eq!(app.vis_area(), None);
     assert!(!app.vis_running());
-    assert!(app.take_requests().contains(&Request::VisArea));
+    let requests = app.take_requests();
+    assert!(requests.contains(&Request::VisArea), "{requests:?}");
+    assert!(!requests.contains(&Request::Vis(true)), "{requests:?}");
 
-    // and opens it again where it was, at its size
-    app.command(command::VISUALIZER);
+    // a double click on the main window's visualizer opens it again where it was, at its size
+    app.asked(&asks("VIS_FS", None));
+    assert!(!app.take_requests().contains(&Request::Vis(true)));
     app.step();
     app.step();
     let (again, _) = app.vis_area().expect("shown again");
@@ -2057,6 +2073,46 @@ fn a_skin_with_no_place_for_the_visualizer_opens_the_milkdrop_window() {
     assert!(app.vis_running());
     app.command(command::VISUALIZER);
     assert!(app.take_requests().contains(&Request::Vis(false)));
+    app.vis_shown(false);
+    app.take_requests();
+    // a double click on its visualizer, the Milkdrop Window item and the preference open
+    // the Milkdrop window too
+    app.asked(&asks("VIS_FS", None));
+    assert_eq!(app.take_requests(), [Request::Vis(true)]);
+    app.command(command::MILKDROP_WINDOW);
+    assert_eq!(app.take_requests(), [Request::Vis(true)]);
+    app.set_preference("milk.open", "1");
+    assert_eq!(app.take_requests(), [Request::Vis(true)]);
+}
+
+#[test]
+fn a_classic_skin_takes_the_visualizer_from_the_milkdrop_window() {
+    let config = scratch("vis-to-classic");
+    let plain = modern_skin(&config, "Plain.wal", NO_VIS_XML);
+    let mut app = start("", &config);
+    assert!(app.wear(&plain));
+    app.step();
+    app.command(command::MILKDROP_WINDOW);
+    app.vis_shown(true);
+    app.take_requests();
+    // the classic skin worn next shows it in its visualizer window, and the Milkdrop window
+    // closes
+    assert!(app.wear(&resources().join("skins/walkit-classic.wsz")));
+    app.step();
+    app.step();
+    let requests = app.take_requests();
+    assert!(requests.contains(&Request::Vis(false)), "{requests:?}");
+    app.vis_shown(false);
+    let (window, _) = app.vis_area().expect("shown in the skin");
+    let skin = app.skin().unwrap();
+    let avs = skin.runtime.window_of("avs").unwrap();
+    assert_eq!(avs.0, window);
+    // beside the main window, not over it
+    let main = skin
+        .runtime
+        .window_rect(skin.runtime.main_window().unwrap());
+    let frame = skin.runtime.window_rect(avs);
+    assert_eq!((frame.left, frame.top), (main.left + main.width, main.top));
 }
 
 /// A modern skin with a visualizer window that holds no visualizer.

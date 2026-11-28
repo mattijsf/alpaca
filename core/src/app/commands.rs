@@ -55,7 +55,7 @@ impl App {
             EFFECTS => self.request(Request::Effects),
             PREFERENCES => self.request(Request::Preferences),
             VISUALIZER => self.toggle_visualizer(),
-            MILKDROP_WINDOW => self.request(Request::Vis(!self.vis_open)),
+            MILKDROP_WINDOW => self.toggle_milkdrop(),
             RANDOM_PRESETS => self.set_vis_random(!self.vis_random()),
             VIS_ANALYZER => self.set_vis_mode(VisMode::Analyzer),
             VIS_SCOPE => self.set_vis_mode(VisMode::Scope),
