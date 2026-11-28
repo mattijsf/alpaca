@@ -1414,7 +1414,7 @@ dependencies = [
 [[package]]
 name = "walkit"
 version = "0.10.6"
-source = "git+https://github.com/mattijsf/walkit?tag=v0.10.6#d0c18ff04b734f824b764ab96e6a78369fb8e98c"
+source = "git+https://github.com/mattijsf/walkit?rev=abdd91237817fd5b65520f7b31805564ca7a204c#abdd91237817fd5b65520f7b31805564ca7a204c"
 dependencies = [
  "skrifa",
 ]

@@ -1951,6 +1951,24 @@ fn a_classic_skin_shows_the_visualizer_in_its_own_window() {
         .menu(Menu::Bar)
         .contains("C\t23\t1\t0\tVisualizer\tshift+k"));
 
+    // its grip, bottom right as in Winamp, sizes it, and the visualizer's area with it
+    let (gx, gy) = (frame.left + frame.width - 5, frame.top + frame.height - 5);
+    let skin = app.skin().unwrap();
+    skin.runtime.pointer_down(gx, gy, 1);
+    skin.runtime.pointer_move(gx + 40, gy + 30);
+    skin.runtime.pointer_up(gx + 40, gy + 30);
+    app.step();
+    // in gen.bmp's steps, 25 across and 29 down, as Winamp sizes it
+    let (_, bigger) = app.vis_area().expect("still shown");
+    assert_eq!((bigger.width, bigger.height), (631, 488));
+    let sized = app
+        .skin()
+        .unwrap()
+        .runtime
+        .window_rect(walkit::host::WindowId(window));
+    assert_eq!((sized.width, sized.height), (650, 522));
+    app.take_requests();
+
     // the Milkdrop Window item and the preference say so too: in a classic skin they are
     // the visualizer window, as in Winamp
     assert!(app.menu(Menu::Visualization).contains(&format!(
@@ -2002,7 +2020,7 @@ fn a_classic_skin_shows_the_visualizer_in_its_own_window() {
         .find(|w| w.id == again)
         .unwrap()
         .rect;
-    assert_eq!(back, frame);
+    assert_eq!(back, sized, "where it was, at the size it was given");
 }
 
 /// A modern skin that holds Winamp's visualizer in its main window.

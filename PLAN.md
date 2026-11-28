@@ -259,7 +259,8 @@ Updated with every step. Whoever picks this up, person or model, starts here.
 
 ### Known about the engine
 
-- The engine is walkit 0.10.6, from its git repository by tag (`v0.10.6`), not crates.io.
+- The engine is walkit 0.10.6, from its git repository by tag (`v0.10.6`), not crates.io; for
+  now a revision of main after it (`abdd912`, the gen window's grip), until 0.10.7 is tagged.
   What the app uses from the releases after 0.10.3:
   - the focus given to a window (`focus_window`), a row of a playlist brought into view
     (`show_playlist_row`) and the list under a point scrolled (`scroll_at`): #26, #27;
@@ -322,6 +323,11 @@ where the system has no Arial or Tahoma (`core/src/fonts.rs`).
 
 ### Log
 
+- 2026-11-28, the gen window's grip: walkit pasted gen.bmp's plain patch over the grip of
+  every gen window that sizes, so the Milkdrop window had none where Winamp 5.666 shows one
+  (base skin, VM). Fixed in walkit (walkit#47); Alpaca takes main at `abdd912` until 0.10.7.
+  Dragging the grip sizes the window in gen.bmp's steps (25 across, 29 down) and the
+  visualizer with it. Dump: Winamp Base with `--show-vis`, corner as in the VM.
 - 2026-11-28, Milkdrop in a classic skin as in Winamp: Milkdrop Window, the preference and a
   double click on the main window's visualizer open the skin's visualizer window, not the
   shell's. A visualizer window opened while wearing a skin is placed as the Visualizer
