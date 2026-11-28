@@ -56,7 +56,7 @@ fn what_the_app_kept_as_andamp_comes_along() {
     std::fs::create_dir_all(old.join("Skins")).unwrap();
     std::fs::write(
         old.join("settings.txt"),
-        "at.AndAmp Light.wsz.1\t10,20\nat.Alpaca Dark.wsz.1\t5,5\nat.AndAmp Dark.wsz.1\t1,1\nzoom\t2\n",
+        "at.walkit-classic.wsz.1\t10,20\nzoom\t2\n",
     )
     .unwrap();
 
@@ -67,15 +67,8 @@ fn what_the_app_kept_as_andamp_comes_along() {
         "the folder moved"
     );
 
-    let mut settings = Settings::open(&dir);
-    settings.carry_over_old_skin_names();
-    assert_eq!(settings.get("at.Alpaca Light.wsz.1"), Some("10,20"));
-    assert_eq!(
-        settings.get("at.Alpaca Dark.wsz.1"),
-        Some("5,5"),
-        "what the new name has stays"
-    );
-    assert_eq!(settings.keys("at.AndAmp"), [] as [&str; 0]);
+    let settings = Settings::open(&dir);
+    assert_eq!(settings.get("at.walkit-classic.wsz.1"), Some("10,20"));
     assert_eq!(settings.get("zoom"), Some("2"));
 
     // a folder of the new name is never replaced by an old one

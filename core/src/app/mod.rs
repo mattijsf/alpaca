@@ -44,7 +44,7 @@ use crate::skin::Skin;
 use crate::vis::Presets;
 
 /// The skin shown when none is asked for, which also lies under every classic skin.
-const DEFAULT_SKIN: &str = "Alpaca Dark.wsz";
+const DEFAULT_SKIN: &str = "walkit-classic.wsz";
 /// The skin `--modern` shows.
 const MODERN_SKIN: &str = "walkit-modern.wal";
 
@@ -144,7 +144,7 @@ impl App {
         config: Option<PathBuf>,
         player: Player,
     ) -> App {
-        let mut settings = match &config {
+        let settings = match &config {
             Some(dir) if options.kept() => {
                 let old = settings::carry_over_old_folder(dir);
                 let mut settings = Settings::open(dir);
@@ -155,7 +155,6 @@ impl App {
             }
             _ => Settings::none(),
         };
-        settings.carry_over_old_skin_names();
         let number = |key: &str| settings.get(key).and_then(|v| v.parse::<f64>().ok());
         let zoom = options
             .zoom
@@ -237,17 +236,8 @@ impl App {
         } else {
             DEFAULT_SKIN
         });
-        let last = || {
-            let kept = PathBuf::from(self.settings.get("skin")?);
-            if kept.exists() {
-                return Some(kept);
-            }
-            // a skin that came with the app when it was called Andamp, kept as a path into
-            // that app: the same skin under its name now
-            let name = kept.file_name()?.to_str()?;
-            let name = name.strip_prefix(settings::OLD_SKIN_PREFIX)?;
-            Some(self.builtin(&format!("{}{name}", settings::SKIN_PREFIX))).filter(|f| f.exists())
-        };
+        // a skin the app no longer comes with, as Alpaca Dark, gives way to the default
+        let last = || Some(PathBuf::from(self.settings.get("skin")?)).filter(|kept| kept.exists());
         let skin = self
             .options
             .skin

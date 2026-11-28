@@ -181,14 +181,16 @@ Updated with every step. Whoever picks this up, person or model, starts here.
   the Mac's and the core's history came in as one squashed commit (#211).
 - [x] Renamed everywhere but where a name is a contract: the Mac's bundle id is
   `nl.mattix.alpaca.mac` and its folder `Application Support/Alpaca`; a first start moves the
-  `Andamp` folder there, and the skin worn, places kept by the built-in skins' old names
-  (`AndAmp Dark.wsz`) and paths into the old folder come along (tested in `tests/app.rs` and
-  `tests/settings.rs`; run once by hand on a copy of real settings). The effect plug-ins keep
+  `Andamp` folder there, and paths into the old folder come along (tested in `tests/app.rs`
+  and `tests/settings.rs`; run once by hand on a copy of real settings); a built-in skin
+  worn then, which the app no longer comes with, gives way to walkit-classic. The effect plug-ins keep
   their ids (`nl.mattix.andamp.*`) on both apps, since racks are saved by them. Android keeps
   its Play application id, its intent actions, Binder descriptors, widget class, stored
   names and its SDK's Maven group (`apps/android/ENGINEERING.md`, Names kept from Andamp).
-- [x] The built-in skins say Alpaca. `core/resources/skins` holds copies of
-  `apps/android/skin/dist`, which builds them; copy them again after a rebuild there.
+- [x] The built-in skins are walkit's two example skins, as on Android: walkit-classic, shown
+  first and laid under every classic skin, and walkit-modern. `core/resources/skins` holds
+  the copies of the walkit release `core/Cargo.toml` names; copy them again with each
+  release. Alpaca Dark, Light and Spot are gone; a listener who wore one gets walkit-classic.
 - [x] One `lefthook.yml` at the root: the desktop gate for pushes that touch the core or the
   Mac, `./gradlew gate` for pushes that touch `apps/android/`; the Android commit-type check
   only for commits that touch it. Workflows: `desktop-ci.yml`, `android-ci.yml`,
@@ -309,13 +311,18 @@ Updated with every step. Whoever picks this up, person or model, starts here.
    The plug-in folder and the settings are already under the app's own names.
 5. AVS.
 
-What comes with the app: Alpaca Dark (the skin shown first, and the one under every classic
-skin), Light and Spot, from Alpaca's own `skin/dist`; walkit's two example skins; Alpaca's
-own element set under modern skins (`core/resources/wasabi`, from Alpaca's `defaultset`); the
-stand-in fonts, drawn only where the system has no Arial or Tahoma (`core/src/fonts.rs`).
+What comes with the app: walkit-classic (the skin shown first, and the one under every
+classic skin) and walkit-modern, walkit's example skins; Alpaca's own element set under modern
+skins (`core/resources/wasabi`, from Alpaca's `defaultset`); the stand-in fonts, drawn only
+where the system has no Arial or Tahoma (`core/src/fonts.rs`).
 
 ### Log
 
+- 2026-11-28, the built-in skins as on Android: walkit-classic is the default and the base
+  under classic skins, walkit-modern the other; Alpaca Dark, Light and Spot no longer come
+  with the app, and the Andamp-era skin-name carry-over went with them. A skin kept from
+  before that is gone gives way to walkit-classic. walkit-classic has no `avs.bmp`, `mb.bmp`
+  or `video.bmp`, which Alpaca Dark had; the app opens none of those windows.
 - 2026-11-28, walkit 0.10.6: the engine comes from walkit's git repository by release tag,
   not crates.io, since it changes too often in this phase for a publish each time; the pin to
   a revision of its main branch is gone. walkit-classic and walkit-modern are 0.10.6's.

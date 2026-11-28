@@ -112,7 +112,7 @@ fn a_first_start_wears_the_default_skin_and_tells_the_shell() {
     );
     assert!(app.skin().is_none());
     app.start();
-    assert_eq!(app.skin_name(), "Alpaca Dark.wsz");
+    assert_eq!(app.skin_name(), "walkit-classic.wsz");
     assert_eq!(app.take_requests(), [Request::Skin, Request::Menu]);
     app.step();
     assert_eq!(
@@ -137,8 +137,8 @@ fn what_andamp_kept_comes_back_in_alpaca() {
     let app = start("", &home.join("Alpaca"));
     assert_eq!(
         app.skin_name(),
-        "Alpaca Light.wsz",
-        "the same built-in skin"
+        "walkit-classic.wsz",
+        "a skin the app no longer comes with gives way to the default"
     );
     assert_eq!(app.zoom(), 2);
     assert!(!old.exists(), "the folder moved");
@@ -153,8 +153,8 @@ fn the_menu_shows_the_skins_and_the_switches() {
         "C\t1\t0\t0\tOpen Files…\to",
         "C\t4\t0\t0\tOpen Skin…\tshift+o",
         "C\t26\t0\t0\tQuit Alpaca\tq",
-        "C\t200\t1\t0\tAlpaca Dark\t",
-        "C\t201\t0\t0\tAlpaca Light\t",
+        "C\t200\t1\t0\twalkit-classic\t",
+        "C\t201\t0\t0\twalkit-modern\t",
         "C\t20\t0\t0\tDouble Size\td",
         "C\t21\t0\t0\tAlways on Top\tt",
         "C\t28\t0\t0\tPreferences…\t,",
@@ -178,12 +178,12 @@ fn the_menu_shows_the_skins_and_the_switches() {
     app.command(command::OPACITY + 3);
     app.command(command::SKIN + 1);
     assert_eq!((app.on_top(), app.opacity()), (true, 70));
-    assert_eq!(app.skin_name(), "Alpaca Light.wsz");
+    assert_eq!(app.skin_name(), "walkit-modern.wal");
     let popup = app.menu(Menu::Popup);
     for line in [
         "C\t21\t1\t0\tAlways on Top\t",
         "C\t103\t1\t0\t70 %\t",
-        "C\t201\t1\t0\tAlpaca Light\t",
+        "C\t201\t1\t0\twalkit-modern\t",
     ] {
         assert!(
             popup.lines().any(|l| l == line),
@@ -310,21 +310,21 @@ fn what_the_listener_picks_is_done() {
     assert_eq!(app.player.borrow().entries().len(), 2);
     app.command(command::STOP);
 
-    let light = resources()
-        .join("skins/Alpaca Light.wsz")
+    let modern = resources()
+        .join("skins/walkit-modern.wal")
         .to_string_lossy()
         .into_owned();
-    app.picked(Ask::Skin, std::slice::from_ref(&light));
-    assert_eq!(app.skin_name(), "Alpaca Light.wsz");
+    app.picked(Ask::Skin, std::slice::from_ref(&modern));
+    assert_eq!(app.skin_name(), "walkit-modern.wal");
     // what the system opens: the skin is worn and the songs play
     app.open(&[
         a,
         resources()
-            .join("skins/Alpaca Spot.wsz")
+            .join("skins/walkit-classic.wsz")
             .to_string_lossy()
             .into_owned(),
     ]);
-    assert_eq!(app.skin_name(), "Alpaca Spot.wsz");
+    assert_eq!(app.skin_name(), "walkit-classic.wsz");
     assert_eq!(app.player.borrow().entries().len(), 1);
     app.command(command::STOP);
 
@@ -339,7 +339,7 @@ fn the_next_run_starts_from_what_this_one_left() {
     let dir = scratch("kept");
     let (a, b) = (song(&dir, "a.wav"), song(&dir, "b.wav"));
     let mut app = start("", &dir);
-    app.command(command::SKIN + 2);
+    app.command(command::SKIN + 1);
     app.step();
     app.skin().unwrap().move_windows(300, 200);
     app.step();
@@ -356,7 +356,7 @@ fn the_next_run_starts_from_what_this_one_left() {
     drop(app);
 
     let mut again = start("", &dir);
-    assert_eq!(again.skin_name(), "Alpaca Spot.wsz");
+    assert_eq!(again.skin_name(), "walkit-modern.wal");
     assert_eq!(
         (again.zoom(), again.on_top(), again.opacity()),
         (2, true, 80)
@@ -369,14 +369,14 @@ fn the_next_run_starts_from_what_this_one_left() {
 
     // a run that only measures starts from nothing and leaves nothing
     let mut bench = start("--bench 5", &dir);
-    assert_eq!(bench.skin_name(), "Alpaca Dark.wsz");
+    assert_eq!(bench.skin_name(), "walkit-classic.wsz");
     assert_eq!(
         (bench.zoom(), bench.player.borrow().entries().len()),
         (1, 0)
     );
     bench.command(command::SKIN + 1);
     bench.save();
-    assert_eq!(start("", &dir).skin_name(), "Alpaca Spot.wsz");
+    assert_eq!(start("", &dir).skin_name(), "walkit-modern.wal");
 }
 
 #[test]
@@ -429,7 +429,7 @@ fn the_listeners_own_plugins_are_kept_and_can_go() {
     let kept = dir.join("Plugins").join(format!("{id}.lua"));
     assert!(kept.exists());
     assert!(app
-        .add_plugin(&resources().join("skins/Alpaca Dark.wsz"))
+        .add_plugin(&resources().join("skins/walkit-classic.wsz"))
         .is_err());
     app.player.borrow_mut().rack.set_on(index, true);
     app.save();
@@ -699,14 +699,14 @@ fn the_listeners_own_skins_are_offered_after_the_apps() {
     let folder = app.skins_folder().expect("a folder for skins");
     assert_eq!(folder, dir.join("Skins"));
     std::fs::create_dir_all(&folder).unwrap();
-    let dark = resources().join("skins/Alpaca Dark.wsz");
+    let classic = resources().join("skins/walkit-classic.wsz");
     for name in [
         "Mine 10.wsz",
         "mine 9.wsz",
-        "Alpaca Light.wsz",
+        "walkit-classic.wsz",
         ".hidden.wsz",
     ] {
-        std::fs::copy(&dark, folder.join(name)).unwrap();
+        std::fs::copy(&classic, folder.join(name)).unwrap();
     }
     std::fs::write(folder.join("notes.txt"), "not a skin").unwrap();
     // by name as a file browser has them; one named as a skin of the app's is the app's
@@ -1265,7 +1265,9 @@ fn the_playlist_follows_the_song_that_plays() {
         (18..=20).contains(&top),
         "song 20 is in view: the first row is {top}"
     );
-    app.wear(&resources().join("skins/Alpaca Dark.wsz"));
+    let other = dir.join("Other.wsz");
+    std::fs::copy(resources().join("skins/walkit-classic.wsz"), &other).unwrap();
+    assert!(app.wear(&other));
     app.step();
     app.step();
     let top = first_row(&mut app);
@@ -1787,7 +1789,7 @@ fn a_skins_other_buttons_reach_their_menus() {
 fn the_preferences_spell_themselves_out_and_take_changes() {
     use walkit::classic::vis::VisMode;
     let dir = scratch("prefs");
-    let mut app = start("", &dir);
+    let mut app = start("--modern", &dir);
     app.take_requests();
     let prefs = app.preferences();
     assert!(
@@ -1797,8 +1799,8 @@ fn the_preferences_spell_themselves_out_and_take_changes() {
     for part in [
         "{\"id\":\"double\",\"kind\":\"toggle\",\"label\":\"Double size\",\"value\":\"0\"}",
         "{\"id\":\"opacity\",\"kind\":\"slider\",\"label\":\"Opacity\",\"value\":\"100\",\"min\":40,\"max\":100,\"step\":10,\"unit\":\"%\"}",
-        "{\"name\":\"Alpaca Light\",\"value\":\"Alpaca Light.wsz\"}",
-        "\"id\":\"skin\",\"kind\":\"choice\",\"label\":\"Skin\",\"value\":\"Alpaca Dark.wsz\"",
+        "{\"name\":\"walkit-classic\",\"value\":\"walkit-classic.wsz\"}",
+        "\"id\":\"skin\",\"kind\":\"choice\",\"label\":\"Skin\",\"value\":\"walkit-modern.wal\"",
         "\"id\":\"vis.mode\",\"kind\":\"choice\",\"label\":\"Shows\",\"value\":\"analyzer\"",
         "{\"id\":\"milk.stay\",\"kind\":\"slider\",\"label\":\"A preset stays\",\"value\":\"30\",\"min\":5,\"max\":120,\"step\":5,\"unit\":\"s\"}",
         "{\"title\":\"About\",",
@@ -1819,7 +1821,7 @@ fn the_preferences_spell_themselves_out_and_take_changes() {
     app.set_preference("vis.peaks", "0");
     app.set_preference("milk.stay", "45");
     app.set_preference("milk.fps", "60");
-    app.set_preference("skin", "Alpaca Spot.wsz");
+    app.set_preference("skin", "walkit-classic.wsz");
     app.set_preference("skin", "../../somewhere/else.wsz");
     app.set_preference("no such preference", "1");
     assert_eq!((app.zoom(), app.on_top(), app.opacity()), (2, true, 70));
@@ -1827,7 +1829,7 @@ fn the_preferences_spell_themselves_out_and_take_changes() {
     assert_eq!((app.vis_stay(), app.vis_fps()), (45, 60));
     assert_eq!(
         app.skin_name(),
-        "Alpaca Spot.wsz",
+        "walkit-classic.wsz",
         "only a skin that comes with the app is worn by name"
     );
     // the skin just worn is set as the one before it was

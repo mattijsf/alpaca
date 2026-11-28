@@ -66,27 +66,6 @@ fn the_classic_skin_shows_three_windows_with_pixels() {
 }
 
 #[test]
-fn alpacas_own_skins_open_and_draw() {
-    for name in ["Alpaca Dark.wsz", "Alpaca Light.wsz", "Alpaca Spot.wsz"] {
-        let mut skin = open(name, false);
-        skin.step();
-        assert_eq!(
-            skin.windows().len(),
-            3,
-            "{name}: main, equalizer and playlist"
-        );
-        for w in skin.windows() {
-            let drawn = w.canvas.pixels.iter().filter(|p| (*p >> 24) != 0).count();
-            assert!(
-                drawn > w.canvas.pixels.len() / 2,
-                "{name}: window {} is mostly drawn",
-                w.id
-            );
-        }
-    }
-}
-
-#[test]
 fn the_modern_skin_opens_and_draws() {
     let mut skin = open("walkit-modern.wal", false);
     skin.step();
@@ -224,7 +203,7 @@ fn the_title_bar_buttons_and_the_clutter_bar_ask_the_app() {
 
 #[test]
 fn drawing_only_what_changed_gives_the_pixels_drawing_everything_gives() {
-    for name in ["Alpaca Dark.wsz", "walkit-classic.wsz", "walkit-modern.wal"] {
+    for name in ["walkit-classic.wsz", "walkit-modern.wal"] {
         let mut skin = open(name, true);
         skin.step();
         let (mut parts, mut wholes) = (0, 0);
